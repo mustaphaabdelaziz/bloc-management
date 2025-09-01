@@ -1,0 +1,375 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeries/new.ejs -->
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/surgeries" id="surgeryForm">
+                    <!-- Informations de base -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patient" class="form-label">Patient *</label>
+                                <select name="patient" id="patient" class="form-select" required>
+                                    <option value="">Sélectionner un patient</option>
+                                    <% patients.forEach(patient => { %>
+                                        <option value="<%= patient._id %>" <%= surgery.patient === patient._id ? 'selected' : '' %>>
+                                            <%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                                <div class="form-text">
+                                    <a href="/patients/new" target="_blank" class="text-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>Ajouter un nouveau patient
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="surgeon" class="form-label">Chirurgien *</label>
+                                <select name="surgeon" id="surgeon" class="form-select" required>
+                                    <option value="">Sélectionner un chirurgien</option>
+                                    <% surgeons.forEach(surgeon => { %>
+                                        <option value="<%= surgeon._id %>" data-contract="<%= surgeon.contractType %>" <%= surgery.surgeon === surgeon._id ? 'selected' : '' %>>
+                                            Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="prestation" class="form-label">Prestation *</label>
+                                <select name="prestation" id="prestation" class="form-select" required>
+                                    <option value="">Sélectionner une prestation</option>
+                                    <% prestations.forEach(prestation => { %>
+                                        <option value="<%= prestation._id %>" 
+                                                data-duration="<%= prestation.duration %>" 
+                                                data-price="<%= prestation.priceHT %>" 
+                                                <%= surgery.prestation === prestation._id ? 'selected' : '' %>>
+                                            <%= prestation.designation %> - <%= prestation.specialty.name %> (<%=prestation.duration%> min)
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Statut *</label>
+                                <select name="status" id="status" class="form-select" required>
+                                    <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
+                                    <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
+                                    <option value="in-progress" <%= surgery.status === 'in-progress' ? 'selected' : '' %>>En cours</option>
+                                    <option value="completed" <%= surgery.status === 'completed' ? 'selected' : '' %>>Terminée</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dates et heures -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="beginDateTime" class="form-label">Date et heure de début *</label>
+                                <input type="datetime-local" class="form-control" id="beginDateTime" name="beginDateTime" 
+                                       value="<%= surgery.beginDateTime ? moment(surgery.beginDateTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="endDateTime" class="form-label">Date et heure de fin</label>
+                                <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime"
+                                       value="<%= surgery.endDateTime ? moment(surgery.endDateTime).format('YYYY-MM-DDTHH:mm') : '' %>">
+                                <div class="form-text">Si renseigné, permettra le calcul de la durée réelle</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dépassement de durée -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="applyExtraFees">
+                                        <strong>Appliquer des frais supplémentaires pour dépassement de durée</strong>
+                                    </label>
+                                </div>
+                                <div class="form-text text-warning">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Si la durée dépasse celle prévue pour la prestation, des frais additionnels peuvent être appliqués.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Personnel médical -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="bi bi-people me-2"></i>Personnel Médical Impliqué</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="medicalStaffContainer">
+                                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+                                    <% surgery.medicalStaff.forEach((staff, index) => { %>
+                                        <div class="row mb-3 medical-staff-row">
+                                            <div class="col-md-5">
+                                                <select name="medicalStaff" class="form-select">
+                                                    <option value="">Sélectionner personnel</option>
+                                                    <% medicalStaff.forEach(ms => { %>
+                                                        <option value="<%= ms._id %>" <%= staff.staff.toString() === ms._id.toString() ? 'selected' : '' %>>
+                                                            <%= ms.firstName %> <%= ms.lastName %>
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <select name="rolePlayedId" class="form-select">
+                                                    <option value="">Sélectionner rôle</option>
+                                                    <% fonctions.forEach(fonction => { %>
+                                                        <option value="<%= fonction._id %>" <%= staff.rolePlayedId.toString() === fonction._id.toString() ? 'selected' : '' %>>
+                                                            <%= fonction.name %>
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                <% } else { %>
+                                    <div class="row mb-3 medical-staff-row">
+                                        <div class="col-md-5">
+                                            <select name="medicalStaff" class="form-select">
+                                                <option value="">Sélectionner personnel</option>
+                                                <% medicalStaff.forEach(ms => { %>
+                                                    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <select name="rolePlayedId" class="form-select">
+                                                <option value="">Sélectionner rôle</option>
+                                                <% fonctions.forEach(fonction => { %>
+                                                    <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStaffRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter personnel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Matériaux consommés -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="bi bi-box me-2"></i>Matériaux Consommés</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="materialsContainer">
+                                <% if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) { %>
+                                    <% surgery.consumedMaterials.forEach((material, index) => { %>
+                                        <div class="row mb-3 material-row">
+                                            <div class="col-md-6">
+                                                <select name="materialId" class="form-select">
+                                                    <option value="">Sélectionner matériau</option>
+                                                    <% materials.forEach(mat => { %>
+                                                        <option value="<%= mat._id %>" 
+                                                                data-price="<%= mat.priceHT %>" 
+                                                                data-unit="<%= mat.unitOfMeasure %>" 
+                                                                data-category="<%= mat.category %>"
+                                                                <%= material.material.toString() === mat._id.toString() ? 'selected' : '' %>>
+                                                            <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %> 
+                                                            (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" name="materialQuantity" class="form-control" placeholder="Quantité" 
+                                                       min="1" step="0.01" value="<%= material.quantity %>">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                <% } else { %>
+                                    <div class="row mb-3 material-row">
+                                        <div class="col-md-6">
+                                            <select name="materialId" class="form-select">
+                                                <option value="">Sélectionner matériau</option>
+                                                <% materials.forEach(mat => { %>
+                                                    <option value="<%= mat._id %>" 
+                                                            data-price="<%= mat.priceHT %>" 
+                                                            data-unit="<%= mat.unitOfMeasure %>" 
+                                                            data-category="<%= mat.category %>">
+                                                        <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %> 
+                                                        (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                    </option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" name="materialQuantity" class="form-control" placeholder="Quantité" 
+                                                   min="1" step="0.01">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addMaterialRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes et observations</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"><%= surgery.notes || '' %></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/surgeries" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Enregistrer Chirurgie
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Ajouter une ligne de personnel médical
+function addStaffRow() {
+    const container = document.getElementById('medicalStaffContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 medical-staff-row';
+    newRow.innerHTML = `
+        <div class="col-md-5">
+            <select name="medicalStaff" class="form-select">
+                <option value="">Sélectionner personnel</option>
+                <% medicalStaff.forEach(ms => { %>
+                    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <select name="rolePlayedId" class="form-select">
+                <option value="">Sélectionner rôle</option>
+                <% fonctions.forEach(fonction => { %>
+                    <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+// Supprimer une ligne de personnel médical
+function removeStaffRow(button) {
+    const row = button.closest('.medical-staff-row');
+    if (document.querySelectorAll('.medical-staff-row').length > 1) {
+        row.remove();
+    }
+}
+
+// Ajouter une ligne de matériau
+function addMaterialRow() {
+    const container = document.getElementById('materialsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 material-row';
+    newRow.innerHTML = `
+        <div class="col-md-6">
+            <select name="materialId" class="form-select">
+                <option value="">Sélectionner matériau</option>
+                <% materials.forEach(mat => { %>
+                    <option value="<%= mat._id %>" 
+                            data-price="<%= mat.priceHT %>" 
+                            data-unit="<%= mat.unitOfMeasure %>" 
+                            data-category="<%= mat.category %>">
+                        <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %> 
+                        (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="number" name="materialQuantity" class="form-control" placeholder="Quantité" 
+                   min="1" step="0.01">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+// Supprimer une ligne de matériau
+function removeMaterialRow(button) {
+    const row = button.closest('.material-row');
+    if (document.querySelectorAll('.material-row').length > 1) {
+        row.remove();
+    }
+}
+
+// Calcul automatique de la fin basé sur la durée de la prestation
+document.getElementById('beginDateTime').addEventListener('change', updateEndTime);
+document.getElementById('prestation').addEventListener('change', updateEndTime);
+
+function updateEndTime() {
+    const beginDateTime = document.getElementById('beginDateTime').value;
+    const prestationSelect = document.getElementById('prestation');
+    const endDateTime = document.getElementById('endDateTime');
+    
+    if (beginDateTime && prestationSelect.value && !endDateTime.value) {
+        const selectedOption = prestationSelect.options[prestationSelect.selectedIndex];
+        const duration = parseInt(selectedOption.dataset.duration);
+        
+        if (duration) {
+            const startDate = new Date(beginDateTime);
+            const endDate = new Date(startDate.getTime() + duration * 60000);
+            endDateTime.value = endDate.toISOString().slice(0, 16);
+        }
+    }
+}
+</script>

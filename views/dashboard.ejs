@@ -1,0 +1,328 @@
+<% layout('layouts/boilerplate')%>
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="stats-card">
+      <div class="d-flex align-items-center">
+        <div class="flex-shrink-0">
+          <i class="bi bi-people fa-2x"></i>
+        </div>
+        <div class="flex-grow-1 ms-3">
+          <h3 class="mb-0"><%= stats.totalPatients %></h3>
+          <p class="mb-0">Patients</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div
+      class="stats-card"
+      style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+    >
+      <div class="d-flex align-items-center">
+        <div class="flex-shrink-0">
+          <i class="bi bi-person-badge fa-2x"></i>
+        </div>
+        <div class="flex-grow-1 ms-3">
+          <h3 class="mb-0"><%= stats.totalSurgeons %></h3>
+          <p class="mb-0">Chirurgiens</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div
+      class="stats-card"
+      style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+    >
+      <div class="d-flex align-items-center">
+        <div class="flex-shrink-0">
+          <i class="bi bi-scissors fa-2x"></i>
+        </div>
+        <div class="flex-grow-1 ms-3">
+          <h3 class="mb-0"><%= stats.totalSurgeries %></h3>
+          <p class="mb-0">Chirurgies</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6">
+    <div
+      class="stats-card"
+      style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+    >
+      <div class="d-flex align-items-center">
+        <div class="flex-shrink-0">
+          <i class="bi bi-hospital fa-2x"></i>
+        </div>
+        <div class="flex-grow-1 ms-3">
+          <h3 class="mb-0"><%= stats.totalMedicalStaff %></h3>
+          <p class="mb-0">Personnel</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Chirurgies du jour -->
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <i class="bi bi-calendar-day me-2"></i>
+        <h5 class="mb-0">Chirurgies du jour</h5>
+        <span class="badge bg-light text-primary ms-auto">
+          <%= todaySurgeries.length %> chirurgies
+        </span>
+      </div>
+      <div class="card-body">
+        <% if (todaySurgeries.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Heure</th>
+                <th>Patient</th>
+                <th>Chirurgien</th>
+                <th>Prestation</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% todaySurgeries.forEach(surgery => { %>
+              <tr>
+                <td>
+                  <strong
+                    ><%= moment(surgery.beginDateTime).format('HH:mm')
+                    %></strong
+                  >
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle me-2 text-primary"></i>
+                    <div>
+                      <div>
+                        <%= surgery.patient.firstName %> <%=
+                        surgery.patient.lastName %>
+                      </div>
+                      <small class="text-muted"
+                        ><%= surgery.patient.code %></small
+                      >
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  Dr. <%= surgery.surgeon.firstName %> <%=
+                  surgery.surgeon.lastName %>
+                </td>
+                <td>
+                  <span class="badge bg-info"
+                    ><%= surgery.prestation.designation %></span
+                  >
+                </td>
+                <td>
+                  <% if (surgery.status === 'planned') { %>
+                  <span class="badge bg-warning">Planifiée</span>
+                  <% } else if (surgery.status === 'in-progress') { %>
+                  <span class="badge bg-primary">En cours</span>
+                  <% } else if (surgery.status === 'completed') { %>
+                  <span class="badge bg-success">Terminée</span>
+                  <% } else if (surgery.status === 'urgent') { %>
+                  <span class="badge bg-danger">Urgente</span>
+                  <% } else { %>
+                  <span class="badge bg-secondary">Annulée</span>
+                  <% } %>
+                </td>
+                <td>
+                  <a
+                    href="/surgeries/<%= surgery._id %>"
+                    class="btn btn-sm btn-outline-primary"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <% } else { %>
+        <div class="text-center py-4">
+          <i class="bi bi-calendar-x fa-3x text-muted mb-3"></i>
+          <p class="text-muted">Aucune chirurgie prévue aujourd'hui</p>
+          <a href="/surgeries/new" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Programmer une chirurgie
+          </a>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques et alertes -->
+  <div class="col-lg-4">
+    <!-- Répartition des chirurgies par statut -->
+    <div class="card mb-4">
+      <div class="card-header bg-info text-white">
+        <i class="bi bi-pie-chart me-2"></i>
+        <h6 class="mb-0">Chirurgies par statut</h6>
+      </div>
+      <div class="card-body">
+        <canvas id="statusChart" width="400" height="300"></canvas>
+      </div>
+    </div>
+
+    <!-- Matériaux en rupture de stock -->
+    <div class="card mb-4">
+      <div class="card-header bg-warning text-dark">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <h6 class="mb-0">Stock faible</h6>
+      </div>
+      <div class="card-body">
+        <% if (lowStockMaterials.length > 0) { %> <%
+        lowStockMaterials.forEach(material => { %>
+        <div class="d-flex align-items-center mb-2">
+          <div class="flex-grow-1">
+            <div class="fw-bold"><%= material.designation %></div>
+            <small class="text-muted"
+              >Stock: <%= material.stock %> <%= material.unitOfMeasure %></small
+            >
+          </div>
+          <span class="badge bg-danger"><%= material.stock %></span>
+        </div>
+        <% }); %>
+        <hr />
+        <a href="/materials" class="btn btn-sm btn-warning w-100">
+          Gérer les stocks
+        </a>
+        <% } else { %>
+        <div class="text-center">
+          <i class="bi bi-check-circle text-success fa-2x mb-2"></i>
+          <p class="text-muted mb-0">Tous les stocks sont OK</p>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chirurgies récentes -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-secondary text-white">
+        <i class="bi bi-clock-history me-2"></i>
+        <h5 class="mb-0">Activités récentes</h5>
+      </div>
+      <div class="card-body">
+        <% if (recentSurgeries.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Code</th>
+                <th>Date</th>
+                <th>Patient</th>
+                <th>Chirurgien</th>
+                <th>Prestation</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentSurgeries.forEach(surgery => { %>
+              <tr>
+                <td><strong><%= surgery.code %></strong></td>
+                <td>
+                  <%= moment(surgery.beginDateTime).format('DD/MM/YYYY HH:mm')
+                  %>
+                </td>
+                <td>
+                  <%= surgery.patient.firstName %> <%= surgery.patient.lastName
+                  %>
+                  <br /><small class="text-muted"
+                    ><%= surgery.patient.code %></small
+                  >
+                </td>
+                <td>
+                  Dr. <%= surgery.surgeon.firstName %> <%=
+                  surgery.surgeon.lastName %>
+                </td>
+                <td><%= surgery.prestation.designation %></td>
+                <td>
+                  <a
+                    href="/surgeries/<%= surgery._id %>"
+                    class="btn btn-sm btn-outline-primary"
+                  >
+                    <i class="bi bi-eye me-1"></i>Voir
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="text-center">
+          <a href="/surgeries" class="btn btn-primary">
+            Voir toutes les chirurgies <i class="bi bi-arrow-right ms-2"></i>
+          </a>
+        </div>
+        <% } else { %>
+        <div class="text-center py-4">
+          <i class="bi bi-inbox fa-3x text-muted mb-3"></i>
+          <p class="text-muted">Aucune activité récente</p>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Graphique des chirurgies par statut
+  document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('statusChart').getContext('2d');
+
+      const statusData = <%- JSON.stringify(surgeryStatusStats) %>;
+      const labels = statusData.map(item => {
+          switch(item._id) {
+              case 'planned': return 'Planifiées';
+              case 'in-progress': return 'En cours';
+              case 'completed': return 'Terminées';
+              case 'urgent': return 'Urgentes';
+              case 'cancelled': return 'Annulées';
+              default: return item._id;
+          }
+      });
+      const data = statusData.map(item => item.count);
+      const colors = ['#ffc107', '#007bff', '#28a745', '#dc3545', '#6c757d'];
+
+      new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+              labels: labels,
+              datasets: [{
+                  data: data,
+                  backgroundColor: colors,
+                  borderWidth: 2,
+                  borderColor: '#fff'
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      position: 'bottom',
+                      labels: {
+                          padding: 20,
+                          usePointStyle: true
+                      }
+                  }
+              }
+          }
+      });
+  });
+</script>

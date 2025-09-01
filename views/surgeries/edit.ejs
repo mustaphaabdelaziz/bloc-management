@@ -1,0 +1,55 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeries/edit.ejs -->
+<!-- Cette vue utilise le même formulaire que new.ejs mais avec les données pré-remplies et l'action PUT -->
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil me-2"></i>Modifier Chirurgie
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/surgeries/<%= surgery._id %>?_method=PUT" id="surgeryForm">
+                    <!-- Reprise du contenu du formulaire surgeries/new.ejs avec les valeurs pré-remplies -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patient" class="form-label">Patient *</label>
+                                <select name="patient" id="patient" class="form-select" required>
+                                    <% patients.forEach(patient => { %>
+                                        <option value="<%= patient._id %>" <%= surgery.patient._id.toString() === patient._id.toString() ? 'selected' : '' %>>
+                                            <%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="surgeon" class="form-label">Chirurgien *</label>
+                                <select name="surgeon" id="surgeon" class="form-select" required>
+                                    <% surgeons.forEach(surgeon => { %>
+                                        <option value="<%= surgeon._id %>" <%= surgery.surgeon._id.toString() === surgeon._id.toString() ? 'selected' : '' %>>
+                                            Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Continuer avec le reste du formulaire... -->
+                    <div class="d-flex justify-content-between">
+                        <a href="/surgeries/<%= surgery._id %>" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save me-2"></i>Sauvegarder
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

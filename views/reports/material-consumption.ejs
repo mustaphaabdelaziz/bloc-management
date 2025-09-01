@@ -1,0 +1,221 @@
+<% layout('layouts/boilerplate') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Rapport de Consommation des Matériaux</h3>
+        <p class="text-muted">Analyse des coûts et quantités consommées</p>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary">
+        <i class="bi bi-printer me-2"></i>Imprimer
+    </button>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Date début</label>
+                <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Date fin</label>
+                <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Résultats -->
+<% if (report.length > 0) { %>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <h3><%= report.length %></h3>
+                <p class="mb-0">Matériaux utilisés</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h3><%= report.reduce((sum, item) => sum + item.usageCount, 0) %></h3>
+                <p class="mb-0">Utilisations</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stats-card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <h3><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalValue, 0)) %></h3>
+                <p class="mb-0">Valeur totale consommée</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Matériau</th>
+                            <th>Catégorie</th>
+                            <th>Quantité totale</th>
+                            <th>Prix unitaire</th>
+                            <th>Valeur totale</th>
+                            <th>Utilisations</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% report.forEach(material => { %>
+                            <tr>
+                                <td>
+                                    <div class="fw-bold"><%= material.materialName %></div>
+                                </td>
+                                <td>
+                                    <span class="badge <%= material.category === 'consumable' ? 'bg-secondary' : 'bg-primary' %>">
+                                        <%= material.category === 'consumable' ? 'Consommable' : 'Patient' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong><%= material.totalQuantity %></strong> <%= material.unitOfMeasure %>
+                                </td>
+                                <td>
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.unitPrice) %>
+                                </td>
+                                <td>
+                                    <strong class="text-warning">
+                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.totalValue) %>
+                                    </strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info"><%= material.usageCount %></span>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot class="table-dark">
+                        <tr>
+                            <th colspan="4">Total</th>
+                            <th class="text-warning">
+                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalValue, 0)) %>
+                            </th>
+                            <th>
+                                <%= report.reduce((sum, item) => sum + item.usageCount, 0) %>
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphique de répartition -->
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Répartition par catégorie</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Top 5 des matériaux les plus coûteux</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="topMaterialsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+<% } else { %>
+    <div class="text-center py-5">
+        <i class="bi bi-box fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Aucune consommation trouvée</h5>
+        <p class="text-muted">Aucun matériau consommé dans cette période</p>
+    </div>
+<% } %>
+
+<script>
+<% if (report.length > 0) { %>
+// Graphiques de consommation
+document.addEventListener('DOMContentLoaded', function() {
+    const reportData = <%- JSON.stringify(report) %>;
+    
+    // Graphique par catégorie
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryData = reportData.reduce((acc, item) => {
+        const category = item.category === 'consumable' ? 'Consommables' : 'Patients';
+        if (!acc[category]) acc[category] = 0;
+        acc[category] += item.totalValue;
+        return acc;
+    }, {});
+    
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(categoryData),
+            datasets: [{
+                data: Object.values(categoryData),
+                backgroundColor: ['#6c757d', '#007bff'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Top 5 matériaux
+    const topMaterialsCtx = document.getElementById('topMaterialsChart').getContext('2d');
+    const topMaterials = reportData.slice(0, 5);
+    
+    new Chart(topMaterialsCtx, {
+        type: 'bar',
+        data: {
+            labels: topMaterials.map(item => item.materialName),
+            datasets: [{
+                label: 'Valeur (DZD)',
+                data: topMaterials.map(item => item.totalValue),
+                backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                borderColor: 'rgba(255, 193, 7, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return new Intl.NumberFormat('fr-DZ', { 
+                                style: 'currency', 
+                                currency: 'DZD' 
+                            }).format(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+<% } %>
+</script>

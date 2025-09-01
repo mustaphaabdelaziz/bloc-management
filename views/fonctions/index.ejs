@@ -1,0 +1,77 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Gestion des Fonctions</h3>
+        <p class="text-muted">Configuration des rôles du personnel médical</p>
+    </div>
+    <a href="/fonctions/new" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Nouvelle Fonction
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <% if (fonctions.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Nom</th>
+                            <th>Date création</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% fonctions.forEach(fonction => { %>
+                            <tr>
+                                <td><strong><%= fonction.code %></strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-workspace fa-2x text-info me-3"></i>
+                                        <div>
+                                            <div class="fw-bold"><%= fonction.name %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><%= moment(fonction.createdAt).format('DD/MM/YYYY') %></td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="/fonctions/<%= fonction._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFonction('<%= fonction._id %>')" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <div class="text-center py-5">
+                <i class="bi bi-person-workspace fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucune fonction trouvée</h5>
+                <p class="text-muted">Commencez par ajouter une fonction</p>
+                <a href="/fonctions/new" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter la première fonction
+                </a>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+function deleteFonction(id) {
+    if (confirmDelete('Êtes-vous sûr de vouloir supprimer cette fonction ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/fonctions/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>

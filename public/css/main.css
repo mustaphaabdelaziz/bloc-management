@@ -1,0 +1,26 @@
+/* Styling for clickable row */
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.clickable-row:hover {
+  background-color: #e8f5e9; /* Light green on hover */
+}
+
+/* Styling for badge displaying status */
+.badge {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .table th, .table td {
+    font-size: 0.9rem; /* Slightly smaller text for smaller screens */
+  }
+}

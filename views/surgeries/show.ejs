@@ -1,0 +1,249 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeries/show.ejs -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-scissors me-2"></i>Détails de la Chirurgie
+                </h5>
+                <div>
+                    <% if (surgery.status === 'planned') { %>
+                        <span class="badge bg-warning fs-6">Planifiée</span>
+                    <% } else if (surgery.status === 'in-progress') { %>
+                        <span class="badge bg-info fs-6">En cours</span>
+                    <% } else if (surgery.status === 'completed') { %>
+                        <span class="badge bg-success fs-6">Terminée</span>
+                    <% } else if (surgery.status === 'urgent') { %>
+                        <span class="badge bg-danger fs-6">Urgente</span>
+                    <% } else { %>
+                        <span class="badge bg-secondary fs-6">Annulée</span>
+                    <% } %>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Code Chirurgie</h6>
+                        <h4 class="text-primary"><%= surgery.code %></h4>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <h6 class="text-muted">Date et Heure</h6>
+                        <h5><%= moment(surgery.beginDateTime).format('DD/MM/YYYY à HH:mm') %></h5>
+                        <% if (surgery.endDateTime) { %>
+                            <small class="text-muted">
+                                Fin: <%= moment(surgery.endDateTime).format('DD/MM/YYYY à HH:mm') %>
+                            </small>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Informations principales -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-info">
+                                <i class="bi bi-person-circle me-2"></i>Patient
+                            </h6>
+                            <div class="ms-4">
+                                <h5><%= surgery.patient.firstName %> <%= surgery.patient.lastName %></h5>
+                                <p class="text-muted mb-0">Code: <%= surgery.patient.code %></p>
+                                <p class="text-muted mb-0">NIN: <%= surgery.patient.nin %></p>
+                                <% if (surgery.patient.phone) { %>
+                                    <p class="text-muted mb-0"><i class="bi bi-telephone me-1"></i><%= surgery.patient.phone %></p>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-success">
+                                <i class="bi bi-person-badge me-2"></i>Chirurgien
+                            </h6>
+                            <div class="ms-4">
+                                <h5>Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %></h5>
+                                <p class="text-muted mb-0">Type contrat: 
+                                    <span class="badge <%= surgery.surgeon.contractType === 'allocation' ? 'bg-info' : 'bg-warning' %>">
+                                        <%= surgery.surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
+                                    </span>
+                                </p>
+                                <% if (surgery.surgeon.contractType === 'allocation') { %>
+                                    <p class="text-muted mb-0">Taux: <%= surgery.surgeon.allocationRate || 0 %> DA/heure</p>
+                                <% } else { %>
+                                    <p class="text-muted mb-0">Pourcentage: <%= surgery.surgeon.percentageRate || 0 %>%</p>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prestation et durée -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-warning">
+                        <i class="bi bi-list-check me-2"></i>Prestation
+                    </h6>
+                    <div class="ms-4">
+                        <h5><%= surgery.prestation.designation %></h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="text-muted mb-0">Durée prévue: <strong><%= surgery.prestation.duration %> minutes</strong></p>
+                            </div>
+                            <% if (surgery.endDateTime) { %>
+                                <% const actualDuration = Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000); %>
+                                <div class="col-md-4">
+                                    <p class="text-muted mb-0">Durée réelle: 
+                                        <strong class="<%= actualDuration > surgery.prestation.duration ? 'text-warning' : 'text-success' %>">
+                                            <%= actualDuration %> minutes
+                                        </strong>
+                                    </p>
+                                </div>
+                                <% if (actualDuration > surgery.prestation.duration) { %>
+                                    <div class="col-md-4">
+                                        <p class="text-warning mb-0">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Dépassement: <strong>+<%= actualDuration - surgery.prestation.duration %> minutes</strong>
+                                        </p>
+                                    </div>
+                                <% } %>
+                            <% } %>
+                        </div>
+                        <p class="text-muted mb-0">Prix HT: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) %></strong></p>
+                        <% if (surgery.applyExtraFees) { %>
+                            <p class="text-warning mb-0">
+                                <i class="bi bi-info-circle me-1"></i>Frais supplémentaires appliqués pour dépassement
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <% if (surgery.notes) { %>
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-secondary">
+                            <i class="bi bi-card-text me-2"></i>Notes et Observations
+                        </h6>
+                        <div class="ms-4">
+                            <p class="text-muted"><%= surgery.notes %></p>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar avec calculs et actions -->
+    <div class="col-lg-4">
+        <!-- Calcul des honoraires -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-calculator me-2"></i>Honoraires Chirurgien
+                </h6>
+            </div>
+            <div class="card-body">
+                <% if (surgery.surgeonAmount > 0) { %>
+                    <div class="text-center">
+                        <h2 class="text-success">
+                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount) %>
+                        </h2>
+                        <p class="text-muted mb-0">Montant calculé</p>
+                        <small class="text-muted">
+                            Méthode: <%= surgery.surgeon.contractType === 'allocation' ? 'Allocation salle' : 'Pourcentage' %>
+                        </small>
+                    </div>
+                <% } else { %>
+                    <div class="text-center text-muted">
+                        <i class="bi bi-calculator fa-3x mb-3"></i>
+                        <p>Honoraires non calculés</p>
+                    </div>
+                <% } %>
+                
+                <form method="POST" action="/surgeries/<%= surgery._id %>/calculate-fees" class="mt-3">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-calculator me-2"></i>Recalculer
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Personnel médical -->
+        <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people me-2"></i>Personnel Médical
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <% surgery.medicalStaff.forEach(staff => { %>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi bi-person-check me-2 text-primary"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">
+                                    <%= staff.staff.firstName %> <%= staff.staff.lastName %>
+                                </div>
+                                <small class="text-muted">
+                                    <%= staff.rolePlayedId.name %>
+                                </small>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Matériaux consommés -->
+        <% if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) { %>
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="bi bi-box me-2"></i>Matériaux Consommés
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <% let totalMaterialCost = 0; %>
+                    <% surgery.consumedMaterials.forEach(material => { %>
+                        <% const cost = material.material.priceHT * material.quantity; %>
+                        <% totalMaterialCost += cost; %>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small"><%= material.material.designation %></div>
+                                <small class="text-muted">
+                                    <%= material.quantity %> <%= material.material.unitOfMeasure %> 
+                                    × <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.material.priceHT) %>
+                                </small>
+                                <div>
+                                    <span class="badge <%= material.material.category === 'consumable' ? 'bg-secondary' : 'bg-primary' %> badge-sm">
+                                        <%= material.material.category === 'consumable' ? 'Consommable' : 'Patient' %>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(cost) %></strong>
+                            </div>
+                        </div>
+                    <% }); %>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total Matériaux:</strong>
+                        <strong class="text-warning"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalMaterialCost) %></strong>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Modifier
+                    </a>
+                    <a href="/surgeries" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

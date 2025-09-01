@@ -1,0 +1,489 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/reports/statistics.ejs -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Statistiques Générales</h3>
+        <p class="text-muted">Tableaux de bord et analyses d'activité globale</p>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary">
+        <i class="bi bi-printer me-2"></i>Imprimer
+    </button>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Date début</label>
+                <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Date fin</label>
+                <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistiques principales -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-scissors fa-2x"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h3 class="mb-0"><%= surgeriesByStatus.reduce((sum, item) => sum + item.count, 0) %></h3>
+                    <p class="mb-0">Chirurgies totales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-award fa-2x"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h3 class="mb-0"><%= surgeriesBySpecialty.length %></h3>
+                    <p class="mb-0">Spécialités actives</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-clock fa-2x"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h3 class="mb-0">
+                        <% if (avgDurations.avgDuration) { %>
+                            <%= Math.round(avgDurations.avgDuration) %>min
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </h3>
+                    <p class="mb-0">Durée moyenne</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-calendar-day fa-2x"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h3 class="mb-0">
+                        <% 
+                        const totalDays = Math.ceil((new Date(filters.endDate) - new Date(filters.startDate)) / (1000 * 60 * 60 * 24)) || 1;
+                        const dailyAvg = Math.round(surgeriesByStatus.reduce((sum, item) => sum + item.count, 0) / totalDays);
+                        %>
+                        <%= dailyAvg %>
+                    </h3>
+                    <p class="mb-0">Chirurgies/jour</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques principaux -->
+<div class="row">
+    <!-- Répartition par statut -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>Répartition par Statut
+                </h6>
+            </div>
+            <div class="card-body">
+                <% if (surgeriesByStatus.length > 0) { %>
+                    <canvas id="statusChart" width="400" height="300"></canvas>
+                    <div class="mt-3">
+                        <% surgeriesByStatus.forEach(status => { %>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <% let statusLabel = status._id; %>
+                                    <% let statusClass = 'secondary'; %>
+                                    <% if (status._id === 'planned') { statusLabel = 'Planifiées'; statusClass = 'warning'; } %>
+                                    <% if (status._id === 'in-progress') { statusLabel = 'En cours'; statusClass = 'primary'; } %>
+                                    <% if (status._id === 'completed') { statusLabel = 'Terminées'; statusClass = 'success'; } %>
+                                    <% if (status._id === 'urgent') { statusLabel = 'Urgentes'; statusClass = 'danger'; } %>
+                                    <% if (status._id === 'cancelled') { statusLabel = 'Annulées'; statusClass = 'secondary'; } %>
+                                    
+                                    <span class="badge bg-<%= statusClass %>"><%= statusLabel %></span>
+                                </div>
+                                <strong><%= status.count %></strong>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-pie-chart fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Aucune donnée disponible</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activité par spécialité -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-bar-chart me-2"></i>Activité par Spécialité
+                </h6>
+            </div>
+            <div class="card-body">
+                <% if (surgeriesBySpecialty.length > 0) { %>
+                    <canvas id="specialtyChart" width="400" height="300"></canvas>
+                    <div class="mt-3">
+                        <% surgeriesBySpecialty.slice(0, 5).forEach(specialty => { %>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold small"><%= specialty.specialtyName %></div>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: <%= (specialty.count / surgeriesBySpecialty[0].count) * 100 %>%"></div>
+                                    </div>
+                                </div>
+                                <strong class="ms-2"><%= specialty.count %></strong>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-bar-chart fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Aucune donnée disponible</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques détaillées -->
+<div class="row">
+    <!-- Durées des chirurgies -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-stopwatch me-2"></i>Analyse des Durées
+                </h6>
+            </div>
+            <div class="card-body">
+                <% if (avgDurations.avgDuration) { %>
+                    <div class="text-center mb-3">
+                        <div class="performance-indicator">
+                            <div class="performance-value text-success">
+                                <%= Math.round(avgDurations.avgDuration) %>
+                            </div>
+                            <div class="performance-label">Minutes (moyenne)</div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="text-primary mb-0"><%= Math.round(avgDurations.minDuration) %></h5>
+                                <small class="text-muted">Min</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-warning mb-0"><%= Math.round(avgDurations.maxDuration) %></h5>
+                            <small class="text-muted">Max</small>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-stopwatch fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Aucune durée enregistrée</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance hebdomadaire -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>Évolution Temporelle
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="timeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau récapitulatif -->
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <h6 class="mb-0">
+            <i class="bi bi-table me-2"></i>Résumé de la Période
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Métrique</th>
+                        <th>Valeur</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><i class="bi bi-scissors me-2 text-primary"></i><strong>Total Chirurgies</strong></td>
+                        <td><span class="badge bg-primary fs-6"><%= surgeriesByStatus.reduce((sum, item) => sum + item.count, 0) %></span></td>
+                        <td>Nombre total d'interventions dans la période</td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-check-circle me-2 text-success"></i><strong>Taux de Réussite</strong></td>
+                        <td>
+                            <% 
+                            const totalSurgeries = surgeriesByStatus.reduce((sum, item) => sum + item.count, 0);
+                            const completedSurgeries = surgeriesByStatus.find(s => s._id === 'completed')?.count || 0;
+                            const successRate = totalSurgeries > 0 ? Math.round((completedSurgeries / totalSurgeries) * 100) : 0;
+                            %>
+                            <span class="badge bg-success fs-6"><%= successRate %>%</span>
+                        </td>
+                        <td>Pourcentage de chirurgies terminées avec succès</td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-exclamation-triangle me-2 text-danger"></i><strong>Chirurgies Urgentes</strong></td>
+                        <td>
+                            <% const urgentSurgeries = surgeriesByStatus.find(s => s._id === 'urgent')?.count || 0; %>
+                            <span class="badge bg-danger fs-6"><%= urgentSurgeries %></span>
+                        </td>
+                        <td>Nombre d'interventions en urgence</td>
+                    </tr>
+                    <% if (avgDurations.avgDuration) { %>
+                    <tr>
+                        <td><i class="bi bi-clock me-2 text-info"></i><strong>Durée Moyenne</strong></td>
+                        <td><span class="badge bg-info fs-6"><%= Math.round(avgDurations.avgDuration) %> min</span></td>
+                        <td>Temps moyen d'intervention</td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-speedometer me-2 text-warning"></i><strong>Efficacité</strong></td>
+                        <td>
+                            <% 
+                            const efficiency = avgDurations.avgDuration <= 120 ? 'Excellente' : 
+                                             avgDurations.avgDuration <= 180 ? 'Bonne' : 'À améliorer';
+                            const efficiencyClass = avgDurations.avgDuration <= 120 ? 'success' : 
+                                                   avgDurations.avgDuration <= 180 ? 'warning' : 'danger';
+                            %>
+                            <span class="badge bg-<%= efficiencyClass %> fs-6"><%= efficiency %></span>
+                        </td>
+                        <td>Évaluation basée sur la durée moyenne</td>
+                    </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données depuis le serveur
+    const statusData = <%- JSON.stringify(surgeriesByStatus) %>;
+    const specialtyData = <%- JSON.stringify(surgeriesBySpecialty) %>;
+
+    // Couleurs pour les graphiques
+    const colors = ['#ffc107', '#007bff', '#28a745', '#dc3545', '#6c757d', '#17a2b8', '#fd7e14'];
+
+    // Graphique des statuts (Doughnut)
+    if (statusData.length > 0) {
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusLabels = statusData.map(item => {
+            switch(item._id) {
+                case 'planned': return 'Planifiées';
+                case 'in-progress': return 'En cours';
+                case 'completed': return 'Terminées';
+                case 'urgent': return 'Urgentes';
+                case 'cancelled': return 'Annulées';
+                default: return item._id;
+            }
+        });
+
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusData.map(item => item.count),
+                    backgroundColor: colors.slice(0, statusData.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((context.raw / total) * 100);
+                                return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique des spécialités (Bar horizontal)
+    if (specialtyData.length > 0) {
+        const specialtyCtx = document.getElementById('specialtyChart').getContext('2d');
+        
+        new Chart(specialtyCtx, {
+            type: 'horizontalBar',
+            data: {
+                labels: specialtyData.map(item => item.specialtyName),
+                datasets: [{
+                    label: 'Nombre de chirurgies',
+                    data: specialtyData.map(item => item.count),
+                    backgroundColor: 'rgba(23, 162, 184, 0.8)',
+                    borderColor: 'rgba(23, 162, 184, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique temporel (simulation - vous pouvez remplacer par de vraies données)
+    const timeCtx = document.getElementById('timeChart').getContext('2d');
+    const days = [];
+    const surgeryCount = [];
+    
+    // Générer des données simulées pour la période
+    const startDate = new Date('<%= filters.startDate %>');
+    const endDate = new Date('<%= filters.endDate %>');
+    const totalSurgeries = statusData.reduce((sum, item) => sum + item.count, 0);
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        days.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
+        // Distribution aléatoire simulée (remplacer par vraies données)
+        surgeryCount.push(Math.floor(Math.random() * 8) + 1);
+    }
+
+    new Chart(timeCtx, {
+        type: 'line',
+        data: {
+            labels: days.slice(-14), // Derniers 14 jours
+            datasets: [{
+                label: 'Chirurgies par jour',
+                data: surgeryCount.slice(-14),
+                borderColor: 'rgba(255, 193, 7, 1)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Animation des chiffres au scroll
+    const animateNumbers = () => {
+        document.querySelectorAll('.performance-value').forEach(element => {
+            const target = parseInt(element.textContent);
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                element.textContent = Math.floor(current);
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                }
+            }, 30);
+        });
+    };
+
+    // Observer pour déclencher l'animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateNumbers();
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+
+    document.querySelectorAll('.performance-indicator').forEach(el => {
+        observer.observe(el);
+    });
+});
+</script>

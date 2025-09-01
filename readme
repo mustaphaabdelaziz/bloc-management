@@ -1,0 +1,632 @@
+# Système de Gestion de Bloc Opératoire
+
+Une application web complète pour la gestion des activités de bloc opératoire, incluant la gestion des patients, chirurgiens, personnel médical, matériaux et le calcul automatique des honoraires.
+
+## 🚀 Fonctionnalités
+
+### Gestion des Entités
+
+- **Patients** : Dossiers complets avec NIN, informations personnelles et historique
+- **Chirurgiens** : Gestion des spécialités et types de contrats (allocation/pourcentage)
+- **Personnel médical** : Suivi des rôles et participations aux chirurgies
+- **Matériaux** : Gestion des stocks (consommables et matériels patients)
+- **Prestations** : Catalogue des interventions avec tarifs et durées
+
+### Gestion des Chirurgies
+
+- Planification et suivi des interventions
+- Gestion des statuts (planifiée, en cours, terminée, urgente)
+- Calcul automatique des dépassements de durée
+- Attribution du personnel médical et matériaux consommés
+
+### Calcul des Honoraires
+
+#### Méthode 1 : Allocation de salle d'opération
+
+```
+Honoraires = Prix prestation HT - TVA - Matériaux totaux - (Durée × Taux horaire) + Frais dépassement
+```
+
+#### Méthode 2 : Pourcentage
+
+```
+Honoraires = (Prix prestation HT - TVA - Matériaux patients) × Pourcentage chirurgien
+```
+
+### Rapports et Analyses
+
+- Honoraires des chirurgiens par période
+- Activité du personnel médical
+- Consommation et coûts des matériaux
+- Statistiques générales avec graphiques
+
+## 🛠️ Technologies Utilisées
+
+### Backend
+
+- **Node.js** avec Express.js
+- **MongoDB** avec Mongoose
+- **EJS** pour le templating
+- **Moment.js** pour la gestion des dates
+
+### Frontend
+
+- **Bootstrap 5.3** pour l'interface
+- **Bootstrap Icons** pour les icônes
+- **Chart.js** pour les graphiques
+- **CSS personnalisé** avec animations
+
+## 📦 Installation
+
+### Prérequis
+
+- Node.js (version 14 ou supérieure)
+- MongoDB (local ou cloud)
+- Git
+
+### Étapes d'installation
+
+1. **Cloner le repository**
+
+```bash
+git clone [url-du-repo]
+cd operating-room-management
+```
+
+2. **Installer les dépendances**
+
+```bash
+npm install
+```
+
+3. **Configuration de l'environnement**
+
+```bash
+cp .env.example .env
+```
+
+4. **Configurer les variables d'environnement**
+   Éditez le fichier `.env` :
+
+```env
+# Configuration base de données
+MONGODB_URI=mongodb://localhost:27017/operating_room
+
+# Configuration session
+SESSION_SECRET=your-super-secret-key-here
+
+# Configuration serveur
+PORT=3000
+
+# Configuration TVA
+DEFAULT_TVA_RATE=0.19
+```
+
+5. **Démarrer MongoDB**
+
+```bash
+# Si MongoDB est installé localement
+mongod
+
+# Ou utiliser MongoDB Atlas (cloud)
+# Remplacez MONGODB_URI par votre string de connexion Atlas
+```
+
+6. **Lancer l'application**
+
+**En développement :**
+
+```bash
+npm run dev
+```
+
+**En production :**
+
+```bash
+npm start
+```
+
+7. **Accéder à l'application**
+   Ouvrez votre navigateur et allez sur : `http://localhost:3000`
+
+## 📁 Structure du Projet
+
+```
+operating-room-management/
+├── models/              # Modèles MongoDB
+│   ├── Patient.js
+│   ├── Surgeon.js
+│   ├── Surgery.js
+│   ├── Material.js
+│   └── ...
+├── routes/              # Routes Express
+│   ├── index.js         # Dashboard
+│   ├── patients.js      # Gestion patients
+│   ├── surgeries.js     # Gestion chirurgies
+│   ├── reports.js       # Rapports
+│   └── ...
+├── views/               # Templates EJS
+│   ├── layout.ejs       # Layout principal
+│   ├── dashboard.ejs    # Tableau de bord
+│   ├── patients/        # Vues patients
+│   ├── surgeries/       # Vues chirurgies
+│   └── reports/         # Vues rapports
+├── public/              # Fichiers statiques
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── app.js               # Serveur principal
+├── package.json         # Dépendances
+└── README.md
+```
+
+## 🎯 Utilisation
+
+### 1. Configuration initiale
+
+- Créez les spécialités médicales dans `/specialties`
+- Ajoutez les fonctions du personnel dans `/fonctions`
+- Configurez le catalogue des prestations dans `/prestations`
+
+### 2. Gestion des entités
+
+- **Ajoutez des patients** avec leurs informations personnelles
+- **Créez des profils chirurgiens** avec leurs spécialités et types de contrats
+- **Enregistrez le personnel médical** avec leurs fonctions
+- **Gérez le stock de matériaux** (consommables et matériels patients)
+
+### 3. Planification des chirurgies
+
+- **Programmez une chirurgie** en sélectionnant patient, chirurgien et prestation
+- **Assignez le personnel médical** avec leurs rôles respectifs
+- **Spécifiez les matériaux** qui seront consommés
+- **Définissez les horaires** et le statut de l'intervention
+
+### 4. Suivi et calculs
+
+- Les **honoraires sont calculés automatiquement** selon le type de contrat
+- Suivez les **chirurgies en temps réel** via le dashboard
+- Consultez les **rapports détaillés** par période
+
+## 📊 Types de Rapports
+
+### 1. Honoraires des Chirurgiens
+
+- Filtrage par chirurgien et période
+- Détail des interventions et calculs
+- Total des honoraires par chirurgien
+
+### 2. Activité du Personnel Médical
+
+- Nombre de participations par personne
+- Rôles exercés et fréquence
+- Analyse de la charge de travail
+
+### 3. Consommation des Matériaux
+
+- Coûts par matériau et catégorie
+- Évolution des stocks
+- Matériaux les plus consommés
+
+### 4. Statistiques Générales
+
+- Répartition des chirurgies par statut
+- Activité par spécialité
+- Durées moyennes des interventions
+
+## 🔧 Personnalisation
+
+### Modification des calculs d'honoraires
+
+Éditez la fonction `calculateSurgeonFees` dans `/routes/surgeries.js` :
+
+```javascript
+// Exemple d'ajout d'une commission administrative
+if (surgeon.contractType === "percentage") {
+  const netAmount = prestationPriceHT - tvAmount - totalPatientMaterialCost;
+  const commission = netAmount * 0.05; // 5% de commission
+  surgeonAmount =
+    ((netAmount - commission) * (surgeon.percentageRate || 0)) / 100;
+}
+```
+
+### Ajout de nouveaux champs
+
+1. **Modifiez le modèle** dans `/models/`
+2. **Mettez à jour les vues** dans `/views/`
+3. **Adaptez les routes** dans `/routes/`
+
+### Personnalisation de l'interface
+
+- **Couleurs et thèmes** : Éditez `/public/css/custom.css`
+- **Logo et branding** : Remplacez les éléments dans `/views/layout.ejs`
+- **Graphiques** : Configurez Chart.js dans les vues de rapports
+
+## 🔐 Sécurité
+
+### Recommandations
+
+- Changez le `SESSION_SECRET` en production
+- Utilisez HTTPS en production
+- Configurez les règles de firewall MongoDB
+- Sauvegardez régulièrement la base de données
+
+### Sauvegarde
+
+```bash
+# Sauvegarde MongoDB
+mongodump --db operating_room --out ./backup/
+
+# Restauration
+mongorestore ./backup/operating_room/
+```
+
+## 🚀 Déploiement
+
+### Option 1: Serveur VPS/Dédié
+
+1. **Installation sur le serveur**
+
+```bash
+# Cloner le projet
+git clone [url-du-repo]
+cd operating-room-management
+
+# Installer Node.js et MongoDB
+sudo apt update
+sudo apt install nodejs npm mongodb
+
+# Installer les dépendances
+npm install --production
+
+# Configurer les variables d'environnement
+nano .env
+```
+
+2. **Configuration avec PM2 (recommandé)**
+
+```bash
+# Installer PM2
+npm install -g pm2
+
+# Créer fichier de configuration
+cat > ecosystem.config.js << EOF
+module.exports = {
+  apps: [{
+    name: 'operating-room-app',
+    script: './app.js',
+    instances: 'max',
+    exec_mode: 'cluster',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    }
+  }]
+}
+EOF
+
+# Lancer l'application
+pm2 start ecosystem.config.js
+pm2 startup
+pm2 save
+```
+
+3. **Configuration Nginx (proxy inverse)**
+
+```nginx
+server {
+    listen 80;
+    server_name votre-domaine.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### Option 2: Heroku
+
+1. **Préparation**
+
+```bash
+# Installer Heroku CLI
+# Créer un Procfile
+echo "web: node app.js" > Procfile
+
+# Git init si nécessaire
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+2. **Déploiement**
+
+```bash
+# Créer app Heroku
+heroku create nom-de-votre-app
+
+# Ajouter MongoDB Atlas
+heroku addons:create mongolab:sandbox
+
+# Configurer variables d'environnement
+heroku config:set SESSION_SECRET=votre-secret-tres-securise
+heroku config:set NODE_ENV=production
+
+# Déployer
+git push heroku main
+
+# Ouvrir l'app
+heroku open
+```
+
+### Option 3: Docker
+
+1. **Créer Dockerfile**
+
+```dockerfile
+FROM node:16-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3000
+
+USER node
+
+CMD ["node", "app.js"]
+```
+
+2. **Créer docker-compose.yml**
+
+```yaml
+version: "3.8"
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/operating_room
+      - SESSION_SECRET=your-secret-key
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:5
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
+```
+
+3. **Lancer avec Docker**
+
+```bash
+docker-compose up -d
+```
+
+## 📱 API Endpoints
+
+### Patients
+
+- `GET /patients` - Liste des patients
+- `POST /patients` - Créer un patient
+- `GET /patients/:id` - Détails d'un patient
+- `PUT /patients/:id` - Modifier un patient
+- `DELETE /patients/:id` - Supprimer un patient
+
+### Chirurgies
+
+- `GET /surgeries` - Liste des chirurgies
+- `POST /surgeries` - Créer une chirurgie
+- `GET /surgeries/:id` - Détails d'une chirurgie
+- `PUT /surgeries/:id` - Modifier une chirurgie
+- `POST /surgeries/:id/calculate-fees` - Calculer les honoraires
+
+### Rapports
+
+- `GET /reports/surgeon-fees` - Honoraires chirurgiens
+- `GET /reports/medical-staff-activity` - Activité personnel
+- `GET /reports/material-consumption` - Consommation matériaux
+- `GET /reports/statistics` - Statistiques générales
+
+## 🔍 Dépannage
+
+### Problèmes courants
+
+**1. Erreur de connexion MongoDB**
+
+```bash
+# Vérifier si MongoDB fonctionne
+sudo systemctl status mongodb
+
+# Redémarrer MongoDB
+sudo systemctl restart mongodb
+
+# Vérifier la string de connexion dans .env
+```
+
+**2. Port déjà utilisé**
+
+```bash
+# Trouver le processus utilisant le port 3000
+lsof -ti:3000
+
+# Tuer le processus
+kill -9 $(lsof -ti:3000)
+
+# Ou changer le port dans .env
+PORT=3001
+```
+
+**3. Problèmes de permissions**
+
+```bash
+# Donner les bonnes permissions
+chmod -R 755 .
+sudo chown -R $USER:$USER .
+```
+
+**4. Erreurs de dépendances**
+
+```bash
+# Nettoyer et réinstaller
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Logs et monitoring
+
+**Voir les logs avec PM2**
+
+```bash
+pm2 logs operating-room-app
+pm2 monit
+```
+
+**Logs d'erreurs personnalisés**
+
+```javascript
+// Ajouter dans app.js
+app.use((err, req, res, next) => {
+  console.error(`${new Date().toISOString()} - Error: ${err.message}`);
+  console.error(err.stack);
+  res.status(500).render("error", { title: "Erreur", error: err });
+});
+```
+
+## 🧪 Tests
+
+### Tests manuels
+
+1. **Créer des données de test**
+
+   - Ajoutez quelques spécialités et fonctions
+   - Créez 2-3 patients
+   - Enregistrez 2 chirurgiens (un en allocation, un en pourcentage)
+   - Ajoutez du personnel médical
+   - Créez quelques matériaux
+
+2. **Tester une chirurgie complète**
+   - Programmez une chirurgie
+   - Ajoutez personnel et matériaux
+   - Calculez les honoraires
+   - Vérifiez les rapports
+
+### Tests automatisés (optionnel)
+
+```bash
+# Installer les dépendances de test
+npm install --save-dev mocha chai supertest
+
+# Ajouter script dans package.json
+"scripts": {
+    "test": "mocha tests/**/*.js"
+}
+```
+
+## 📈 Optimisations
+
+### Performance
+
+- **Indexation MongoDB** : Ajoutez des index sur les champs fréquemment recherchés
+- **Pagination** : Limitez le nombre d'éléments par page
+- **Cache** : Implémentez du cache pour les données statiques
+- **CDN** : Utilisez un CDN pour les assets statiques
+
+### Monitoring
+
+```bash
+# Installer monitoring
+npm install --save express-rate-limit helmet compression
+
+# Ajouter middleware sécurité
+const helmet = require('helmet');
+const compression = require('compression');
+app.use(helmet());
+app.use(compression());
+```
+
+## 🤝 Contribution
+
+### Guide de contribution
+
+1. Forkez le projet
+2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
+3. Commitez vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Pushez vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
+
+### Standards de code
+
+- Utilisez ESLint pour la cohérence du code
+- Documentez les nouvelles fonctionnalités
+- Testez vos changements avant de commit
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 📞 Support
+
+### Aide et documentation
+
+- **Documentation** : Ce README et les commentaires dans le code
+- **Issues** : Utilisez GitHub Issues pour signaler des bugs
+- **Discussions** : GitHub Discussions pour les questions générales
+
+### Contact
+
+- **Email** : [votre-email@domaine.com]
+- **GitHub** : [votre-username]
+
+## 🔮 Roadmap
+
+### Fonctionnalités prévues
+
+- [ ] **Authentification utilisateurs** avec rôles et permissions
+- [ ] **API REST complète** avec documentation Swagger
+- [ ] **Notifications temps réel** (WebSocket)
+- [ ] **Export PDF/Excel** des rapports
+- [ ] **Calendrier interactif** des chirurgies
+- [ ] **Module de facturation** intégré
+- [ ] **Gestion des rendez-vous** pré-opératoires
+- [ ] **Interface mobile** responsive améliorée
+- [ ] **Intégration** avec systèmes hospitaliers (HL7/FHIR)
+- [ ] **Tableau de bord temps réel** avec métriques avancées
+
+### Améliorations techniques
+
+- [ ] Migration vers TypeScript
+- [ ] Tests automatisés complets
+- [ ] CI/CD avec GitHub Actions
+- [ ] Containerisation complète (Kubernetes)
+- [ ] Système de cache Redis
+- [ ] Monitoring avancé (Prometheus/Grafana)
+
+---
+
+## 🎉 Remerciements
+
+Merci d'utiliser notre système de gestion de bloc opératoire ! Cette application a été conçue pour améliorer l'efficacité et la transparence dans la gestion des activités chirurgicales.
+
+Pour toute suggestion d'amélioration ou signalement de bug, n'hésitez pas à contribuer au projet.
+
+---
+
+**Développé avec ❤️ pour les professionnels de santé**

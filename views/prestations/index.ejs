@@ -1,0 +1,131 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/prestations/index.ejs -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-0">Gestion des Prestations</h3>
+    <p class="text-muted">Catalogue des interventions chirurgicales</p>
+  </div>
+  <a href="/prestations/new" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-2"></i>Nouvelle Prestation
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <% if (prestations.length > 0) { %>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Code</th>
+            <th>Prestation</th>
+            <th>Spécialité</th>
+            <th>Durée</th>
+            <th>Prix HT</th>
+            <th>Prix TTC</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% prestations.forEach(prestation => { %>
+          <tr>
+            <td><strong><%= prestation.code %></strong></td>
+            <td>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-clipboard-check fa-2x text-primary me-3"></i>
+                <div>
+                  <div class="fw-bold"><%= prestation.designation %></div>
+                  <% if (prestation.exceededDurationFee > 0) { %>
+                  <small class="text-warning">
+                    <i class="bi bi-clock-history me-1"></i>
+                    Frais dépassement: <%= new Intl.NumberFormat('fr-DZ', {
+                    style: 'currency', currency: 'DZD'
+                    }).format(prestation.exceededDurationFee) %> / <%=
+                    prestation.exceededDurationUnit %> min
+                  </small>
+                  <% } %>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-info"
+                ><%= prestation.specialty.name %></span
+              >
+            </td>
+            <td>
+              <strong class="text-primary"><%= prestation.duration %></strong>
+              min
+            </td>
+            <td>
+              <strong
+                ><%= new Intl.NumberFormat('fr-DZ', { style: 'currency',
+                currency: 'DZD' }).format(prestation.priceHT) %></strong
+              >
+            </td>
+            <td>
+              <strong class="text-success">
+                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency',
+                currency: 'DZD' }).format(prestation.priceHT * (1 +
+                prestation.tva)) %>
+              </strong>
+              <small class="text-muted d-block"
+                >TVA: <%= (prestation.tva * 100) %>%</small
+              >
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                <a
+                  href="/prestations/<%= prestation._id %>"
+                  class="btn btn-sm btn-outline-primary"
+                  title="Voir"
+                >
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a
+                  href="/prestations/<%= prestation._id %>/edit"
+                  class="btn btn-sm btn-outline-warning"
+                  title="Modifier"
+                >
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  onclick="deletePrestation('<%= prestation._id %>')"
+                  title="Supprimer"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="text-center py-5">
+      <i class="bi bi-clipboard-check fa-3x text-muted mb-3"></i>
+      <h5 class="text-muted">Aucune prestation trouvée</h5>
+      <p class="text-muted">Commencez par ajouter des prestations</p>
+      <a href="/prestations/new" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Ajouter la première prestation
+      </a>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  function deletePrestation(id) {
+    if (
+      confirmDelete("Êtes-vous sûr de vouloir supprimer cette prestation ?")
+    ) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/prestations/" + id + "?_method=DELETE";
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+</script>

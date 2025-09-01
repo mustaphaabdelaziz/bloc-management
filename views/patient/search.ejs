@@ -1,0 +1,24 @@
+<% layout('layouts/boilerplate')%>
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-3">
+      <div class="col-md-8">
+        <input
+          type="text"
+          class="form-control"
+          name="search"
+          placeholder="Rechercher par nom, prénom, code ou NIN..."
+          value="<%= search %>"
+        />
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-outline-primary me-2">
+          <i class="bi bi-search me-1"></i>Rechercher
+        </button>
+        <a href="/patients" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Reset
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

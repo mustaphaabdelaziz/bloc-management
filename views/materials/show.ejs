@@ -1,0 +1,201 @@
+<% layout('layouts/boilerplate') %>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-box me-2"></i>Informations Matériau
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-box fa-4x text-warning mb-3"></i>
+                    <h4><%= material.designation %></h4>
+                    <p class="text-muted">Code: <strong><%= material.code %></strong></p>
+                    <% if (material.category === 'consumable') { %>
+                        <span class="badge bg-secondary fs-6">Consommable</span>
+                    <% } else { %>
+                        <span class="badge bg-primary fs-6">Matériel Patient</span>
+                    <% } %>
+                </div>
+                
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Prix HT:</strong></td>
+                        <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.priceHT) %></td>
+                    </tr>
+                    <tr>
+                        <td><strong>TVA:</strong></td>
+                        <td><%= (material.tva * 100) %>%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prix TTC:</strong></td>
+                        <td>
+                            <strong class="text-success">
+                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.priceHT * (1 + material.tva)) %>
+                            </strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Unité:</strong></td>
+                        <td><%= material.unitOfMeasure %></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stock actuel:</strong></td>
+                        <td>
+                            <% if (material.stock <= 10) { %>
+                                <span class="badge bg-danger fs-6">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    <%= material.stock %> <%= material.unitOfMeasure %>
+                                </span>
+                            <% } else if (material.stock <= 50) { %>
+                                <span class="badge bg-warning fs-6">
+                                    <%= material.stock %> <%= material.unitOfMeasure %>
+                                </span>
+                            <% } else { %>
+                                <span class="badge bg-success fs-6">
+                                    <%= material.stock %> <%= material.unitOfMeasure %>
+                                </span>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% if (material.specialty) { %>
+                    <tr>
+                        <td><strong>Spécialité:</strong></td>
+                        <td><span class="badge bg-info"><%= material.specialty.name %></span></td>
+                    </tr>
+                    <% } %>
+                    <tr>
+                        <td><strong>Créé le:</strong></td>
+                        <td><%= moment(material.createdAt).format('DD/MM/YYYY HH:mm') %></td>
+                    </tr>
+                </table>
+                
+                <div class="d-grid gap-2">
+                    <a href="/materials/<%= material._id %>/edit" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Modifier
+                    </a>
+                    <button type="button" class="btn btn-success" onclick="showArrivalModal('<%= material._id %>')">
+                        <i class="bi bi-plus-square me-2"></i>Ajouter Stock
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-truck me-2"></i>Historique des Arrivages
+                    <span class="badge bg-light text-info ms-2"><%= material.arrivals ? material.arrivals.length : 0 %></span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if (material.arrivals && material.arrivals.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Quantité</th>
+                                    <th>Prix Unitaire</th>
+                                    <th>Valeur Totale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% let totalValue = 0; %>
+                                <% material.arrivals.forEach(arrival => { %>
+                                    <% const arrivalValue = arrival.quantity * arrival.unitPrice; %>
+                                    <% totalValue += arrivalValue; %>
+                                    <tr>
+                                        <td><%= moment(arrival.date).format('DD/MM/YYYY') %></td>
+                                        <td><strong><%= arrival.quantity %></strong> <%= material.unitOfMeasure %></td>
+                                        <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(arrival.unitPrice) %></td>
+                                        <td><strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(arrivalValue) %></strong></td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <th>Total</th>
+                                    <th><%= material.arrivals.reduce((sum, a) => sum + a.quantity, 0) %> <%= material.unitOfMeasure %></th>
+                                    <th>-</th>
+                                    <th><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalValue) %></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <!-- Prix pondéré -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Prix pondéré moyen :</strong>
+                        <% const totalQuantity = material.arrivals.reduce((sum, a) => sum + a.quantity, 0); %>
+                        <%= totalQuantity > 0 ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalValue / totalQuantity) : 'N/A' %>
+                        par <%= material.unitOfMeasure %>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-truck fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucun arrivage enregistré</h5>
+                        <p class="text-muted">Ajoutez du stock pour commencer le suivi</p>
+                        <button type="button" class="btn btn-primary" onclick="showArrivalModal('<%= material._id %>')">
+                            <i class="bi bi-plus-square me-2"></i>Premier Arrivage
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="/materials" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+    </a>
+</div>
+
+<!-- Modal pour ajouter du stock (même modal que dans index.ejs) -->
+<div class="modal fade" id="arrivalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-square me-2"></i>Ajouter Stock
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/materials/<%= material._id %>/arrival">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="arrivalDate" class="form-label">Date d'arrivage</label>
+                        <input type="date" class="form-control" id="arrivalDate" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arrivalQuantity" class="form-label">Quantité</label>
+                        <input type="number" class="form-control" id="arrivalQuantity" name="quantity" min="1" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arrivalPrice" class="form-label">Prix unitaire (DA)</label>
+                        <input type="number" class="form-control" id="arrivalPrice" name="unitPrice" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Ajouter Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showArrivalModal(materialId) {
+    // Définir la date d'aujourd'hui par défaut
+    document.getElementById('arrivalDate').value = new Date().toISOString().split('T')[0];
+    
+    const modal = new bootstrap.Modal(document.getElementById('arrivalModal'));
+    modal.show();
+}
+</script>

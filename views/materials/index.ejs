@@ -1,0 +1,194 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/materials/index.ejs -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Gestion des Matériaux</h3>
+        <p class="text-muted">Stock et suivi des matériaux médicaux</p>
+    </div>
+    <a href="/materials/new" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Nouveau Matériau
+    </a>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Catégorie</label>
+                <select name="category" class="form-select">
+                    <option value="">Toutes les catégories</option>
+                    <option value="consumable" <%= filters.category === 'consumable' ? 'selected' : '' %>>Consommables</option>
+                    <option value="patient" <%= filters.category === 'patient' ? 'selected' : '' %>>Matériels patients</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Nom ou code du matériau..." value="<%= filters.search %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex">
+                    <button type="submit" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-search me-1"></i>Filtrer
+                    </button>
+                    <a href="/materials" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des matériaux -->
+<div class="card">
+    <div class="card-body">
+        <% if (materials.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Matériau</th>
+                            <th>Catégorie</th>
+                            <th>Prix HT</th>
+                            <th>Stock</th>
+                            <th>Spécialité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% materials.forEach(material => { %>
+                            <tr class="<%= material.stock <= 10 ? 'table-warning' : '' %>">
+                                <td><strong><%= material.code %></strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-box fa-2x text-warning me-3"></i>
+                                        <div>
+                                            <div class="fw-bold"><%= material.designation %></div>
+                                            <small class="text-muted">Unité: <%= material.unitOfMeasure %></small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <% if (material.category === 'consumable') { %>
+                                        <span class="badge bg-secondary">Consommable</span>
+                                    <% } else { %>
+                                        <span class="badge bg-primary">Patient</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.priceHT) %></strong>
+                                    <small class="text-muted d-block">TVA: <%= (material.tva * 100) %>%</small>
+                                </td>
+                                <td>
+                                    <% if (material.stock <= 10) { %>
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            <%= material.stock %>
+                                        </span>
+                                    <% } else if (material.stock <= 50) { %>
+                                        <span class="badge bg-warning fs-6"><%= material.stock %></span>
+                                    <% } else { %>
+                                        <span class="badge bg-success fs-6"><%= material.stock %></span>
+                                    <% } %>
+                                    <small class="text-muted d-block"><%= material.unitOfMeasure %></small>
+                                </td>
+                                <td>
+                                    <% if (material.specialty) { %>
+                                        <span class="badge bg-info"><%= material.specialty.name %></span>
+                                    <% } else { %>
+                                        <span class="text-muted">Général</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="/materials/<%= material._id %>" class="btn btn-sm btn-outline-primary" title="Voir">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="/materials/<%= material._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-success" onclick="showArrivalModal('<%= material._id %>')" title="Ajouter stock">
+                                            <i class="bi bi-plus-square"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMaterial('<%= material._id %>')" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <div class="text-center py-5">
+                <i class="bi bi-box fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucun matériau trouvé</h5>
+                <p class="text-muted">Commencez par ajouter des matériaux</p>
+                <a href="/materials/new" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter le premier matériau
+                </a>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Modal pour ajouter du stock -->
+<div class="modal fade" id="arrivalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-square me-2"></i>Ajouter Stock
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="arrivalForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="arrivalDate" class="form-label">Date d'arrivage</label>
+                        <input type="date" class="form-control" id="arrivalDate" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arrivalQuantity" class="form-label">Quantité</label>
+                        <input type="number" class="form-control" id="arrivalQuantity" name="quantity" min="1" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="arrivalPrice" class="form-label">Prix unitaire (DA)</label>
+                        <input type="number" class="form-control" id="arrivalPrice" name="unitPrice" min="0" step="0.01" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Ajouter Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteMaterial(id) {
+    if (confirmDelete('Êtes-vous sûr de vouloir supprimer ce matériau ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/materials/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function showArrivalModal(materialId) {
+    const form = document.getElementById('arrivalForm');
+    form.action = '/materials/' + materialId + '/arrival';
+    
+    // Définir la date d'aujourd'hui par défaut
+    document.getElementById('arrivalDate').value = new Date().toISOString().split('T')[0];
+    
+    const modal = new bootstrap.Modal(document.getElementById('arrivalModal'));
+    modal.show();
+}
+</script>

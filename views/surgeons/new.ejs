@@ -1,0 +1,151 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeons/new.ejs -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-plus me-2"></i>Nouveau Chirurgien
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/surgeons">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="code" class="form-label">Code *</label>
+                                <input type="text" class="form-control" id="code" name="code" value="<%= surgeon.code || '' %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="specialty" class="form-label">Spécialité *</label>
+                                <select name="specialty" id="specialty" class="form-select" required>
+                                    <option value="">Sélectionner une spécialité</option>
+                                    <% specialties.forEach(specialty => { %>
+                                        <option value="<%= specialty._id %>" <%= surgeon.specialty === specialty._id ? 'selected' : '' %>>
+                                            <%= specialty.name %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">Prénom *</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName" value="<%= surgeon.firstName || '' %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Nom *</label>
+                                <input type="text" class="form-control" id="lastName" name="lastName" value="<%= surgeon.lastName || '' %>" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dateOfBirth" class="form-label">Date de naissance *</label>
+                                <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
+                                       value="<%= surgeon.dateOfBirth ? moment(surgeon.dateOfBirth).format('YYYY-MM-DD') : '' %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="<%= surgeon.phone || '' %>">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Type de contrat -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="bi bi-file-text me-2"></i>Configuration du Contrat</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="contractType" class="form-label">Type de contrat *</label>
+                                <select name="contractType" id="contractType" class="form-select" required onchange="toggleContractFields()">
+                                    <option value="">Sélectionner le type</option>
+                                    <option value="allocation" <%= surgeon.contractType === 'allocation' ? 'selected' : '' %>>
+                                        Allocation de salle d'opération
+                                    </option>
+                                    <option value="percentage" <%= surgeon.contractType === 'percentage' ? 'selected' : '' %>>
+                                        Pourcentage
+                                    </option>
+                                </select>
+                                <div class="form-text">
+                                    <strong>Allocation :</strong> Le chirurgien paie un taux horaire pour l'utilisation de la salle<br>
+                                    <strong>Pourcentage :</strong> Le chirurgien reçoit un pourcentage du montant de la prestation
+                                </div>
+                            </div>
+                            
+                            <div id="allocationFields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="allocationRate" class="form-label">Taux horaire (DA/heure)</label>
+                                    <input type="number" class="form-control" id="allocationRate" name="allocationRate" 
+                                           value="<%= surgeon.allocationRate || '' %>" min="0" step="100">
+                                    <div class="form-text">Montant facturé par heure d'utilisation de la salle</div>
+                                </div>
+                            </div>
+                            
+                            <div id="percentageFields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="percentageRate" class="form-label">Pourcentage (%)</label>
+                                    <input type="number" class="form-control" id="percentageRate" name="percentageRate" 
+                                           value="<%= surgeon.percentageRate || '' %>" min="0" max="100" step="0.1">
+                                    <div class="form-text">Pourcentage du montant de la prestation revenant au chirurgien</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/surgeons" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Retour
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save me-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleContractFields() {
+    const contractType = document.getElementById('contractType').value;
+    const allocationFields = document.getElementById('allocationFields');
+    const percentageFields = document.getElementById('percentageFields');
+    
+    if (contractType === 'allocation') {
+        allocationFields.style.display = 'block';
+        percentageFields.style.display = 'none';
+        document.getElementById('percentageRate').removeAttribute('required');
+        document.getElementById('allocationRate').setAttribute('required', 'required');
+    } else if (contractType === 'percentage') {
+        allocationFields.style.display = 'none';
+        percentageFields.style.display = 'block';
+        document.getElementById('allocationRate').removeAttribute('required');
+        document.getElementById('percentageRate').setAttribute('required', 'required');
+    } else {
+        allocationFields.style.display = 'none';
+        percentageFields.style.display = 'none';
+        document.getElementById('allocationRate').removeAttribute('required');
+        document.getElementById('percentageRate').removeAttribute('required');
+    }
+}
+
+// Initialiser l'affichage des champs au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    toggleContractFields();
+});
+</script>

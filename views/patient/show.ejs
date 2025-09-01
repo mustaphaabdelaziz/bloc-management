@@ -1,0 +1,142 @@
+<!-- views/patients/show.ejs -->
+ <% layout('layouts/boilerplate')%>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-circle me-2"></i>Informations Patient
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-circle fa-4x text-primary mb-3"></i>
+                    <h4><%= patient.firstName %> <%= patient.lastName %></h4>
+                    <p class="text-muted">Code: <strong><%= patient.code %></strong></p>
+                </div>
+                
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>NIN:</strong></td>
+                        <td><%= patient.nin %></td>
+                    </tr>
+                    <% if (patient.fatherName) { %>
+                    <tr>
+                        <td><strong>Père:</strong></td>
+                        <td><%= patient.fatherName %></td>
+                    </tr>
+                    <% } %>
+                    <tr>
+                        <td><strong>Âge:</strong></td>
+                        <td>
+                            <% if (patient.dateOfBirth) { %>
+                                <%= moment().diff(patient.dateOfBirth, 'years') %> ans
+                                <small class="text-muted">(né le <%= moment(patient.dateOfBirth).format('DD/MM/YYYY') %>)</small>
+                            <% } else if (patient.presumedAge) { %>
+                                ~<%= patient.presumedAge %> ans (âge présumé)
+                            <% } else { %>
+                                Non renseigné
+                            <% } %>
+                        </td>
+                    </tr>
+                    <% if (patient.phone) { %>
+                    <tr>
+                        <td><strong>Téléphone:</strong></td>
+                        <td><i class="bi bi-telephone me-2"></i><%= patient.phone %></td>
+                    </tr>
+                    <% } %>
+                    <tr>
+                        <td><strong>Créé le:</strong></td>
+                        <td><%= moment(patient.createdAt).format('DD/MM/YYYY HH:mm') %></td>
+                    </tr>
+                </table>
+                
+                <div class="d-grid gap-2">
+                    <a href="/patients/<%= patient._id %>/edit" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Modifier
+                    </a>
+                    <a href="/surgeries/new?patient=<%= patient._id %>" class="btn btn-success">
+                        <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-scissors me-2"></i>Historique des Chirurgies
+                    <span class="badge bg-light text-info ms-2"><%= surgeries.length %></span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if (surgeries.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Chirurgien</th>
+                                    <th>Prestation</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% surgeries.forEach(surgery => { %>
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong><%= moment(surgery.beginDateTime).format('DD/MM/YYYY') %></strong>
+                                            </div>
+                                            <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
+                                        </td>
+                                        <td>
+                                            Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary"><%= surgery.prestation.designation %></span>
+                                        </td>
+                                        <td>
+                                            <% if (surgery.status === 'completed') { %>
+                                                <span class="badge bg-success">Terminée</span>
+                                            <% } else if (surgery.status === 'in-progress') { %>
+                                                <span class="badge bg-primary">En cours</span>
+                                            <% } else if (surgery.status === 'planned') { %>
+                                                <span class="badge bg-warning">Planifiée</span>
+                                            <% } else { %>
+                                                <span class="badge bg-danger">Urgente</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <a href="/surgeries/<%= surgery._id %>" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i>Voir
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-scissors fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune chirurgie enregistrée</h5>
+                        <p class="text-muted">Ce patient n'a pas encore eu de chirurgie</p>
+                        <a href="/surgeries/new?patient=<%= patient._id %>" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Programmer une chirurgie
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="/patients" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+    </a>
+</div>

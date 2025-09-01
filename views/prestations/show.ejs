@@ -1,0 +1,310 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/prestations/show.ejs -->
+<div class="row">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-clipboard-check me-2"></i>Détails Prestation
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="text-center mb-4">
+          <i class="bi bi-clipboard-check fa-4x text-primary mb-3"></i>
+          <h4><%= prestation.designation %></h4>
+          <p class="text-muted">
+            Code: <strong><%= prestation.code %></strong>
+          </p>
+          <% if (prestation.specialty && prestation.specialty.name) { %>
+          <span class="badge bg-info fs-6">
+            <%= prestation.specialty.name %>
+          </span>
+          <% } %>
+        </div>
+
+        <table class="table table-borderless">
+          <tbody>
+            <tr>
+              <td class="fw-bold">Prix HT:</td>
+              <td>
+                <%= new Intl.NumberFormat('fr-DZ', { 
+                  style: 'currency', 
+                  currency: 'DZD' 
+                }).format(prestation.priceHT) %>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-bold">TVA:</td>
+              <td><%= (prestation.tva * 100).toFixed(0) %>%</td>
+            </tr>
+            <tr>
+              <td class="fw-bold">Prix TTC:</td>
+              <td>
+                <strong class="text-success fs-5">
+                  <%= new Intl.NumberFormat('fr-DZ', { 
+                    style: 'currency',
+                    currency: 'DZD' 
+                  }).format(prestation.priceHT * (1 + prestation.tva)) %>
+                </strong>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-bold">Durée prévue:</td>
+              <td>
+                <span class="badge bg-primary">
+                  <i class="bi bi-clock me-1"></i>
+                  <%= prestation.duration %> minutes
+                </span>
+              </td>
+            </tr>
+            <% if (prestation.exceededDurationFee > 0) { %>
+            <tr>
+              <td class="fw-bold">Frais dépassement:</td>
+              <td>
+                <span class="text-warning">
+                  <%= new Intl.NumberFormat('fr-DZ', { 
+                    style: 'currency',
+                    currency: 'DZD' 
+                  }).format(prestation.exceededDurationFee) %> 
+                  <small class="text-muted">
+                    par tranche de <%= prestation.exceededDurationUnit %> min
+                  </small>
+                </span>
+              </td>
+            </tr>
+            <% } %>
+            <tr>
+              <td class="fw-bold">Créé le:</td>
+              <td>
+                <i class="bi bi-calendar3 me-1"></i>
+                <%= moment(prestation.createdAt).format('DD/MM/YYYY à HH:mm') %>
+              </td>
+            </tr>
+            <% if (prestation.updatedAt && prestation.updatedAt.getTime() !== prestation.createdAt.getTime()) { %>
+            <tr>
+              <td class="fw-bold">Modifié le:</td>
+              <td>
+                <i class="bi bi-pencil me-1"></i>
+                <%= moment(prestation.updatedAt).format('DD/MM/YYYY à HH:mm') %>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+
+        <div class="d-grid gap-2 mt-4">
+          <a href="/prestations/<%= prestation._id %>/edit" class="btn btn-warning">
+            <i class="bi bi-pencil me-2"></i>Modifier
+          </a>
+          <a href="/surgeries/new?prestation=<%= prestation._id %>" class="btn btn-success">
+            <i class="bi bi-plus-circle me-2"></i>Programmer Chirurgie
+          </a>
+          <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash me-2"></i>Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-bar-chart me-2"></i>Statistiques d'Utilisation
+          <% if (stats && stats.totalSurgeries > 0) { %>
+          <span class="badge bg-light text-info ms-2">
+            <%= stats.totalSurgeries %> chirurgie<%= stats.totalSurgeries > 1 ? 's' : '' %>
+          </span>
+          <% } %>
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if (surgeries && surgeries.length > 0) { %>
+        <!-- Statistiques principales -->
+        <div class="row mb-4 text-center">
+          <div class="col-4">
+            <div class="p-3 bg-light rounded">
+              <h4 class="text-primary mb-1">
+                <%= stats.totalSurgeries %>
+              </h4>
+              <small class="text-muted">Total Chirurgies</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-3 bg-light rounded">
+              <h4 class="text-info mb-1">
+                <%= stats.averageDuration || '-' %><% if (stats.averageDuration) { %> min<% } %>
+              </h4>
+              <small class="text-muted">Durée moyenne</small>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-3 bg-light rounded">
+              <h4 class="text-success mb-1">
+                <%= stats.thisMonthCount %>
+              </h4>
+              <small class="text-muted">Ce mois</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyse des dépassements -->
+        <% if (stats.exceededCount > 0) { %>
+        <div class="alert alert-warning d-flex align-items-center">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <div>
+            <strong><%= stats.exceededCount %></strong> chirurgie<%= stats.exceededCount > 1 ? 's ont' : ' a' %> 
+            dépassé la durée prévue 
+            <span class="badge bg-warning text-dark ms-2">
+              <%= Math.round((stats.exceededCount / stats.completedSurgeries) * 100) %>%
+            </span>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Revenue estimé -->
+        <% if (stats.totalRevenue > 0) { %>
+        <div class="mb-4 p-3 bg-success bg-opacity-10 rounded">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted">Revenue total estimé:</span>
+            <strong class="text-success fs-5">
+              <%= new Intl.NumberFormat('fr-DZ', { 
+                style: 'currency',
+                currency: 'DZD' 
+              }).format(stats.totalRevenue) %>
+            </strong>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Dernières chirurgies -->
+        <h6 class="fw-bold mb-3">
+          <i class="bi bi-clock-history me-2"></i>Dernières chirurgies
+        </h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Patient</th>
+                <th>Chirurgien</th>
+                <th>Durée</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% surgeries.slice(0, 5).forEach(surgery => { %>
+              <tr>
+                <td>
+                  <%= moment(surgery.beginDateTime).format('DD/MM/YY') %>
+                  <small class="text-muted d-block">
+                    <%= moment(surgery.beginDateTime).format('HH:mm') %>
+                  </small>
+                </td>
+                <td>
+                  <% if (surgery.patient) { %>
+                    <%= surgery.patient.firstName %> <%= surgery.patient.lastName %>
+                  <% } else { %>
+                    <span class="text-muted">Non spécifié</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (surgery.surgeon) { %>
+                    Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                  <% } else { %>
+                    <span class="text-muted">Non spécifié</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (surgery.actualDuration) { %>
+                    <% if (surgery.actualDuration > prestation.duration) { %>
+                      <span class="badge bg-warning text-dark">
+                        <%= surgery.actualDuration %> min
+                        <i class="bi bi-arrow-up"></i>
+                      </span>
+                    <% } else if (surgery.actualDuration < prestation.duration) { %>
+                      <span class="badge bg-success">
+                        <%= surgery.actualDuration %> min
+                        <i class="bi bi-arrow-down"></i>
+                      </span>
+                    <% } else { %>
+                      <span class="badge bg-primary">
+                        <%= surgery.actualDuration %> min
+                      </span>
+                    <% } %>
+                  <% } else { %>
+                    <span class="badge bg-secondary">En cours</span>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if (surgeries.length > 5) { %>
+        <div class="text-center mt-3">
+          <a href="/surgeries?prestation=<%= prestation._id %>" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-list-ul me-2"></i>Voir toutes les chirurgies
+          </a>
+        </div>
+        <% } %>
+
+        <% } else { %>
+        <div class="text-center py-5">
+          <i class="bi bi-scissors fa-3x text-muted mb-3 opacity-50"></i>
+          <h6 class="text-muted">Aucune utilisation</h6>
+          <p class="text-muted small">
+            Cette prestation n'a pas encore été utilisée dans une chirurgie
+          </p>
+          <a href="/surgeries/new?prestation=<%= prestation._id %>" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>Première chirurgie
+          </a>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="mt-4">
+  <a href="/prestations" class="btn btn-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+  </a>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+          Confirmer la suppression
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Êtes-vous sûr de vouloir supprimer la prestation "<strong><%= prestation.designation %></strong>" ?</p>
+        <% if (surgeries && surgeries.length > 0) { %>
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          Cette prestation est utilisée dans <%= surgeries.length %> chirurgie<%= surgeries.length > 1 ? 's' : '' %> 
+          et ne peut pas être supprimée.
+        </div>
+        <% } else { %>
+        <p class="text-muted">Cette action est irréversible.</p>
+        <% } %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <% if (!surgeries || surgeries.length === 0) { %>
+        <form action="/prestations/<%= prestation._id %>?_method=DELETE" method="POST" class="d-inline">
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash me-2"></i>Supprimer
+          </button>
+        </form>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>

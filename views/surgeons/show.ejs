@@ -1,0 +1,172 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeons/show.ejs -->
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge me-2"></i>Profil Chirurgien
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-badge fa-4x text-success mb-3"></i>
+                    <h4>Dr. <%= surgeon.firstName %> <%= surgeon.lastName %></h4>
+                    <p class="text-muted">Code: <strong><%= surgeon.code %></strong></p>
+                    <span class="badge bg-info fs-6"><%= surgeon.specialty.name %></span>
+                </div>
+                
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Date de naissance:</strong></td>
+                        <td><%= moment(surgeon.dateOfBirth).format('DD/MM/YYYY') %></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Âge:</strong></td>
+                        <td><%= moment().diff(surgeon.dateOfBirth, 'years') %> ans</td>
+                    </tr>
+                    <% if (surgeon.phone) { %>
+                    <tr>
+                        <td><strong>Téléphone:</strong></td>
+                        <td><i class="bi bi-telephone me-2"></i><%= surgeon.phone %></td>
+                    </tr>
+                    <% } %>
+                    <tr>
+                        <td><strong>Type contrat:</strong></td>
+                        <td>
+                            <% if (surgeon.contractType === 'allocation') { %>
+                                <span class="badge bg-primary">Allocation</span>
+                            <% } else { %>
+                                <span class="badge bg-warning">Pourcentage</span>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Taux:</strong></td>
+                        <td>
+                            <% if (surgeon.contractType === 'allocation') { %>
+                                <strong class="text-primary"><%= surgeon.allocationRate || 0 %> DA/heure</strong>
+                            <% } else { %>
+                                <strong class="text-warning"><%= surgeon.percentageRate || 0 %>%</strong>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Créé le:</strong></td>
+                        <td><%= moment(surgeon.createdAt).format('DD/MM/YYYY HH:mm') %></td>
+                    </tr>
+                </table>
+                
+                <div class="d-grid gap-2">
+                    <a href="/surgeons/<%= surgeon._id %>/edit" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Modifier
+                    </a>
+                    <a href="/surgeries/new?surgeon=<%= surgeon._id %>" class="btn btn-success">
+                        <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-scissors me-2"></i>Historique des Chirurgies
+                    <span class="badge bg-light text-info ms-2"><%= surgeries.length %></span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if (surgeries.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Prestation</th>
+                                    <th>Honoraires</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% surgeries.forEach(surgery => { %>
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong><%= moment(surgery.beginDateTime).format('DD/MM/YYYY') %></strong>
+                                            </div>
+                                            <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
+                                        </td>
+                                        <td>
+                                            <%= surgery.patient.firstName %> <%= surgery.patient.lastName %>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary"><%= surgery.prestation.designation %></span>
+                                        </td>
+                                        <td>
+                                            <% if (surgery.surgeonAmount > 0) { %>
+                                                <strong class="text-success">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount) %>
+                                                </strong>
+                                            <% } else { %>
+                                                <span class="text-muted">Non calculé</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <a href="/surgeries/<%= surgery._id %>" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i>Voir
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Statistiques du chirurgien -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-primary"><%= surgeries.length %></h4>
+                                <small class="text-muted">Total chirurgies</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-success">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeries.reduce((sum, s) => sum + (s.surgeonAmount || 0), 0)) %>
+                                </h4>
+                                <small class="text-muted">Total honoraires</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-info">
+                                    <%= surgeries.length > 0 ? Math.round(surgeries.reduce((sum, s) => sum + (s.surgeonAmount || 0), 0) / surgeries.length) : 0 %> DA
+                                </h4>
+                                <small class="text-muted">Honoraires moyens</small>
+                            </div>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-scissors fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune chirurgie enregistrée</h5>
+                        <p class="text-muted">Ce chirurgien n'a pas encore réalisé de chirurgie</p>
+                        <a href="/surgeries/new?surgeon=<%= surgeon._id %>" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Programmer une chirurgie
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="/surgeons" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+    </a>
+</div>

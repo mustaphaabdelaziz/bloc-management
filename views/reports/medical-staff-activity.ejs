@@ -1,0 +1,130 @@
+<% layout('layouts/boilerplate') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Rapport d'Activité du Personnel Médical</h3>
+        <p class="text-muted">Suivi de la participation du personnel aux chirurgies</p>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary">
+        <i class="bi bi-printer me-2"></i>Imprimer
+    </button>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Date début</label>
+                <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Date fin</label>
+                <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Personnel</label>
+                <select name="staffId" class="form-select">
+                    <option value="">Tout le personnel</option>
+                    <% medicalStaff.forEach(staff => { %>
+                        <option value="<%= staff._id %>" <%= filters.staffId === staff._id.toString() ? 'selected' : '' %>>
+                            <%= staff.firstName %> <%= staff.lastName %>
+                        </option>
+                    <% }); %>
+                </select>
+                <div class="d-grid mt-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Résultats -->
+<% if (report.length > 0) { %>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stats-card text-center">
+                <h3><%= report.length %></h3>
+                <p class="mb-0">Membres du personnel</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h3><%= report.reduce((sum, item) => sum + item.totalSurgeries, 0) %></h3>
+                <p class="mb-0">Participations</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <h3><%= Math.round(report.reduce((sum, item) => sum + item.totalSurgeries, 0) / report.length) %></h3>
+                <p class="mb-0">Moyenne/personne</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Personnel</th>
+                            <th>Participations</th>
+                            <th>Rôles exercés</th>
+                            <th>Dernière chirurgie</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% report.forEach(staff => { %>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-circle fa-2x text-primary me-3"></i>
+                                        <div>
+                                            <div class="fw-bold"><%= staff.staffName %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary fs-6"><%= staff.totalSurgeries %></span>
+                                </td>
+                                <td>
+                                    <% staff.roles.forEach(role => { %>
+                                        <span class="badge bg-secondary me-1"><%= role %></span>
+                                    <% }); %>
+                                </td>
+                                <td>
+                                    <% if (staff.surgeries.length > 0) { %>
+                                        <% const lastSurgery = staff.surgeries[0]; %>
+                                        <div>
+                                            <strong><%= moment(lastSurgery.date).format('DD/MM/YYYY') %></strong>
+                                        </div>
+                                        <small class="text-muted">
+                                            <%= lastSurgery.code %> - <%= lastSurgery.role %>
+                                        </small>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showStaffDetails('<%= staff._id %>')">
+                                        <i class="bi bi-eye"></i> Détails
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<% } else { %>
+    <div class="text-center py-5">
+        <i class="bi bi-people fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Aucune activité trouvée</h5>
+        <p class="text-muted">Aucune participation du personnel médical dans cette période</p>
+    </div>
+<% } %>

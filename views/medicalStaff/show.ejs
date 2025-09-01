@@ -1,0 +1,150 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/medicalStaff/show.ejs -->
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-check me-2"></i>Profil Personnel
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-check fa-4x text-info mb-3"></i>
+                    <h4><%= staff.firstName %> <%= staff.lastName %></h4>
+                    <p class="text-muted">Code: <strong><%= staff.code %></strong></p>
+                </div>
+                
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Date de naissance:</strong></td>
+                        <td><%= moment(staff.dateOfBirth).format('DD/MM/YYYY') %></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Âge:</strong></td>
+                        <td><%= moment().diff(staff.dateOfBirth, 'years') %> ans</td>
+                    </tr>
+                    <% if (staff.phone) { %>
+                    <tr>
+                        <td><strong>Téléphone:</strong></td>
+                        <td><i class="bi bi-telephone me-2"></i><%= staff.phone %></td>
+                    </tr>
+                    <% } %>
+                    <tr>
+                        <td><strong>Fonctions:</strong></td>
+                        <td>
+                            <% if (staff.fonctions && staff.fonctions.length > 0) { %>
+                                <% staff.fonctions.forEach(fonction => { %>
+                                    <span class="badge bg-secondary me-1 mb-1"><%= fonction.name %></span>
+                                <% }); %>
+                            <% } else { %>
+                                <span class="text-muted">Aucune fonction</span>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Créé le:</strong></td>
+                        <td><%= moment(staff.createdAt).format('DD/MM/YYYY HH:mm') %></td>
+                    </tr>
+                </table>
+                
+                <div class="d-grid gap-2">
+                    <a href="/medical-staff/<%= staff._id %>/edit" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>Modifier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-activity me-2"></i>Activité Chirurgicale
+                    <span class="badge bg-light text-success ms-2"><%= surgeries.length %></span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <% if (surgeries.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Chirurgien</th>
+                                    <th>Rôle</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% surgeries.forEach(surgery => { %>
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong><%= moment(surgery.beginDateTime).format('DD/MM/YYYY') %></strong>
+                                            </div>
+                                            <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
+                                        </td>
+                                        <td><%= surgery.patient.firstName %> <%= surgery.patient.lastName %></td>
+                                        <td>Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %></td>
+                                        <td>
+                                            <% const staffRole = surgery.medicalStaff.find(ms => ms.staff.toString() === staff._id.toString()); %>
+                                            <% if (staffRole && staffRole.rolePlayedId) { %>
+                                                <span class="badge bg-info"><%= staffRole.rolePlayedId.name %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">Non défini</span>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <a href="/surgeries/<%= surgery._id %>" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i>Voir
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Statistiques du personnel -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-primary"><%= surgeries.length %></h4>
+                                <small class="text-muted">Participations</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <% const uniqueRoles = [...new Set(surgeries.map(s => s.medicalStaff.find(ms => ms.staff.toString() === staff._id.toString())?.rolePlayedId?.name).filter(Boolean))]; %>
+                                <h4 class="text-info"><%= uniqueRoles.length %></h4>
+                                <small class="text-muted">Rôles différents</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <% const thisMonth = surgeries.filter(s => moment(s.beginDateTime).isSame(moment(), 'month')).length; %>
+                                <h4 class="text-success"><%= thisMonth %></h4>
+                                <small class="text-muted">Ce mois</small>
+                            </div>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-activity fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune participation enregistrée</h5>
+                        <p class="text-muted">Ce membre du personnel n'a pas encore participé à des chirurgies</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="/medical-staff" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+    </a>
+</div>

@@ -1,0 +1,140 @@
+<% layout('layouts/boilerplate') %>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Rapport des Honoraires des Chirurgiens</h3>
+        <p class="text-muted">Calcul et suivi des rémunérations par chirurgien</p>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-primary">
+        <i class="bi bi-printer me-2"></i>Imprimer
+    </button>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Date début</label>
+                <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date fin</label>
+                <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Chirurgien</label>
+                <select name="surgeonId" class="form-select">
+                    <option value="">Tous les chirurgiens</option>
+                    <% surgeons.forEach(surgeon => { %>
+                        <option value="<%= surgeon._id %>" <%= filters.surgeonId === surgeon._id.toString() ? 'selected' : '' %>>
+                            Dr. <%= surgeon.firstName %> <%= surgeon.lastName %>
+                        </option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Résultats -->
+<% if (report.length > 0) { %>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card text-center">
+                <h3><%= report.length %></h3>
+                <p class="mb-0">Chirurgiens</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h3><%= report.reduce((sum, item) => sum + item.totalSurgeries, 0) %></h3>
+                <p class="mb-0">Chirurgies</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stats-card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <h3><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalAmount, 0)) %></h3>
+                <p class="mb-0">Total Honoraires</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <% report.forEach((surgeon, index) => { %>
+                <div class="accordion mb-3" id="accordion<%= index %>">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button <%= index === 0 ? '' : 'collapsed' %>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<%= index %>">
+                                <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                    <div>
+                                        <strong>Dr. <%= surgeon.surgeonName %></strong>
+                                        <span class="badge <%= surgeon.contractType === 'allocation' ? 'bg-info' : 'bg-warning' %> ms-2">
+                                            <%= surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
+                                        </span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="h5 mb-0 text-success">
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeon.totalAmount) %>
+                                        </div>
+                                        <small class="text-muted"><%= surgeon.totalSurgeries %> chirurgies</small>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse<%= index %>" class="accordion-collapse collapse <%= index === 0 ? 'show' : '' %>" data-bs-parent="#accordion<%= index %>">
+                            <div class="accordion-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Code</th>
+                                                <th>Date</th>
+                                                <th>Prestation</th>
+                                                <th>Honoraires</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% surgeon.surgeries.forEach(surgery => { %>
+                                                <tr>
+                                                    <td><%= surgery.code %></td>
+                                                    <td><%= moment(surgery.date).format('DD/MM/YYYY') %></td>
+                                                    <td><%= surgery.prestationName %></td>
+                                                    <td class="text-success fw-bold">
+                                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.amount) %>
+                                                    </td>
+                                                </tr>
+                                            <% }); %>
+                                        </tbody>
+                                        <tfoot class="table-dark">
+                                            <tr>
+                                                <th colspan="3">Total</th>
+                                                <th class="text-success">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeon.totalAmount) %>
+                                                </th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+<% } else { %>
+    <div class="text-center py-5">
+        <i class="bi bi-inbox fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Aucune donnée trouvée</h5>
+        <p class="text-muted">Ajustez vos filtres ou vérifiez la période sélectionnée</p>
+    </div>
+<% } %>

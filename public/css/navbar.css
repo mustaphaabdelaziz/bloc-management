@@ -1,0 +1,43 @@
+  /* Make sure dropdown menu items are aligned */
+  .dropdown-menu {
+    width: 200px;
+  }
+
+  /* Optional: improve button alignment and spacing */
+  .navbar-nav .nav-item {
+    margin-right: 10px;
+  }
+
+  .d-flex.align-items-center a {
+    margin-left: 10px;
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar-nav {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .navbar-toggler-icon {
+    background-color: #4db8b2; /* Matching the text-greenSea color */
+  }
+
+  .btn-outline-greenSea {
+    color: #4db8b2;
+    border-color: #4db8b2;
+  }
+
+  .btn-outline-greenSea:hover {
+    background-color: #4db8b2;
+    color: white;
+  }
+
+  .btn-danger {
+    background-color: #ff4d4d;
+    border-color: #ff4d4d;
+  }

@@ -1,0 +1,110 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeons/index.ejs -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0">Gestion des Chirurgiens</h3>
+        <p class="text-muted">Configuration des profils chirurgiens et contrats</p>
+    </div>
+    <a href="/surgeons/new" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Nouveau Chirurgien
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <% if (surgeons.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Chirurgien</th>
+                            <th>Spécialité</th>
+                            <th>Type Contrat</th>
+                            <th>Taux</th>
+                            <th>Téléphone</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% surgeons.forEach(surgeon => { %>
+                            <tr>
+                                <td><strong><%= surgeon.code %></strong></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-badge fa-2x text-success me-3"></i>
+                                        <div>
+                                            <div class="fw-bold">Dr. <%= surgeon.firstName %> <%= surgeon.lastName %></div>
+                                            <small class="text-muted">
+                                                Né le <%= moment(surgeon.dateOfBirth).format('DD/MM/YYYY') %>
+                                                (<%= moment().diff(surgeon.dateOfBirth, 'years') %> ans)
+                                            </small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info"><%= surgeon.specialty.name %></span>
+                                </td>
+                                <td>
+                                    <% if (surgeon.contractType === 'allocation') { %>
+                                        <span class="badge bg-primary">Allocation</span>
+                                    <% } else { %>
+                                        <span class="badge bg-warning">Pourcentage</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (surgeon.contractType === 'allocation') { %>
+                                        <strong><%= surgeon.allocationRate || 0 %></strong> DA/h
+                                    <% } else { %>
+                                        <strong><%= surgeon.percentageRate || 0 %>%</strong>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (surgeon.phone) { %>
+                                        <i class="bi bi-telephone me-1"></i><%= surgeon.phone %>
+                                    <% } else { %>
+                                        <span class="text-muted">-</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="/surgeons/<%= surgeon._id %>" class="btn btn-sm btn-outline-primary" title="Voir">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="/surgeons/<%= surgeon._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteSurgeon('<%= surgeon._id %>')" title="Supprimer">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <div class="text-center py-5">
+                <i class="bi bi-person-badge fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucun chirurgien trouvé</h5>
+                <p class="text-muted">Commencez par ajouter un chirurgien</p>
+                <a href="/surgeons/new" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter le premier chirurgien
+                </a>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+function deleteSurgeon(id) {
+    if (confirmDelete('Êtes-vous sûr de vouloir supprimer ce chirurgien ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/surgeons/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
