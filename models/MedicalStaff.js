@@ -25,7 +25,11 @@ const medicalStaffSchema = new mongoose.Schema({
     fonctions: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Fonction'
-    }]
+    }],
+    personalFee: {
+        type: Number, // frais personnels pour allocation horaire
+        default: 0
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model('MedicalStaff', medicalStaffSchema);

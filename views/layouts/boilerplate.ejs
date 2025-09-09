@@ -224,15 +224,15 @@
                     </div>
                     
                     <!-- Alerts -->
-                    <% if (typeof success !== 'undefined' || typeof error !== 'undefined') { %>
-                        <% if (typeof success !== 'undefined') { %>
+                    <% if (success || error) { %>
+                        <% if (success) { %>
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
                                 <i class="bi bi-check-circle me-2"></i>
                                 <%= success %>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         <% } %>
-                        <% if (typeof error !== 'undefined') { %>
+                        <% if (error) { %>
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <i class="bi bi-exclamation-triangle me-2"></i>
                                 <%= error %>

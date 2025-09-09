@@ -46,6 +46,13 @@
                                value="<%= staff.dateOfBirth ? moment(staff.dateOfBirth).format('YYYY-MM-DD') : '' %>" required>
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="personalFee" class="form-label">Frais personnels (DA)</label>
+                        <input type="number" class="form-control" id="personalFee" name="personalFee" 
+                               value="<%= staff.personalFee || 0 %>" min="0" step="0.01">
+                        <div class="form-text">Frais personnels facturés au chirurgien pour allocation horaire</div>
+                    </div>
+                    
                     <!-- Fonctions -->
                     <div class="card mb-4">
                         <div class="card-header bg-secondary text-white">

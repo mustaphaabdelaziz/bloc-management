@@ -1,6 +1,5 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/surgeries/edit.ejs -->
-<!-- Cette vue utilise le même formulaire que new.ejs mais avec les données pré-remplies et l'action PUT -->
 <div class="row justify-content-center">
     <div class="col-lg-10">
         <div class="card">
@@ -11,26 +10,33 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="/surgeries/<%= surgery._id %>?_method=PUT" id="surgeryForm">
-                    <!-- Reprise du contenu du formulaire surgeries/new.ejs avec les valeurs pré-remplies -->
+                    <!-- Informations de base -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="patient" class="form-label">Patient *</label>
-                                <select name="patient" id="patient" class="form-select" required>
+                                <select name="patient" id="patient" class="form-select searchable-select" required>
+                                    <option value="">Sélectionner un patient</option>
                                     <% patients.forEach(patient => { %>
                                         <option value="<%= patient._id %>" <%= surgery.patient._id.toString() === patient._id.toString() ? 'selected' : '' %>>
                                             <%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>
                                         </option>
                                     <% }); %>
                                 </select>
+                                <div class="form-text">
+                                    <a href="/patients/new" target="_blank" class="text-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>Ajouter un nouveau patient
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="surgeon" class="form-label">Chirurgien *</label>
-                                <select name="surgeon" id="surgeon" class="form-select" required>
+                                <select name="surgeon" id="surgeon" class="form-select searchable-select" required>
+                                    <option value="">Sélectionner un chirurgien</option>
                                     <% surgeons.forEach(surgeon => { %>
-                                        <option value="<%= surgeon._id %>" <%= surgery.surgeon._id.toString() === surgeon._id.toString() ? 'selected' : '' %>>
+                                        <option value="<%= surgeon._id %>" data-specialty="<%= surgeon.specialty._id %>" data-contract="<%= surgeon.contractType %>" <%= surgery.surgeon._id.toString() === surgeon._id.toString() ? 'selected' : '' %>>
                                             Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>
                                         </option>
                                     <% }); %>
@@ -39,7 +45,252 @@
                         </div>
                     </div>
                     
-                    <!-- Continuer avec le reste du formulaire... -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="prestation" class="form-label">Prestation *</label>
+                                <select name="prestation" id="prestation" class="form-select searchable-select" required>
+                                    <option value="">Sélectionner une prestation</option>
+                                    <% prestations.forEach(prestation => { %>
+                                        <option value="<%= prestation._id %>"
+                                                data-specialty="<%= prestation.specialty._id %>"
+                                                data-duration="<%= prestation.duration %>"
+                                                data-price="<%= prestation.priceHT %>"
+                                                <%= surgery.prestation._id.toString() === prestation._id.toString() ? 'selected' : '' %>>
+                                            <%= prestation.designation %> - <%= prestation.specialty.name %> (<%=prestation.duration%> min)
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Statut *</label>
+                                <select name="status" id="status" class="form-select" required>
+                                    <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
+                                    <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
+                                    <option value="in-progress" <%= surgery.status === 'in-progress' ? 'selected' : '' %>>En cours</option>
+                                    <option value="completed" <%= surgery.status === 'completed' ? 'selected' : '' %>>Terminée</option>
+                                </select>
+                                <div class="form-text">
+                                    <small id="statusHelp" class="text-muted">
+                                        Changer le statut affecte automatiquement les calculs des honoraires
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations sur les statuts -->
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle me-2"></i>Effets des changements de statut :</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Urgente :</strong>
+                                <ul class="mb-1">
+                                    <li>Frais urgents appliqués automatiquement</li>
+                                    <li>Majoration de 20% sur les honoraires</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>En cours :</strong>
+                                <ul class="mb-1">
+                                    <li>Date de début définie automatiquement</li>
+                                    <li>Estimation des honoraires (-20%)</li>
+                                </ul>
+                                <strong>Terminée :</strong>
+                                <ul class="mb-1">
+                                    <li>Date de fin définie automatiquement</li>
+                                    <li>Calcul définitif des honoraires</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dates et heures -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="beginDateTime" class="form-label">Date et heure de début *</label>
+                                <input type="datetime-local" class="form-control" id="beginDateTime" name="beginDateTime" 
+                                       value="<%= surgery.beginDateTime ? moment(surgery.beginDateTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="endDateTime" class="form-label">Date et heure de fin</label>
+                                <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime"
+                                       value="<%= surgery.endDateTime ? moment(surgery.endDateTime).format('YYYY-MM-DDTHH:mm') : '' %>">
+                                <div class="form-text">Si renseigné, permettra le calcul de la durée réelle</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dépassement de durée -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="applyExtraFees">
+                                        <strong>Appliquer des frais supplémentaires pour dépassement de durée</strong>
+                                    </label>
+                                </div>
+                                <div class="form-text text-warning">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Si la durée dépasse celle prévue pour la prestation, des frais additionnels peuvent être appliqués.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Personnel médical -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="bi bi-people me-2"></i>Personnel Médical Impliqué</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="medicalStaffContainer">
+                                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+                                    <% surgery.medicalStaff.forEach((staff, index) => { %>
+                                        <div class="row mb-3 medical-staff-row">
+                                            <div class="col-md-5">
+                                                <select name="medicalStaff" class="form-select">
+                                                    <option value="">Sélectionner personnel</option>
+                                                    <% medicalStaff.forEach(ms => { %>
+                                                        <option value="<%= ms._id %>" <%= staff.staff._id.toString() === ms._id.toString() ? 'selected' : '' %>>
+                                                            <%= ms.firstName %> <%= ms.lastName %>
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <select name="rolePlayedId" class="form-select">
+                                                    <option value="">Sélectionner rôle</option>
+                                                    <% fonctions.forEach(fonction => { %>
+                                                        <option value="<%= fonction._id %>" <%= staff.rolePlayedId._id.toString() === fonction._id.toString() ? 'selected' : '' %>>
+                                                            <%= fonction.name %>
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                <% } else { %>
+                                    <div class="row mb-3 medical-staff-row">
+                                        <div class="col-md-5">
+                                            <select name="medicalStaff" class="form-select">
+                                                <option value="">Sélectionner personnel</option>
+                                                <% medicalStaff.forEach(ms => { %>
+                                                    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <select name="rolePlayedId" class="form-select">
+                                                <option value="">Sélectionner rôle</option>
+                                                <% fonctions.forEach(fonction => { %>
+                                                    <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStaffRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter personnel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Matériaux consommés -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="bi bi-box me-2"></i>Matériaux Consommés</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="materialsContainer">
+                                <% if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) { %>
+                                    <% surgery.consumedMaterials.forEach((material, index) => { %>
+                                        <div class="row mb-3 material-row">
+                                            <div class="col-md-6">
+                                                <select name="materialId" class="form-select searchable-select">
+                                                    <option value="">Sélectionner matériau</option>
+                                                    <% materials.forEach(mat => { %>
+                                                        <option value="<%= mat._id %>"
+                                                                data-price="<%= mat.priceHT %>"
+                                                                data-unit="<%= mat.unitOfMeasure %>"
+                                                                data-category="<%= mat.category %>"
+                                                                data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+                                                                <%= material.material._id.toString() === mat._id.toString() ? 'selected' : '' %>>
+                                                            <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %>
+                                                            (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                        </option>
+                                                    <% }); %>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" name="materialQuantity" class="form-control" placeholder="Quantité" 
+                                                       min="1" step="0.01" value="<%= material.quantity %>">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                <% } else { %>
+                                    <div class="row mb-3 material-row">
+                                        <div class="col-md-6">
+                                            <select name="materialId" class="form-select searchable-select">
+                                                <option value="">Sélectionner matériau</option>
+                                                <% materials.forEach(mat => { %>
+                                                    <option value="<%= mat._id %>"
+                                                            data-price="<%= mat.priceHT %>"
+                                                            data-unit="<%= mat.unitOfMeasure %>"
+                                                            data-category="<%= mat.category %>"
+                                                            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>">
+                                                        <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %>
+                                                        (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                    </option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" name="materialQuantity" class="form-control" placeholder="Quantité" 
+                                                   min="1" step="0.01">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addMaterialRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes et observations</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"><%= surgery.notes || '' %></textarea>
+                    </div>
+                    
                     <div class="d-flex justify-content-between">
                         <a href="/surgeries/<%= surgery._id %>" class="btn btn-secondary">
                             <i class="bi bi-arrow-left me-2"></i>Annuler
@@ -53,3 +304,339 @@
         </div>
     </div>
 </div>
+
+<script>
+// Ajouter une ligne de personnel médical
+function addStaffRow() {
+    const container = document.getElementById('medicalStaffContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 medical-staff-row';
+    newRow.innerHTML = `
+        <div class="col-md-5">
+            <select name="medicalStaff" class="form-select">
+                <option value="">Sélectionner personnel</option>
+                <% medicalStaff.forEach(ms => { %>
+                    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <select name="rolePlayedId" class="form-select">
+                <option value="">Sélectionner rôle</option>
+                <% fonctions.forEach(fonction => { %>
+                    <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+// Supprimer une ligne de personnel médical
+function removeStaffRow(button) {
+    const row = button.closest('.medical-staff-row');
+    if (document.querySelectorAll('.medical-staff-row').length > 1) {
+        row.remove();
+    }
+}
+
+// Ajouter une ligne de matériau
+function addMaterialRow() {
+    const container = document.getElementById('materialsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 material-row';
+    newRow.innerHTML = `
+        <div class="col-md-6">
+            <select name="materialId" class="form-select searchable-select">
+                <option value="">Sélectionner matériau</option>
+                <% materials.forEach(mat => { %>
+                    <option value="<%= mat._id %>" 
+                            data-price="<%= mat.priceHT %>" 
+                            data-unit="<%= mat.unitOfMeasure %>" 
+                            data-category="<%= mat.category %>"
+                            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>">
+                        <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %> 
+                        (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="number" name="materialQuantity" class="form-control" placeholder="Quantité" 
+                   min="1" step="0.01">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    
+    // Make the new select searchable
+    const newSelect = newRow.querySelector('.searchable-select');
+    if (newSelect) {
+        makeSelectSearchable(newSelect);
+        
+        // Apply current specialty filter if surgeon is selected
+        const surgeonSelect = document.getElementById('surgeon');
+        if (surgeonSelect.value) {
+            const selectedSurgeon = surgeonSelect.options[surgeonSelect.selectedIndex];
+            const surgeonSpecialty = selectedSurgeon ? selectedSurgeon.getAttribute('data-specialty') : null;
+            if (surgeonSpecialty) {
+                filterMaterialsBySpecialty(surgeonSpecialty);
+            }
+        }
+    }
+}
+
+// Supprimer une ligne de matériau
+function removeMaterialRow(button) {
+    const row = button.closest('.material-row');
+    if (document.querySelectorAll('.material-row').length > 1) {
+        row.remove();
+    }
+}
+
+function makeSelectSearchable(select) {
+    // Create a wrapper for the select
+    const wrapper = document.createElement('div');
+    wrapper.className = 'searchable-select-wrapper';
+    wrapper.style.position = 'relative';
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.appendChild(select);
+    
+    // Create search input
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'form-control';
+    searchInput.placeholder = 'Rechercher...';
+    searchInput.style.position = 'absolute';
+    searchInput.style.top = '0';
+    searchInput.style.left = '0';
+    searchInput.style.width = '100%';
+    searchInput.style.height = '100%';
+    searchInput.style.zIndex = '1';
+    searchInput.style.background = 'transparent';
+    searchInput.style.border = 'none';
+    searchInput.style.padding = select.style.padding || '0.375rem 0.75rem';
+    searchInput.style.display = 'none';
+    
+    wrapper.appendChild(searchInput);
+    
+    select.style.position = 'relative';
+    select.style.zIndex = '2';
+    
+    let isSearchMode = false;
+    
+    select.addEventListener('click', function() {
+        if (!isSearchMode) {
+            isSearchMode = true;
+            searchInput.style.display = 'block';
+            searchInput.focus();
+            select.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            filterOptions('');
+        }
+    });
+    
+    searchInput.addEventListener('input', function() {
+        filterOptions(this.value.toLowerCase());
+    });
+    
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            if (!searchInput.matches(':focus')) {
+                isSearchMode = false;
+                searchInput.style.display = 'none';
+                select.style.backgroundColor = '';
+            }
+        }, 150);
+    });
+    
+    function filterOptions(searchTerm) {
+        const options = Array.from(select.options);
+        options.forEach(option => {
+            if (option.value === '') return;
+            const text = option.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+}
+
+function filterPrestationsBySpecialty(specialtyId) {
+    const options = document.querySelectorAll('#prestation option');
+    let hasVisibleOptions = false;
+    
+    options.forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+        
+        const optionSpecialty = option.getAttribute('data-specialty');
+        if (optionSpecialty === specialtyId) {
+            option.style.display = '';
+            hasVisibleOptions = true;
+        } else {
+            option.style.display = 'none';
+        }
+    });
+    
+    if (document.getElementById('prestation').value && !hasVisibleOptions) {
+        document.getElementById('prestation').value = '';
+    }
+}
+
+function showAllPrestations() {
+    const options = document.querySelectorAll('#prestation option');
+    options.forEach(option => {
+        option.style.display = '';
+    });
+}
+
+function filterMaterialsBySpecialty(specialtyId) {
+    const materialSelects = document.querySelectorAll('select[name="materialId"]');
+    
+    materialSelects.forEach(materialSelect => {
+        const options = materialSelect.querySelectorAll('option');
+        
+        options.forEach(option => {
+            if (option.value === '') {
+                option.style.display = '';
+                return;
+            }
+            
+            const optionSpecialty = option.getAttribute('data-specialty');
+            if (!optionSpecialty || optionSpecialty === specialtyId) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    });
+}
+
+function showAllMaterials() {
+    const materialSelects = document.querySelectorAll('select[name="materialId"]');
+    materialSelects.forEach(materialSelect => {
+        const options = materialSelect.querySelectorAll('option');
+        options.forEach(option => {
+            option.style.display = '';
+        });
+    });
+}
+
+// Calcul automatique de la fin basé sur la durée de la prestation
+document.getElementById('beginDateTime').addEventListener('change', updateEndTime);
+document.getElementById('prestation').addEventListener('change', updateEndTime);
+
+function updateEndTime() {
+    const beginDateTime = document.getElementById('beginDateTime').value;
+    const prestationSelect = document.getElementById('prestation');
+    const endDateTime = document.getElementById('endDateTime');
+    
+    if (beginDateTime && prestationSelect.value && !endDateTime.value) {
+        const selectedOption = prestationSelect.options[prestationSelect.selectedIndex];
+        const duration = parseInt(selectedOption.dataset.duration);
+        
+        if (duration) {
+            const startDate = new Date(beginDateTime);
+            const endDate = new Date(startDate.getTime() + duration * 60000);
+            endDateTime.value = endDate.toISOString().slice(0, 16);
+        }
+    }
+}
+
+// Gestion des changements de statut
+document.getElementById('status').addEventListener('change', function() {
+    const status = this.value;
+    const statusAlert = document.querySelector('.alert-info');
+    const statusHelp = document.getElementById('statusHelp');
+    
+    let helpText = '';
+    let alertClass = 'alert-info';
+    
+    switch(status) {
+        case 'urgent':
+            helpText = '⚠️ Frais urgents seront appliqués automatiquement (+20% sur les honoraires)';
+            alertClass = 'alert-danger';
+            break;
+        case 'in-progress':
+            helpText = '▶️ Date de début sera définie, estimation des honoraires (-20%)';
+            alertClass = 'alert-warning';
+            break;
+        case 'completed':
+            helpText = '✅ Date de fin sera définie, calcul définitif des honoraires';
+            alertClass = 'alert-success';
+            break;
+        case 'planned':
+            helpText = '📅 Statut planifié, honoraires non calculés';
+            alertClass = 'alert-info';
+            break;
+        default:
+            helpText = 'Changer le statut affecte automatiquement les calculs des honoraires';
+            alertClass = 'alert-info';
+    }
+    
+    statusHelp.textContent = helpText;
+    statusAlert.className = `alert ${alertClass}`;
+});
+
+// Fonctionnalité de recherche
+function setupSearch(searchInputId, selectId) {
+    const searchInput = document.getElementById(searchInputId);
+    const select = document.getElementById(selectId);
+    const options = Array.from(select.options);
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        // Clear current options except the first one
+        select.innerHTML = '<option value="">Sélectionner...</option>';
+        
+        // Filter and add matching options
+        options.forEach(option => {
+            if (option.value && option.text.toLowerCase().includes(searchTerm)) {
+                select.appendChild(option.cloneNode(true));
+            }
+        });
+    });
+}
+
+// Initialiser la recherche pour chaque champ
+document.addEventListener('DOMContentLoaded', function() {
+    setupSearch('patientSearch', 'patient');
+    setupSearch('surgeonSearch', 'surgeon');
+    setupSearch('prestationSearch', 'prestation');
+    
+    // Initialize searchable dropdowns
+    const searchableSelects = document.querySelectorAll('.searchable-select');
+    searchableSelects.forEach(select => {
+        makeSelectSearchable(select);
+    });
+    
+    // Filter prestations and materials based on surgeon specialty
+    const surgeonSelect = document.getElementById('surgeon');
+    surgeonSelect.addEventListener('change', function() {
+        const selectedSurgeon = this.options[this.selectedIndex];
+        const surgeonSpecialty = selectedSurgeon ? selectedSurgeon.getAttribute('data-specialty') : null;
+        
+        if (surgeonSpecialty) {
+            filterPrestationsBySpecialty(surgeonSpecialty);
+            filterMaterialsBySpecialty(surgeonSpecialty);
+        } else {
+            showAllPrestations();
+            showAllMaterials();
+        }
+    });
+});
+</script>

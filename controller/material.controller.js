@@ -46,7 +46,11 @@ module.exports.renderCreateMateirialForm = async (req, res) => {
 };
 module.exports.createMaterial = async (req, res) => {
   try {
-    const material = new Material(req.body);
+    // Remove code from req.body since it will be auto-generated
+    const materialData = { ...req.body };
+    delete materialData.code;
+    
+    const material = new Material(materialData);
     await material.save();
     res.redirect("/materials?success=Matériau créé avec succès");
   } catch (error) {
@@ -104,7 +108,12 @@ module.exports.updateMaterial = async (req, res) => {
     if (!material) {
       return res.status(404).json({ error: "Matériau non trouvé" });
     }
-    Object.assign(material, req.body);
+    
+    // Remove code from update data since it should not be changed
+    const updateData = { ...req.body };
+    delete updateData.code;
+    
+    Object.assign(material, updateData);
     await material.save();
     res.redirect(`/materials?success=Matériau modifié`);
   } catch (error) {

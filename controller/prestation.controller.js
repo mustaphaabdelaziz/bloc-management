@@ -67,13 +67,16 @@ module.exports.createPrestation = async (req, res) => {
       designation: designation.trim(),
       specialty,
       priceHT: parseFloat(priceHT),
-      tva: req.body.tva ? parseFloat(req.body.tva) : 0.19,
+      tva: req.body.tva ? parseFloat(req.body.tva) : 0.09,
       duration: parseInt(duration),
       exceededDurationUnit: req.body.exceededDurationUnit
         ? parseInt(req.body.exceededDurationUnit)
         : 15,
       exceededDurationFee: req.body.exceededDurationFee
         ? parseFloat(req.body.exceededDurationFee)
+        : 0,
+      urgentFee: req.body.urgentFee
+        ? parseFloat(req.body.urgentFee)
         : 0,
     };
 
@@ -170,10 +173,9 @@ module.exports.updatePrestation = async (req, res) => {
       priceHT: req.body.priceHT
         ? parseFloat(req.body.priceHT)
         : existingPrestation.priceHT,
-      tva:
-        req.body.tva !== undefined
-          ? parseFloat(req.body.tva)
-          : existingPrestation.tva,
+      tva: req.body.tva !== undefined && req.body.tva !== ''
+        ? parseFloat(req.body.tva)
+        : existingPrestation.tva,
       duration: req.body.duration
         ? parseInt(req.body.duration)
         : existingPrestation.duration,
@@ -184,6 +186,10 @@ module.exports.updatePrestation = async (req, res) => {
         req.body.exceededDurationFee !== undefined
           ? parseFloat(req.body.exceededDurationFee)
           : existingPrestation.exceededDurationFee,
+      urgentFee:
+        req.body.urgentFee !== undefined
+          ? parseFloat(req.body.urgentFee)
+          : existingPrestation.urgentFee,
     };
 
     await Prestation.findByIdAndUpdate(prestationId, updateData, {

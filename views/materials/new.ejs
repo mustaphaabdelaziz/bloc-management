@@ -11,13 +11,9 @@
             <div class="card-body">
                 <form method="POST" action="/materials">
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="code" class="form-label">Code *</label>
-                                <input type="text" class="form-control" id="code" name="code" value="<%= material.code || '' %>" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
+                    <div class="row">
+                      
+                        <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="category" class="form-label">Catégorie *</label>
                                 <select name="category" id="category" class="form-select" required>
@@ -74,9 +70,9 @@
                             <div class="mb-3">
                                 <label for="specialty" class="form-label">Spécialité</label>
                                 <select name="specialty" id="specialty" class="form-select">
-                                    <option value="">Matériau général (toutes spécialités)</option>
+                                    <option value="" data-code="GEN">Matériau général (toutes spécialités)</option>
                                     <% specialties.forEach(specialty => { %>
-                                        <option value="<%= specialty._id %>" <%= material.specialty === specialty._id ? 'selected' : '' %>>
+                                        <option value="<%= specialty._id %>" data-code="<%= specialty.code %>" <%= material.specialty === specialty._id ? 'selected' : '' %>>
                                             <%= specialty.name %>
                                         </option>
                                     <% }); %>
@@ -104,3 +100,30 @@
         </div>
     </div>
 </div>
+
+<script>
+// Update code preview when specialty changes
+document.getElementById('specialty').addEventListener('change', function() {
+    const specialtySelect = this;
+    const selectedOption = specialtySelect.options[specialtySelect.selectedIndex];
+    const specialtyCode = selectedOption.getAttribute('data-code') || 'GEN';
+    const codeField = document.getElementById('code');
+    
+    // Show preview of what the code will look like
+    codeField.value = `MAT-${specialtyCode}-XXX (sera généré automatiquement)`;
+});
+
+// Initialize code preview on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const specialtySelect = document.getElementById('specialty');
+    if (specialtySelect) {
+        const selectedOption = specialtySelect.options[specialtySelect.selectedIndex];
+        const specialtyCode = selectedOption ? (selectedOption.getAttribute('data-code') || 'GEN') : 'GEN';
+        const codeField = document.getElementById('code');
+        
+        if (codeField && !codeField.value) {
+            codeField.value = `MAT-${specialtyCode}-XXX (sera généré automatiquement)`;
+        }
+    }
+});
+</script>

@@ -164,7 +164,7 @@
                                     <div class="fw-bold small"><%= specialty.specialtyName %></div>
                                     <div class="progress" style="height: 6px;">
                                         <div class="progress-bar bg-info" role="progressbar" 
-                                             style="width: <%= (specialty.count / surgeriesBySpecialty[0].count) * 100 %>%"></div>
+                                             style="width: <%- (specialty.count / surgeriesBySpecialty[0].count) * 100 %>%"></div>
                                     </div>
                                 </div>
                                 <strong class="ms-2"><%= specialty.count %></strong>
@@ -311,14 +311,119 @@
     </div>
 </div>
 
+<!-- Liste détaillée des chirurgies -->
+<div class="card mt-4">
+    <div class="card-header bg-info text-white">
+        <h6 class="mb-0">
+            <i class="bi bi-list me-2"></i>Détail des Chirurgies
+            <small class="text-white-50">(<%= typeof totalSurgeries !== 'undefined' ? totalSurgeries : surgeriesByStatus.reduce((sum, item) => sum + item.count, 0) %> total)</small>
+        </h6>
+    </div>
+    <div class="card-body">
+        <div id="surgeries-container">
+            <% if (typeof detailedSurgeries !== 'undefined' && detailedSurgeries && detailedSurgeries.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="surgeries-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Code</th>
+                                <th>Patient</th>
+                                <th>Chirurgien</th>
+                                <th>Prestation</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                                <th>Durée</th>
+                            </tr>
+                        </thead>
+                        <tbody id="surgeries-tbody">
+                            <% detailedSurgeries.forEach(surgery => { %>
+                                <tr>
+                                    <td><strong><%= surgery.code %></strong></td>
+                                    <td>
+                                        <% if (surgery.patient) { %>
+                                            <%= surgery.patient.firstName %> <%= surgery.patient.lastName %>
+                                            <br><small class="text-muted"><%= surgery.patient.code %></small>
+                                        <% } else { %>
+                                            <span class="text-muted">N/A</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (surgery.surgeon) { %>
+                                            Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                                        <% } else { %>
+                                            <span class="text-muted">N/A</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (surgery.prestation) { %>
+                                            <%= surgery.prestation.designation %>
+                                            <br><small class="text-muted"><%= surgery.prestation.duration %> min</small>
+                                        <% } else { %>
+                                            <span class="text-muted">N/A</span>
+                                        <% } %>
+                                    </td>
+                                    <td><%= moment(surgery.beginDateTime).format('DD/MM/YYYY HH:mm') %></td>
+                                    <td>
+                                        <% let statusLabel = surgery.status; %>
+                                        <% let statusClass = 'secondary'; %>
+                                        <% if (surgery.status === 'planned') { statusLabel = 'Planifiée'; statusClass = 'warning'; } %>
+                                        <% if (surgery.status === 'in-progress') { statusLabel = 'En cours'; statusClass = 'primary'; } %>
+                                        <% if (surgery.status === 'completed') { statusLabel = 'Terminée'; statusClass = 'success'; } %>
+                                        <% if (surgery.status === 'urgent') { statusLabel = 'Urgente'; statusClass = 'danger'; } %>
+                                        <% if (surgery.status === 'cancelled') { statusLabel = 'Annulée'; statusClass = 'secondary'; } %>
+                                        <span class="badge bg-<%= statusClass %>"><%= statusLabel %></span>
+                                    </td>
+                                    <td>
+                                        <% if (surgery.endDateTime) { %>
+                                            <% const duration = Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000); %>
+                                            <%= duration %> min
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <% if (typeof hasMore !== 'undefined' && hasMore) { %>
+                    <div class="text-center mt-3" id="loading-indicator">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="text-muted mt-2">Chargement de plus de données...</p>
+                    </div>
+                    
+                    <div class="text-center mt-3 d-none" id="load-more-container">
+                        <button class="btn btn-outline-primary" id="load-more-btn">
+                            <i class="bi bi-arrow-down-circle me-2"></i>Charger plus de chirurgies
+                        </button>
+                    </div>
+                <% } %>
+            <% } else { %>
+                <div class="text-center py-5">
+                    <i class="bi bi-table fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucune chirurgie trouvée pour cette période</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Données depuis le serveur
-    const statusData = <%- JSON.stringify(surgeriesByStatus) %>;
-    const specialtyData = <%- JSON.stringify(surgeriesBySpecialty) %>;
+    const statusData = <%- JSON.stringify(surgeriesByStatus || []) %>;
+    const specialtyData = <%- JSON.stringify(surgeriesBySpecialty || []) %>;
 
     // Couleurs pour les graphiques
     const colors = ['#ffc107', '#007bff', '#28a745', '#dc3545', '#6c757d', '#17a2b8', '#fd7e14'];
+
+    // Variables pour l'infinite scroll
+    let currentPage = <%- JSON.stringify(currentPage || 1) %>;
+    let isLoading = false;
+    let hasMore = <%- JSON.stringify(typeof hasMore !== 'undefined' ? hasMore : false) %>;
 
     // Graphique des statuts (Doughnut)
     if (statusData.length > 0) {
@@ -373,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Graphique des spécialités (Bar horizontal)
     if (specialtyData.length > 0) {
         const specialtyCtx = document.getElementById('specialtyChart').getContext('2d');
-        
+
         new Chart(specialtyCtx, {
             type: 'horizontalBar',
             data: {
@@ -410,12 +515,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeCtx = document.getElementById('timeChart').getContext('2d');
     const days = [];
     const surgeryCount = [];
-    
+
     // Générer des données simulées pour la période
-    const startDate = new Date('<%= filters.startDate %>');
-    const endDate = new Date('<%= filters.endDate %>');
+    const startDate = new Date('<%- filters.startDate %>');
+    const endDate = new Date('<%- filters.endDate %>');
     const totalSurgeries = statusData.reduce((sum, item) => sum + item.count, 0);
-    
+
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
         days.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
         // Distribution aléatoire simulée (remplacer par vraies données)
@@ -454,6 +559,122 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Fonction pour charger plus de chirurgies
+    async function loadMoreSurgeries() {
+        if (isLoading || !hasMore) return;
+
+        isLoading = true;
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const loadMoreContainer = document.getElementById('load-more-container');
+
+        if (loadingIndicator) loadingIndicator.classList.remove('d-none');
+        if (loadMoreContainer) loadMoreContainer.classList.add('d-none');
+
+        try {
+            const response = await fetch(`/reports/statistics?page=${currentPage + 1}&startDate=${'<%- filters.startDate %>'}&endDate=${'<%- filters.endDate %>'}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const tbody = document.getElementById('surgeries-tbody');
+
+                data.surgeries.forEach(surgery => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${surgery.code}</strong></td>
+                        <td>
+                            ${surgery.patient ?
+                                `${surgery.patient.firstName} ${surgery.patient.lastName}<br><small class="text-muted">${surgery.patient.code}</small>` :
+                                '<span class="text-muted">N/A</span>'
+                            }
+                        </td>
+                        <td>
+                            ${surgery.surgeon ?
+                                `Dr. ${surgery.surgeon.firstName} ${surgery.surgeon.lastName}` :
+                                '<span class="text-muted">N/A</span>'
+                            }
+                        </td>
+                        <td>
+                            ${surgery.prestation ?
+                                `${surgery.prestation.designation}<br><small class="text-muted">${surgery.prestation.duration} min</small>` :
+                                '<span class="text-muted">N/A</span>'
+                            }
+                        </td>
+                        <td>${new Date(surgery.beginDateTime).toLocaleDateString('fr-FR')} ${new Date(surgery.beginDateTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</td>
+                        <td>
+                            ${(() => {
+                                let statusLabel = surgery.status;
+                                let statusClass = 'secondary';
+                                if (surgery.status === 'planned') { statusLabel = 'Planifiée'; statusClass = 'warning'; }
+                                if (surgery.status === 'in-progress') { statusLabel = 'En cours'; statusClass = 'primary'; }
+                                if (surgery.status === 'completed') { statusLabel = 'Terminée'; statusClass = 'success'; }
+                                if (surgery.status === 'urgent') { statusLabel = 'Urgente'; statusClass = 'danger'; }
+                                if (surgery.status === 'cancelled') { statusLabel = 'Annulée'; statusClass = 'secondary'; }
+                                return `<span class="badge bg-${statusClass}">${statusLabel}</span>`;
+                            })()}
+                        </td>
+                        <td>
+                            ${surgery.endDateTime ?
+                                `${Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000)} min` :
+                                '<span class="text-muted">-</span>'
+                            }
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                hasMore = data.hasMore;
+                currentPage = data.page;
+
+                if (!hasMore) {
+                    if (loadingIndicator) loadingIndicator.classList.add('d-none');
+                    if (loadMoreContainer) loadMoreContainer.classList.add('d-none');
+                } else {
+                    if (loadingIndicator) loadingIndicator.classList.add('d-none');
+                    if (loadMoreContainer) loadMoreContainer.classList.remove('d-none');
+                }
+            } else {
+                console.error('Erreur lors du chargement des données');
+                if (loadingIndicator) loadingIndicator.classList.add('d-none');
+                if (loadMoreContainer) loadMoreContainer.classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            if (loadingIndicator) loadingIndicator.classList.add('d-none');
+            if (loadMoreContainer) loadMoreContainer.classList.remove('d-none');
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // Configuration de l'infinite scroll avec Intersection Observer
+    if (hasMore) {
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', loadMoreSurgeries);
+        }
+
+        // Infinite scroll automatique
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !isLoading && hasMore) {
+                    loadMoreSurgeries();
+                }
+            });
+        }, {
+            rootMargin: '100px'
+        });
+
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            observer.observe(loadingIndicator);
+        }
+    }
 
     // Animation des chiffres au scroll
     const animateNumbers = () => {

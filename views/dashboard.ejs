@@ -95,10 +95,7 @@
               <% todaySurgeries.forEach(surgery => { %>
               <tr>
                 <td>
-                  <strong
-                    ><%= moment(surgery.beginDateTime).format('HH:mm')
-                    %></strong
-                  >
+                  <strong><%= moment(surgery.beginDateTime).format('HH:mm') %></strong>
                 </td>
                 <td>
                   <div class="d-flex align-items-center">
@@ -236,8 +233,7 @@
               <tr>
                 <td><strong><%= surgery.code %></strong></td>
                 <td>
-                  <%= moment(surgery.beginDateTime).format('DD/MM/YYYY HH:mm')
-                  %>
+                  <%= moment(surgery.beginDateTime).format('DD/MM/YYYY HH:mm') %>
                 </td>
                 <td>
                   <%= surgery.patient.firstName %> <%= surgery.patient.lastName

@@ -66,6 +66,10 @@ const surgerySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    clinicAmount: {
+      type: Number,
+      default: 0,
+    },
     notes: {
       type: String,
     },

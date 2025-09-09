@@ -23,7 +23,7 @@ const prestationSchema = new mongoose.Schema({
     tva: {
         type: Number,
         required: true,
-        default: 0.19
+        default: 0.09
     },
     duration: {
         type: Number, // en minutes
@@ -35,6 +35,10 @@ const prestationSchema = new mongoose.Schema({
     },
     exceededDurationFee: {
         type: Number, // frais par unité de dépassement
+        default: 0
+    },
+    urgentFee: {
+        type: Number, // frais pour chirurgie urgente
         default: 0
     }
 }, { timestamps: true });

@@ -13,8 +13,9 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="code" class="form-label">Code *</label>
-                                <input type="text" class="form-control" id="code" name="code" value="<%= material.code %>" required>
+                                <label for="code" class="form-label">Code (Auto-généré)</label>
+                                <input type="text" class="form-control" id="code" name="code" value="<%= material.code %>" readonly disabled>
+                                <div class="form-text">Le code ne peut pas être modifié</div>
                             </div>
                         </div>
                         <div class="col-md-6">

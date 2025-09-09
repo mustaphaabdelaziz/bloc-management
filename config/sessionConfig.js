@@ -1,4 +1,4 @@
-const dbUrl = process.env.LOCAL_DB_URL;
+const dbUrl = process.env.MONGODB_URI;
 // const dbUrl = process.env.LOCAL_DB_URL;
 const secret = process.env.SECRET || "thisshouldbeabettersecret!";
 const MongoDBStore = require("connect-mongo");

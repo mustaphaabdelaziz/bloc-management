@@ -1,4 +1,4 @@
-<% if (success && success.length) {%>
+<% if (success) {%>
 <div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
   <i class="bi bi-check-circle-fill"></i> <%= success %>
   <button
@@ -8,7 +8,7 @@
     aria-label="Close"
   ></button>
 </div>
-<% }%> <%if (error && error.length) { %>
+<% }%> <%if (error) { %>
 <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
     <i class="bi bi-exclamation-triangle-fill"></i> <%= error %>
   <button

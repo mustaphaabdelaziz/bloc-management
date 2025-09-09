@@ -1,98 +1,86 @@
 <% layout('layouts/boilerplate') %>
 <div class="row">
-  <div class="col-12">
-    <div class="text-center mb-5">
-      <i class="bi bi-graph-up fa-4x text-primary mb-3"></i>
-      <h2>Rapports et Analyses</h2>
-      <p class="text-muted">
-        Consultez les différents rapports d'activité et analyses financières
-      </p>
+    <div class="col-12">
+        <div class="text-center mb-5">
+            <i class="bi bi-graph-up fa-4x text-primary mb-3"></i>
+            <h2>Rapports et Analyses</h2>
+            <p class="text-muted">
+                Consultez les différents rapports d'activité et analyses financières
+            </p>
+        </div>
     </div>
-  </div>
 </div>
 
 <div class="row">
-  <!-- Rapport honoraires chirurgiens -->
-  <div class="col-lg-3 col-md-6 mb-4">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body text-center">
-        <div
-          class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-          style="width: 60px; height: 60px"
-        >
-          <i class="bi bi-cash-stack text-white fa-2x"></i>
+    <!-- Rapport honoraires chirurgiens -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px">
+                    <i class="bi bi-cash-stack text-white fa-2x"></i>
+                </div>
+                <h5 class="card-title">Honoraires Chirurgiens</h5>
+                <p class="card-text text-muted">
+                    Calcul des honoraires et rémunérations par période et chirurgien
+                </p>
+                <a href="/reports/surgeon-fees" class="btn btn-success">
+                    Consulter <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
         </div>
-        <h5 class="card-title">Honoraires Chirurgiens</h5>
-        <p class="card-text text-muted">
-          Calcul des honoraires et rémunérations par période et chirurgien
-        </p>
-        <a href="/reports/surgeon-fees" class="btn btn-success">
-          Consulter <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-      </div>
     </div>
-  </div>
 
-  <!-- Activité personnel médical -->
-  <div class="col-lg-3 col-md-6 mb-4">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body text-center">
-        <div
-          class="bg-info rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-          style="width: 60px; height: 60px"
-        >
-          <i class="bi bi-people text-white fa-2x"></i>
+    <!-- Activité personnel médical -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-info rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px">
+                    <i class="bi bi-people text-white fa-2x"></i>
+                </div>
+                <h5 class="card-title">Activité Personnel</h5>
+                <p class="card-text text-muted">
+                    Suivi de l'activité et participation du personnel médical
+                </p>
+                <a href="/reports/medical-staff-activity" class="btn btn-info">
+                    Consulter <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
         </div>
-        <h5 class="card-title">Activité Personnel</h5>
-        <p class="card-text text-muted">
-          Suivi de l'activité et participation du personnel médical
-        </p>
-        <a href="/reports/medical-staff-activity" class="btn btn-info">
-          Consulter <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-      </div>
     </div>
-  </div>
 
-  <!-- Consommation matériaux -->
-  <div class="col-lg-3 col-md-6 mb-4">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body text-center">
-        <div
-          class="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-          style="width: 60px; height: 60px"
-        >
-          <i class="bi bi-box text-white fa-2x"></i>
+    <!-- Consommation matériaux -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px">
+                    <i class="bi bi-box text-white fa-2x"></i>
+                </div>
+                <h5 class="card-title">Consommation Matériaux</h5>
+                <p class="card-text text-muted">
+                    Analyse des coûts et consommation des matériaux
+                </p>
+                <a href="/reports/material-consumption" class="btn btn-warning">
+                    Consulter <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
         </div>
-        <h5 class="card-title">Consommation Matériaux</h5>
-        <p class="card-text text-muted">
-          Analyse des coûts et consommation des matériaux
-        </p>
-        <a href="/reports/material-consumption" class="btn btn-warning">
-          Consulter <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-      </div>
     </div>
-  </div>
 
-  <!-- Statistiques générales -->
-  <div class="col-lg-3 col-md-6 mb-4">
-    <div class="card h-100 border-0 shadow-sm">
-      <div class="card-body text-center">
-        <div
-          class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-          style="width: 60px; height: 60px"
-        >
-          <i class="bi bi-bar-chart text-white fa-2x"></i>
+    <!-- Statistiques générales -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px">
+                    <i class="bi bi-bar-chart text-white fa-2x"></i>
+                </div>
+                <h5 class="card-title">Statistiques Générales</h5>
+                <p class="card-text text-muted">
+                    Tableaux de bord et statistiques d'activité globale
+                </p>
+                <a href="/reports/statistics" class="btn btn-primary">
+                    Consulter <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
         </div>
-        <h5 class="card-title">Statistiques Générales</h5>
-        <p class="card-text text-muted">
-          Tableaux de bord et statistiques d'activité globale
-        </p>
-        <a href="/reports/statistics" class="btn btn-primary">
-          Consulter <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-      </div>
     </div>
-  </div>
 </div>

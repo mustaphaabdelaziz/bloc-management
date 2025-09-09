@@ -33,8 +33,49 @@ module.exports.renderCreateSurgeonForm = async (req, res) => {
 
 module.exports.createSurgeon = async (req, res) => {
   try {
-    const surgeon = new Surgeon(req.body);
+    // Auto-generate surgeon code
+    const specialty = await Specialty.findById(req.body.specialty);
+    if (!specialty) {
+      const specialties = await Specialty.find().sort({ name: 1 });
+      return res.render("surgeons/new", {
+        title: "Nouveau Chirurgien",
+        surgeon: req.body,
+        specialties,
+        error: "Spécialité non trouvée",
+      });
+    }
+
+    // Generate code in format: S-SPECIALTYCODE-XXXX
+    const specialtyCode = specialty.code ? specialty.code.toUpperCase() : 'UNK';
+    const baseCode = `S-${specialtyCode}-`;
+
+    // Find the highest existing number for this specialty
+    const lastSurgeon = await Surgeon.findOne({
+      code: new RegExp(`^${baseCode}\\d{4}$`)
+    }).sort({ code: -1 });
+
+    let nextNumber = 1;
+    if (lastSurgeon) {
+      const codeParts = lastSurgeon.code.split('-');
+      if (codeParts.length === 3) {
+        const lastNumber = parseInt(codeParts[2]);
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1;
+        }
+      }
+    }
+
+    const generatedCode = `${baseCode}${nextNumber.toString().padStart(4, '0')}`;
+
+    // Create surgeon with auto-generated code
+    const surgeonData = {
+      ...req.body,
+      code: generatedCode
+    };
+
+    const surgeon = new Surgeon(surgeonData);
     await surgeon.save();
+
     res.redirect("/surgeons?success=Chirurgien créé avec succès");
   } catch (error) {
     const specialties = await Specialty.find().sort({ name: 1 });

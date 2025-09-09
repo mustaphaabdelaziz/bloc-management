@@ -25,10 +25,23 @@ module.exports.createSpecialty = async (req, res) => {
     await specialty.save();
     res.redirect("/specialties?success=Spécialité créée avec succès");
   } catch (error) {
+    let errorMessage = "Erreur lors de la création";
+    
+    // Handle specific validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      errorMessage = errors.join(', ');
+    } else if (error.code === 11000) {
+      // Duplicate key error
+      errorMessage = "Le code de spécialité existe déjà. Veuillez utiliser un code unique.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     res.render("specialties/new", {
       title: "Nouvelle Spécialité",
       specialty: req.body,
-      error: "Erreur lors de la création",
+      error: errorMessage,
     });
   }
 };

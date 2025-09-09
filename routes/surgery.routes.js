@@ -10,6 +10,7 @@ const {
   createSurgery,
   renderCreateSurgeryForm,
   calculateFees,
+  updateSurgeryStatus,
 } = require("../controller/surgery.controller");
 
 router.route("/").get(catchAsync(surgeryList)).post(catchAsync(createSurgery));
@@ -22,6 +23,7 @@ router
   .delete(catchAsync(deleteSurgery));
 
 router.post("/:id/calculate-fees", catchAsync(calculateFees));
+router.post("/:id/update-status", catchAsync(updateSurgeryStatus));
 router.get("/:id/edit", renderEditSurgeryForm);
 
 module.exports = router;

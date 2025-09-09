@@ -9,7 +9,7 @@
                 </h5>
                 <div>
                     <% if (surgery.status === 'planned') { %>
-                        <span class="badge bg-warning fs-6">Planifiée</span>
+                        <span class="badge bg-danger fs-6">Planifiée</span>
                     <% } else if (surgery.status === 'in-progress') { %>
                         <span class="badge bg-info fs-6">En cours</span>
                     <% } else if (surgery.status === 'completed') { %>
@@ -22,6 +22,7 @@
                 </div>
             </div>
             <div class="card-body">
+               
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <h6 class="text-muted">Code Chirurgie</h6>
@@ -34,6 +35,19 @@
                             <small class="text-muted">
                                 Fin: <%= moment(surgery.endDateTime).format('DD/MM/YYYY à HH:mm') %>
                             </small>
+                        <% } %>
+                        <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
+                            <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                            <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                            <% if (extraduration >= threshold) { %>
+                                <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                <div class="mt-2">
+                                    <span class="badge bg-danger text-white">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Frais dépassement: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %>
+                                    </span>
+                                </div>
+                            <% } %>
                         <% } %>
                     </div>
                 </div>
@@ -63,14 +77,49 @@
                             <div class="ms-4">
                                 <h5>Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %></h5>
                                 <p class="text-muted mb-0">Type contrat: 
-                                    <span class="badge <%= surgery.surgeon.contractType === 'allocation' ? 'bg-info' : 'bg-warning' %>">
-                                        <%= surgery.surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
+                                    <span class="badge <%= surgery.surgeon && surgery.surgeon.contractType === 'allocation' ? 'bg-info' : 'bg-warning' %>">
+                                        <%= surgery.surgeon && surgery.surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
                                     </span>
                                 </p>
                                 <% if (surgery.surgeon.contractType === 'allocation') { %>
-                                    <p class="text-muted mb-0">Taux: <%= surgery.surgeon.allocationRate || 0 %> DA/heure</p>
+                                    <p class="text-muted mb-0">Taux: <%= surgery.surgeon ? (surgery.surgeon.allocationRate || 0) : 0 %> DA/heure</p>
+                                    <small class="text-info">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Formule: Prestation - [(durée × taux allocation) + matériaux + frais personnels horaires]
+                                    </small>
+                                    <div class="mt-2 p-2 bg-info bg-opacity-10 rounded">
+                                        <small class="text-info fw-bold">
+                                            <i class="bi bi-cash me-1"></i>Le chirurgien paye à la clinique:
+                                        </small>
+                                        <% if (surgery.actualDuration) { %>
+                                            <% const durationHours = surgery.actualDuration / 60; %>
+                                            <% const allocationCost = durationHours * (surgery.surgeon.allocationRate || 0); %>
+                                            <% const materialsCost = surgery.consumedMaterials?.reduce((sum, mat) => sum + ((mat.material?.weightedPrice * mat.quantity) || 0), 0) || 0; %>
+                                            <% const personalFees = surgery.medicalStaff?.reduce((sum, staff) => sum + (staff.staff?.personalFee * durationHours || 0), 0) || 0; %>
+                                            <% const surgeonPays = allocationCost + materialsCost + personalFees; %>
+                                            <br><small class="text-info">
+                                                • Allocation: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(allocationCost) %>
+                                                (<%= durationHours.toFixed(2) %>h × <%= surgery.surgeon.allocationRate || 0 %> DA/h)
+                                            </small>
+                                            <br><small class="text-info">
+                                                • Matériaux: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(materialsCost) %>
+                                            </small>
+                                            <br><small class="text-info">
+                                                • Frais personnels: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(personalFees) %>
+                                            </small>
+                                            <br><small class="text-info fw-bold">
+                                                = Total: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeonPays) %>
+                                            </small>
+                                        <% } else { %>
+                                            <br><small class="text-muted">Calculera après la fin de la chirurgie</small>
+                                        <% } %>
+                                    </div>
                                 <% } else { %>
-                                    <p class="text-muted mb-0">Pourcentage: <%= surgery.surgeon.percentageRate || 0 %>%</p>
+                                    <p class="text-muted mb-0">Pourcentage: <%= surgery.surgeon ? (surgery.surgeon.percentageRate || 0) : 0 %>%</p>
+                                    <small class="text-danger">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Calcul: (<%= surgery.surgeon ? (surgery.surgeon.percentageRate || 0) : 0 %>% de (Prestation - Matériaux patient)) + Frais dépassement
+                                    </small>
                                 <% } %>
                             </div>
                         </div>
@@ -79,11 +128,11 @@
 
                 <!-- Prestation et durée -->
                 <div class="mb-4">
-                    <h6 class="fw-bold text-warning">
+                    <h6 class="fw-bold text-danger">
                         <i class="bi bi-list-check me-2"></i>Prestation
                     </h6>
                     <div class="ms-4">
-                        <h5><%= surgery.prestation.designation %></h5>
+                        <h5><%= surgery.prestation ? surgery.prestation.designation : 'Prestation non définie' %></h5>
                         <div class="row">
                             <div class="col-md-4">
                                 <p class="text-muted mb-0">Durée prévue: <strong><%= surgery.prestation.duration %> minutes</strong></p>
@@ -92,14 +141,14 @@
                                 <% const actualDuration = Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000); %>
                                 <div class="col-md-4">
                                     <p class="text-muted mb-0">Durée réelle: 
-                                        <strong class="<%= actualDuration > surgery.prestation.duration ? 'text-warning' : 'text-success' %>">
+                                        <strong class="<%= actualDuration > surgery.prestation.duration ? 'text-danger' : 'text-success' %>">
                                             <%= actualDuration %> minutes
                                         </strong>
                                     </p>
                                 </div>
                                 <% if (actualDuration > surgery.prestation.duration) { %>
                                     <div class="col-md-4">
-                                        <p class="text-warning mb-0">
+                                        <p class="text-danger mb-0">
                                             <i class="bi bi-exclamation-triangle me-1"></i>
                                             Dépassement: <strong>+<%= actualDuration - surgery.prestation.duration %> minutes</strong>
                                         </p>
@@ -108,10 +157,32 @@
                             <% } %>
                         </div>
                         <p class="text-muted mb-0">Prix HT: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) %></strong></p>
-                        <% if (surgery.applyExtraFees) { %>
-                            <p class="text-warning mb-0">
-                                <i class="bi bi-info-circle me-1"></i>Frais supplémentaires appliqués pour dépassement
+                        <% if (surgery.status === 'urgent' && surgery.prestation.urgentFee > 0) { %>
+                            <p class="text-danger mb-0">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Frais urgents: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.urgentFee) %></strong>
                             </p>
+                        <% } %>
+                        <% if (surgery.applyExtraFees) { %>
+                            <p class="text-danger mb-0">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                <strong>Frais supplémentaires appliqués</strong> pour dépassement de durée
+                            </p>
+                            <% if (surgery.actualDuration > surgery.prestation.duration) { %>
+                                <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                                <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                                <% if (extraduration >= threshold) { %>
+                                    <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                    <p class="text-danger small mb-0">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Durée dépassée: <%= extraduration %> min | Frais: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %>
+                                    </p>
+                                <% } else { %>
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Durée dépassée: <%= extraduration %> min (seuil non atteint: <%= threshold %> min)
+                                    </p>
+                                <% } %>
+                            <% } %>
                         <% } %>
                     </div>
                 </div>
@@ -141,20 +212,278 @@
                 </h6>
             </div>
             <div class="card-body">
-                <% if (surgery.surgeonAmount > 0) { %>
+                <% if (surgery.surgeonAmount && !isNaN(surgery.surgeonAmount) && surgery.surgeonAmount > 0) { %>
                     <div class="text-center">
                         <h2 class="text-success">
                             <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount) %>
                         </h2>
-                        <p class="text-muted mb-0">Montant calculé</p>
+                        <p class="text-muted mb-0">Montant total chirurgien</p>
                         <small class="text-muted">
                             Méthode: <%= surgery.surgeon.contractType === 'allocation' ? 'Allocation salle' : 'Pourcentage' %>
+                            <% if (surgery.status === 'urgent') { %>
+                                <br><span class="text-danger">• Chirurgie urgente</span>
+                            <% } else if (surgery.status === 'in-progress') { %>
+                                <br><span class="text-info">• Estimation en cours (-20%)</span>
+                            <% } else if (surgery.status === 'completed') { %>
+                                <br><span class="text-success">• Calcul définitif</span>
+                            <% } %>
                         </small>
+                    </div>
+                    
+                    <!-- Détail des honoraires -->
+                    <div class="fee-breakdown mt-3 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-primary mb-0">
+                                <i class="bi bi-calculator me-2"></i>Répartition des honoraires
+                            </h6>
+                            <span class="badge bg-success">
+                                <i class="bi bi-shield-check me-1"></i>Extra Fees Display Enhanced
+                            </span>
+                        </div>
+                        
+                        <!-- Frais dépassement - Section dédiée -->
+                        <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
+                            <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                            <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                            <div class="mb-3 p-3 rounded <%= extraduration >= threshold ? 'bg-danger bg-opacity-10 border border-danger' : 'bg-info bg-opacity-10 border border-info' %>">
+                                <h6 class="mb-2 <%= extraduration >= threshold ? 'text-danger' : 'text-info' %>">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Frais de dépassement
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Durée prévue:</small>
+                                        <br><strong><%= surgery.prestation.duration %> min</strong>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Durée réelle:</small>
+                                        <br><strong><%= surgery.actualDuration %> min</strong>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Dépassement:</small>
+                                        <br><strong><%= extraduration %> min</strong>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Seuil d'application:</small>
+                                        <br><strong><%= threshold %> min</strong>
+                                    </div>
+                                </div>
+                                <% if (extraduration >= threshold) { %>
+                                    <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                    <div class="mt-3 p-2 bg-danger bg-opacity-25 rounded">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span><strong>Frais dépassement appliqués:</strong></span>
+                                            <span class="badge bg-danger text-white fs-6">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %>
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">
+                                            Calcul: (<%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.exceededDurationFee || 0) %> × <%= extraduration %> min) ÷ <%= threshold %> min
+                                        </small>
+                                    </div>
+                                <% } else { %>
+                                    <div class="mt-3 p-2 bg-info bg-opacity-25 rounded">
+                                        <small class="text-info">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Le dépassement est inférieur au seuil requis. Aucun frais supplémentaire n'est appliqué.
+                                        </small>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% } %>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <p class="mb-1 small">Prix de base HT: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) %></strong></p>
+                                <% if (surgery.status === 'urgent' && surgery.prestation.urgentFee > 0) { %>
+                                    <p class="mb-1 small text-danger">Frais urgents: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.urgentFee) %></strong></p>
+                                    <p class="mb-1 small">Total HT: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT + surgery.prestation.urgentFee) %></strong></p>
+                                <% } else { %>
+                                    <p class="mb-1 small">Total HT: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) %></strong></p>
+                                <% } %>
+
+                                <!-- Surgeon Amount Breakdown -->
+                                <% if (surgery.surgeon.contractType === 'percentage') { %>
+                                    <% const baseAmount = surgery.prestation.priceHT - (surgery.consumedMaterials?.reduce((sum, mat) => sum + ((mat.material?.category === 'patient' ? mat.material?.weightedPrice * mat.quantity : 0) || 0), 0) || 0); %>
+                                    <% const surgeonPercentage = surgery.surgeon.percentageRate || 0; %>
+                                    <% const baseSurgeonAmount = baseAmount * surgeonPercentage / 100; %>
+                                    <p class="mb-1 small">Honoraires chirurgien de base: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseSurgeonAmount) %></strong></p>
+
+                                    <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
+                                        <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                                        <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                                        <% if (extraduration >= threshold) { %>
+                                            <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                            <p class="mb-1 small text-danger">+ Frais supplémentaires: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %></strong></p>
+                                            <p class="mb-1 small border-top pt-1">Total honoraires chirurgien: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount || 0) %></strong></p>
+                                        <% } else { %>
+                                            <p class="mb-1 small">Total honoraires chirurgien: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount || 0) %></strong></p>
+                                        <% } %>
+                                    <% } else { %>
+                                        <p class="mb-1 small">Total honoraires chirurgien: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount || 0) %></strong></p>
+                                    <% } %>
+                                <% } else { %>
+                                    <p class="mb-1 small">Honoraires chirurgien: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount || 0) %></strong></p>
+                                <% } %>
+
+                                <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
+                                    <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                                    <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                                    <% if (extraduration >= threshold) { %>
+                                        <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                        <p class="mb-1 small text-danger">
+                                            <i class="bi bi-plus-circle me-1"></i>
+                                            Dont frais dépassement: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %></strong>
+                                        </p>
+                                    <% } %>
+                                <% } %>
+                                
+                                <!-- Divider between surgeon and clinic parts -->
+                                <hr class="my-2">
+                                
+                                <p class="mb-1 small">Montant clinique: <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.clinicAmount || 0) %></strong></p>
+                                
+                                <% if (surgery.surgeon.contractType === 'allocation') { %>
+                                    <!-- Allocation Method Details -->
+                                    <div class="mt-2 p-2 bg-info bg-opacity-10 rounded border-start border-info border-3">
+                                        <h6 class="text-info mb-2">
+                                            <i class="bi bi-cash me-1"></i>Détail du paiement du chirurgien à la clinique
+                                        </h6>
+                                        <% if (surgery.actualDuration) { %>
+                                            <% const durationHours = surgery.actualDuration / 60; %>
+                                            <% const allocationCost = durationHours * (surgery.surgeon.allocationRate || 0); %>
+                                            <% const materialsCost = surgery.consumedMaterials?.reduce((sum, mat) => sum + ((mat.material?.weightedPrice * mat.quantity) || 0), 0) || 0; %>
+                                            <% const personalFees = surgery.medicalStaff?.reduce((sum, staff) => sum + (staff.staff?.personalFee * durationHours || 0), 0) || 0; %>
+                                            <% const surgeonPays = allocationCost + materialsCost + personalFees; %>
+                                            
+                                            <div class="mb-2">
+                                                <small class="text-muted d-block">
+                                                    <i class="bi bi-clock me-1"></i>Allocation salle: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(allocationCost) %>
+                                                    (<%= durationHours.toFixed(2) %>h × <%= surgery.surgeon.allocationRate || 0 %> DA/h)
+                                                </small>
+                                                <small class="text-muted d-block">
+                                                    <i class="bi bi-box me-1"></i>Matériaux: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(materialsCost) %>
+                                                </small>
+                                                <small class="text-muted d-block">
+                                                    <i class="bi bi-people me-1"></i>Frais personnels horaires: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(personalFees) %>
+                                                </small>
+                                                <small class="text-info fw-bold d-block border-top pt-1">
+                                                    <i class="bi bi-calculator me-1"></i>Total payé par le chirurgien: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeonPays) %>
+                                                </small>
+                                            </div>
+                                            <% if (surgery.status === 'urgent') { %>
+                                                <div class="mt-1">
+                                                    <small class="text-warning d-block">
+                                                        <i class="bi bi-exclamation-triangle me-1"></i>Frais urgents: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.urgentFee || 0) %> (perçus par la clinique)
+                                                    </small>
+                                                </div>
+                                            <% } %>
+                                            <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
+                                                <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                                                <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                                                <% if (extraduration >= threshold) { %>
+                                                    <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                                    <div class="mt-1">
+                                                        <small class="text-warning d-block">
+                                                            <i class="bi bi-plus-circle me-1"></i>Frais dépassement: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %> (perçus par la clinique)
+                                                        </small>
+                                                    </div>
+                                                <% } %>
+                                            <% } %>
+                                        <% } else { %>
+                                            <small class="text-muted">Le détail sera disponible après la fin de la chirurgie</small>
+                                        <% } %>
+                                    </div>
+                                <% } %>
+                                
+                                <% if (surgery.surgeon.contractType === 'percentage') { %>
+                                    <!-- Surgeon Part Details -->
+                                    <div class="mt-2 p-2 bg-primary bg-opacity-10 rounded border-start border-primary border-3">
+                                        <h6 class="text-primary mb-2">
+                                            <i class="bi bi-person-circle me-1"></i>Détail Honoraires Chirurgien
+                                        </h6>
+
+                                        <!-- Base Calculation -->
+                                        <% const baseAmount = surgery.prestation.priceHT - (surgery.consumedMaterials?.reduce((sum, mat) => sum + ((mat.material?.category === 'patient' ? mat.material?.weightedPrice * mat.quantity : 0) || 0), 0) || 0); %>
+                                        <% const surgeonPercentage = surgery.surgeon.percentageRate || 0; %>
+                                        <% const baseSurgeonAmount = baseAmount * surgeonPercentage / 100; %>
+
+                                        <div class="mb-3">
+                                            <h6 class="text-primary mb-2 small">
+                                                <i class="bi bi-calculator me-1"></i>Calcul de Base
+                                            </h6>
+                                            <small class="text-muted d-block">Base calcul: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseAmount) %></small>
+                                            <small class="text-muted d-block">Pourcentage chirurgien: <%= surgeonPercentage %>%</small>
+                                            <small class="text-muted d-block">Montant de base: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseAmount) %> × <%= surgeonPercentage %>% = <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseSurgeonAmount) %></strong></small>
+                                        </div>
+
+                                        <!-- Extra Fees Section -->
+                                        <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
+                                            <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
+                                            <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
+                                            <% if (extraduration >= threshold) { %>
+                                                <% const extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
+                                                <div class="mb-3 p-2 bg-danger bg-opacity-10 rounded border border-danger">
+                                                    <h6 class="text-danger mb-2 small">
+                                                        <i class="bi bi-exclamation-triangle me-1"></i>Frais Supplémentaires
+                                                    </h6>
+                                                    <small class="text-muted d-block">Durée dépassée: <%= extraduration %> min (seuil: <%= threshold %> min)</small>
+                                                    <small class="text-muted d-block">Frais dépassement: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.exceededDurationFee || 0) %> × <%= extraduration %> ÷ <%= threshold %> = <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %></strong></small>
+                                                </div>
+
+                                                <!-- Total Calculation -->
+                                                <div class="mt-3 p-2 bg-success bg-opacity-10 rounded border border-success">
+                                                    <h6 class="text-success mb-2 small">
+                                                        <i class="bi bi-plus-circle me-1"></i>Total Honoraires Chirurgien
+                                                    </h6>
+                                                    <small class="text-muted d-block">Base: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseSurgeonAmount) %></small>
+                                                    <small class="text-muted d-block">+ Frais supplémentaires: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %></small>
+                                                    <small class="text-muted d-block"><strong>Total: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseSurgeonAmount + extraFees) %></strong></small>
+                                                </div>
+                                            <% } else { %>
+                                                <!-- No Extra Fees Applied -->
+                                                <div class="mb-3 p-2 bg-info bg-opacity-10 rounded border border-info">
+                                                    <small class="text-info">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Dépassement insuffisant (<%= extraduration %> min < <%= threshold %> min). Aucun frais supplémentaire.
+                                                    </small>
+                                                </div>
+                                            <% } %>
+                                        <% } %>
+                                    </div>
+                                    
+                                    <!-- Clinic Part Details -->
+                                    <div class="mt-2 p-2 bg-success bg-opacity-10 rounded border-start border-success border-3">
+                                        <h6 class="text-success mb-2">
+                                            <i class="bi bi-building me-1"></i>Détail Part Clinique
+                                        </h6>
+                                        <% const clinicBase = baseAmount * (1 - surgeonPercentage / 100); %>
+                                        <small class="text-muted d-block">Part clinique de base: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicBase) %></small>
+                                        <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+                                            <% const personalFees = surgery.medicalStaff.reduce((sum, staff) => sum + (staff.staff.personalFee * ((surgery.actualDuration || 0) / 60)), 0); %>
+                                            <small class="text-muted d-block">+ Frais personnels: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(personalFees) %></small>
+                                        <% } %>
+                                        <% if (surgery.status === 'urgent' && surgery.prestation.urgentFee > 0) { %>
+                                            <small class="text-muted d-block">+ Frais urgents: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.urgentFee) %></small>
+                                        <% } %>
+                                        <% const clinicMaterials = (surgery.consumedMaterials?.reduce((sum, mat) => sum + ((mat.material?.category !== 'patient' ? mat.material?.weightedPrice * mat.quantity : 0) || 0), 0) || 0); %>
+                                        <% if (clinicMaterials > 0) { %>
+                                            <small class="text-muted d-block">+ Matériaux clinique: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicMaterials) %></small>
+                                        <% } %>
+                                    </div>
+                                <% } %>
+                                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+                                    <p class="mb-1 small">Personnel médical (horaire): <strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.medicalStaff.reduce((sum, staff) => sum + (staff.staff.personalFee * ((surgery.actualDuration || 0) / 60)), 0)) %></strong></p>
+                                <% } %>
+                            </div>
+                        </div>
                     </div>
                 <% } else { %>
                     <div class="text-center text-muted">
                         <i class="bi bi-calculator fa-3x mb-3"></i>
                         <p>Honoraires non calculés</p>
+                        <small>Les honoraires seront calculés automatiquement</small>
                     </div>
                 <% } %>
                 
@@ -163,6 +492,63 @@
                         <i class="bi bi-calculator me-2"></i>Recalculer
                     </button>
                 </form>
+            </div>
+        </div>
+
+        <!-- Informations sur le statut -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Statut et Implications
+                </h6>
+            </div>
+            <div class="card-body">
+                <% if (surgery.status === 'urgent') { %>
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle me-2"></i>Chirurgie Urgente</h6>
+                        <ul class="mb-0">
+                            <li>Frais urgents automatiquement appliqués</li>
+                            <li>Majoration de 20% sur les honoraires</li>
+                            <li>Traitement prioritaire</li>
+                        </ul>
+                    </div>
+                <% } else if (surgery.status === 'in-progress') { %>
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-play-circle me-2"></i>Chirurgie en Cours</h6>
+                        <ul class="mb-0">
+                            <li>Calcul estimatif des honoraires (-20%)</li>
+                            <li>Matériaux en cours de consommation</li>
+                            <li>Durée en cours de calcul</li>
+                        </ul>
+                    </div>
+                <% } else if (surgery.status === 'completed') { %>
+                    <div class="alert alert-success">
+                        <h6><i class="bi bi-check-circle me-2"></i>Chirurgie Terminée</h6>
+                        <ul class="mb-0">
+                            <li>Calcul définitif des honoraires</li>
+                            <li>Tous les frais appliqués</li>
+                            <li>Stock des matériaux mis à jour</li>
+                        </ul>
+                    </div>
+                <% } else if (surgery.status === 'planned') { %>
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-calendar me-2"></i>Chirurgie Planifiée</h6>
+                        <ul class="mb-0">
+                            <li>Honoraires non encore calculés</li>
+                            <li>Matériaux réservés</li>
+                            <li>Personnel assigné</li>
+                        </ul>
+                    </div>
+                <% } else { %>
+                    <div class="alert alert-secondary">
+                        <h6><i class="bi bi-x-circle me-2"></i>Chirurgie Annulée</h6>
+                        <ul class="mb-0">
+                            <li>Aucun frais appliqué</li>
+                            <li>Matériaux non consommés</li>
+                            <li>Personnel libéré</li>
+                        </ul>
+                    </div>
+                <% } %>
             </div>
         </div>
 
@@ -175,19 +561,39 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <% surgery.medicalStaff.forEach(staff => { %>
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="bi bi-person-check me-2 text-primary"></i>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold">
-                                    <%= staff.staff.firstName %> <%= staff.staff.lastName %>
+                    <% 
+                    const durationInHours = surgery.actualDuration ? surgery.actualDuration / 60 : 0;
+                    surgery.medicalStaff.forEach(staff => { 
+                    %>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-check me-2 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold">
+                                        <%= staff.staff.firstName %> <%= staff.staff.lastName %>
+                                    </div>
+                                    <small class="text-muted">
+                                        <%= staff.rolePlayedId.name %>
+                                    </small>
                                 </div>
+                            </div>
+                            <div class="text-end">
                                 <small class="text-muted">
-                                    <%= staff.rolePlayedId.name %>
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(staff.staff.personalFee) %>/h × <%= durationInHours.toFixed(1) %>h
                                 </small>
+                                <div class="fw-bold text-success">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(staff.staff.personalFee * durationInHours) %>
+                                </div>
                             </div>
                         </div>
                     <% }); %>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Total frais personnels:</strong>
+                        <strong class="text-success">
+                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.medicalStaff.reduce((sum, staff) => sum + (staff.staff.personalFee * durationInHours), 0)) %>
+                        </strong>
+                    </div>
                 </div>
             </div>
         <% } %>
@@ -195,7 +601,7 @@
         <!-- Matériaux consommés -->
         <% if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) { %>
             <div class="card mb-4">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header bg-info text-dark">
                     <h6 class="mb-0">
                         <i class="bi bi-box me-2"></i>Matériaux Consommés
                     </h6>
@@ -226,7 +632,7 @@
                     <hr>
                     <div class="d-flex justify-content-between">
                         <strong>Total Matériaux:</strong>
-                        <strong class="text-warning"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalMaterialCost) %></strong>
+                        <strong class="text-danger"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalMaterialCost) %></strong>
                     </div>
                 </div>
             </div>

@@ -8,17 +8,29 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="/specialties">
+                <% if (error) { %>
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <%= error %>
+                    </div>
+                <% } %>
+                <form method="POST" action="/specialties" onsubmit="return validateForm()">
                     <div class="mb-3">
                         <label for="code" class="form-label">Code *</label>
-                        <input type="text" class="form-control" id="code" name="code" value="<%= specialty.code || '' %>" required>
-                        <div class="form-text">Code unique pour identifier la spécialité</div>
+                        <input type="text" class="form-control" id="code" name="code" value="<%= specialty.code || '' %>" required maxlength="10">
+                        <div class="form-text">Code unique pour identifier la spécialité (max 10 caractères)</div>
                     </div>
                     
                     <div class="mb-3">
                         <label for="name" class="form-label">Nom *</label>
-                        <input type="text" class="form-control" id="name" name="name" value="<%= specialty.name || '' %>" required>
-                        <div class="form-text">Nom complet de la spécialité médicale</div>
+                        <input type="text" class="form-control" id="name" name="name" value="<%= specialty.name || '' %>" required maxlength="100">
+                        <div class="form-text">Nom complet de la spécialité médicale (max 100 caractères)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" maxlength="500"><%= specialty.description || '' %></textarea>
+                        <div class="form-text">Description détaillée de la spécialité (optionnel, max 500 caractères)</div>
                     </div>
                     
                     <div class="d-flex justify-content-between">
@@ -34,3 +46,36 @@
         </div>
     </div>
 </div>
+
+<script>
+function validateForm() {
+    const code = document.getElementById('code').value.trim();
+    const name = document.getElementById('name').value.trim();
+    
+    if (!code) {
+        alert('Le code de spécialité est obligatoire.');
+        document.getElementById('code').focus();
+        return false;
+    }
+    
+    if (!name) {
+        alert('Le nom de spécialité est obligatoire.');
+        document.getElementById('name').focus();
+        return false;
+    }
+    
+    if (code.length > 10) {
+        alert('Le code ne peut pas dépasser 10 caractères.');
+        document.getElementById('code').focus();
+        return false;
+    }
+    
+    if (name.length > 100) {
+        alert('Le nom ne peut pas dépasser 100 caractères.');
+        document.getElementById('name').focus();
+        return false;
+    }
+    
+    return true;
+}
+</script>
