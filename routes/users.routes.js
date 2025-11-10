@@ -1,0 +1,84 @@
+const express = require("express");
+const router = express.Router();
+const catchAsync = require("../utils/catchAsync");
+const User = require("../models/User");
+const { isLoggedIn } = require("../middleware/auth");
+const { ensureAdmin } = require('../middleware/rbac');
+
+// Show all users (admin only)
+router.get("/", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
+    const users = await User.find({}).select('-password');
+    res.render("users/index", {
+        title: "Gestion des Utilisateurs",
+        currentUser: req.user,
+        users
+    });
+}));
+
+// Show user details (admin only)
+router.get("/:id", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+        req.flash('error', 'Utilisateur non trouvé');
+        return res.redirect('/users');
+    }
+    res.render("users/show", {
+        title: `Utilisateur: ${user.firstname} ${user.lastname}`,
+        currentUser: req.user,
+        user
+    });
+}));
+
+// Show edit user form (admin only)
+router.get("/:id/edit", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+        req.flash('error', 'Utilisateur non trouvé');
+        return res.redirect('/users');
+    }
+    res.render("users/edit", {
+        title: "Modifier Utilisateur",
+        currentUser: req.user,
+        user
+    });
+}));
+
+// Update user (admin only)
+router.put("/:id", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
+    const { firstname, lastname, username, privileges } = req.body;
+    const user = await User.findByIdAndUpdate(req.params.id, {
+        firstname,
+        lastname,
+        username,
+        privileges: privileges ? privileges.split(',').map(p => p.trim()) : []
+    }, { new: true });
+
+    if (!user) {
+        req.flash('error', 'Utilisateur non trouvé');
+        return res.redirect('/users');
+    }
+
+    req.flash('success', 'Utilisateur modifié avec succès');
+    res.redirect(`/users/${user._id}`);
+}));
+
+// Delete user (admin only)
+router.delete("/:id", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        req.flash('error', 'Utilisateur non trouvé');
+        return res.redirect('/users');
+    }
+
+    // Prevent deleting the current admin user
+    if (user._id.equals(req.user._id)) {
+        req.flash('error', 'Vous ne pouvez pas supprimer votre propre compte');
+        return res.redirect('/users');
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    req.flash('success', 'Utilisateur supprimé avec succès');
+    res.redirect('/users');
+}));
+
+module.exports = router;

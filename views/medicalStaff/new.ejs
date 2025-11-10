@@ -47,10 +47,40 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="personalFee" class="form-label">Frais personnels (DA)</label>
-                        <input type="number" class="form-control" id="personalFee" name="personalFee" 
-                               value="<%= staff.personalFee || 0 %>" min="0" step="0.01">
-                        <div class="form-text">Frais personnels facturés au chirurgien pour allocation horaire</div>
+                        <label for="personalFee" class="form-label">
+                            Frais personnels - Taux horaire (DA/heure)
+                            <i class="bi bi-clock-history text-info ms-1" title="Tarif horaire pour les chirurgies en allocation"></i>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="personalFee" name="personalFee" 
+                                   value="<%= staff.personalFee || 0 %>" min="0" step="0.01" 
+                                   placeholder="0.00">
+                            <span class="input-group-text">DA/h</span>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            <strong>Tarif horaire</strong> facturé au chirurgien pour les interventions en régime d'allocation.
+                            <br><small class="text-muted">
+                                Le montant total sera calculé automatiquement : <strong>Taux horaire × Durée effective</strong>
+                            </small>
+                        </div>
+                        
+                        <!-- Live Calculation Preview -->
+                        <div id="calculationPreview" class="mt-3 p-3 bg-light rounded d-none">
+                            <h6 class="text-info mb-2">
+                                <i class="bi bi-calculator me-1"></i>Aperçu du calcul
+                            </h6>
+                            <div class="row text-sm">
+                                <div class="col-md-6">
+                                    <strong>Pour une intervention de 2h :</strong><br>
+                                    <span id="calc2h" class="text-success">0 DA</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Pour une intervention de 4h :</strong><br>
+                                    <span id="calc4h" class="text-success">0 DA</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Fonctions -->
@@ -96,3 +126,29 @@
         </div>
     </div>
 </div>
+
+<script>
+// Live calculation preview for personal fee
+document.getElementById('personalFee').addEventListener('input', function() {
+    const rate = parseFloat(this.value) || 0;
+    const preview = document.getElementById('calculationPreview');
+    const calc2h = document.getElementById('calc2h');
+    const calc4h = document.getElementById('calc4h');
+    
+    if (rate > 0) {
+        calc2h.textContent = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(rate * 2);
+        calc4h.textContent = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(rate * 4);
+        preview.classList.remove('d-none');
+    } else {
+        preview.classList.add('d-none');
+    }
+});
+
+// Trigger calculation on page load if there's a value
+document.addEventListener('DOMContentLoaded', function() {
+    const personalFeeInput = document.getElementById('personalFee');
+    if (personalFeeInput.value) {
+        personalFeeInput.dispatchEvent(new Event('input'));
+    }
+});
+</script>

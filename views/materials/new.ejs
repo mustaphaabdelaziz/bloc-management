@@ -9,7 +9,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="/materials">
+                <form method="POST" action="/materials" onsubmit="console.log('Form data:', new FormData(this)); return true;">
                     <div class="row">
                     <div class="row">
                       
@@ -68,15 +68,17 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="specialty" class="form-label">Spécialité</label>
-                                <select name="specialty" id="specialty" class="form-select">
-                                    <option value="" data-code="GEN">Matériau général (toutes spécialités)</option>
+                                <label for="specialty" class="form-label">Spécialités</label>
+                                <select name="specialty" id="specialty" class="form-select" multiple size="4">
                                     <% specialties.forEach(specialty => { %>
-                                        <option value="<%= specialty._id %>" data-code="<%= specialty.code %>" <%= material.specialty === specialty._id ? 'selected' : '' %>>
-                                            <%= specialty.name %>
+                                        <option value="<%= specialty._id %>" <%= (material.specialty && material.specialty.includes(specialty._id)) ? 'selected' : '' %>>
+                                            <%= specialty.name %> (<%= specialty.code %>)
                                         </option>
                                     <% }); %>
                                 </select>
+                                <div class="form-text">
+                                    <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -102,28 +104,61 @@
 </div>
 
 <script>
+// Update specialty field behavior based on category
+document.getElementById('category').addEventListener('change', function() {
+    const category = this.value;
+    const specialtySelect = document.getElementById('specialty');
+    const specialtyLabel = specialtySelect.previousElementSibling;
+
+    if (category === 'consumable') {
+        specialtyLabel.innerHTML = 'Spécialités <small class="text-muted">(optionnel pour les consommables)</small>';
+        specialtySelect.required = false;
+    } else if (category === 'patient') {
+        specialtyLabel.innerHTML = 'Spécialités <small class="text-warning">(recommandé pour les matériels patient)</small>';
+        specialtySelect.required = false; // Still optional but recommended
+    } else {
+        specialtyLabel.innerHTML = 'Spécialités';
+        specialtySelect.required = false;
+    }
+});
+
 // Update code preview when specialty changes
 document.getElementById('specialty').addEventListener('change', function() {
     const specialtySelect = this;
-    const selectedOption = specialtySelect.options[specialtySelect.selectedIndex];
-    const specialtyCode = selectedOption.getAttribute('data-code') || 'GEN';
-    const codeField = document.getElementById('code');
-    
-    // Show preview of what the code will look like
-    codeField.value = `MAT-${specialtyCode}-XXX (sera généré automatiquement)`;
+    const selectedOptions = Array.from(specialtySelect.selectedOptions);
+
+    if (selectedOptions.length === 0) {
+        // No specialties selected - use GEN
+        updateCodePreview('GEN');
+    } else if (selectedOptions.length === 1) {
+        // Single specialty selected
+        const specialtyCode = selectedOptions[0].getAttribute('data-code') || selectedOptions[0].textContent.split('(')[1]?.replace(')', '') || 'GEN';
+        updateCodePreview(specialtyCode);
+    } else {
+        // Multiple specialties selected - use MUL for multiple
+        updateCodePreview('MUL');
+    }
 });
 
-// Initialize code preview on page load
+function updateCodePreview(specialtyCode) {
+    const codeField = document.getElementById('code');
+    if (codeField) {
+        codeField.value = `MAT-${specialtyCode}-XXX (sera généré automatiquement)`;
+    }
+}
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Trigger category change to set initial state
+    const categorySelect = document.getElementById('category');
+    if (categorySelect.value) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
+
+    // Initialize code preview
     const specialtySelect = document.getElementById('specialty');
     if (specialtySelect) {
-        const selectedOption = specialtySelect.options[specialtySelect.selectedIndex];
-        const specialtyCode = selectedOption ? (selectedOption.getAttribute('data-code') || 'GEN') : 'GEN';
-        const codeField = document.getElementById('code');
-        
-        if (codeField && !codeField.value) {
-            codeField.value = `MAT-${specialtyCode}-XXX (sera généré automatiquement)`;
-        }
+        specialtySelect.dispatchEvent(new Event('change'));
     }
 });
 </script>

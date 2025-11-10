@@ -16,6 +16,26 @@ module.exports.locals = (req, res, next) => {
   res.locals.currentUser = req.user;
   res.locals.user = req.user;
 
+  // Compute permission flags for templates so views can show/hide menus consistently
+  const privileges = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+  const permissions = {
+    isLoggedIn: req.isAuthenticated && req.isAuthenticated(),
+    isAdmin: privileges.includes('admin'),
+    isMedecin: privileges.includes('medecin'),
+    isAcheteur: privileges.includes('acheteur'),
+    isChefBloc: privileges.includes('chefBloc'),
+    isTechnicien: privileges.includes('technicien'),
+    isAssistant: privileges.includes('assistant'),
+  };
+  // Convenience derived flags
+  permissions.onlyAcheteur = permissions.isAcheteur && !permissions.isAdmin && !permissions.isMedecin && !permissions.isChefBloc && !permissions.isTechnicien && !permissions.isAssistant;
+  // General abilities
+  permissions.canManageMaterials = permissions.isAdmin || permissions.isAcheteur;
+  permissions.canManageSurgeries = permissions.isAdmin || permissions.isChefBloc;
+  permissions.canManageUsers = permissions.isAdmin;
+
+  res.locals.permissions = permissions;
+
   // Get flash messages without consuming them first
   const successMessages = req.flash("success");
   const errorMessages = req.flash("error");

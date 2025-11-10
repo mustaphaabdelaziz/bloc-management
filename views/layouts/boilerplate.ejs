@@ -135,18 +135,44 @@
                         <i class="fas fa-hospital-alt fa-2x text-white me-2"></i>
                         <h4 class="text-white mb-0">Bloc Op.</h4>
                     </div>
+
+                    <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+                    <div class="user-info mb-4 p-3 bg-white bg-opacity-10 rounded">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-4 text-white me-2"></i>
+                            <div>
+                                <small class="text-white-50">Connecté en tant que</small>
+                                <div class="text-white fw-bold"><%= currentUser.firstname %> <%= currentUser.lastname %></div>
+                                <small class="text-white-75">
+                                    <% if (currentUser.privileges && currentUser.privileges.length > 0) { %>
+                                        <%= currentUser.privileges.join(', ') %>
+                                    <% } else { %>
+                                        Aucun privilège
+                                    <% } %>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
                     
+                    <% const onlyAcheteur = (typeof permissions !== 'undefined' && permissions.onlyAcheteur) || false; %>
                     <nav class="nav flex-column">
+                        <!-- Dashboard - Available to all users -->
                         <a class="nav-link" href="/">
                             <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
                         </a>
                         
                         <hr class="text-white-50">
                         
+                        <!-- Patients - All can view, only admin/chefBloc can modify -->
+                        <% if (!onlyAcheteur) { %>
                         <a class="nav-link" href="/patients">
                             <i class="bi bi-person me-2"></i> Patients
                         </a>
+                        <% } %>
                         
+                        <!-- Surgeons - Admin and chefBloc only -->
+                        <% if (typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isChefBloc) && !onlyAcheteur) { %>
                         <a class="nav-link" href="/surgeons">
                             <i class="bi bi-person-badge me-2"></i> Chirurgiens
                         </a>
@@ -154,21 +180,31 @@
                         <a class="nav-link" href="/medical-staff">
                             <i class="bi bi-people me-2"></i> Personnel Médical
                         </a>
+                        <% } %>
                         
                         <hr class="text-white-50">
                         
+                        <!-- Surgeries - All can view (filtered by role in controller) -->
+                        <% if (!onlyAcheteur) { %>
                         <a class="nav-link" href="/surgeries">
                             <i class="bi bi-scissors me-2"></i> Chirurgies
                         </a>
+                        <% } %>
                         
+                        <!-- Prestations - Admin and chefBloc only -->
+                        <% if (typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isChefBloc) && !onlyAcheteur) { %>
                         <a class="nav-link" href="/prestations">
                             <i class="bi bi-list-check me-2"></i> Prestations
                         </a>
+                        <% } %>
                         
+                        <!-- Materials - All can view, only admin/acheteur can modify -->
                         <a class="nav-link" href="/materials">
                             <i class="bi bi-box me-2"></i> Matériaux
                         </a>
                         
+                        <!-- Administrative sections - Admin only -->
+                        <% if (typeof permissions !== 'undefined' && permissions.isAdmin) { %>
                         <hr class="text-white-50">
                         
                         <a class="nav-link" href="/specialties">
@@ -178,7 +214,10 @@
                         <a class="nav-link" href="/fonctions">
                             <i class="bi bi-person-workspace me-2"></i> Fonctions
                         </a>
+                        <% } %>
                         
+                        <!-- Reports - Admin and chefBloc can access all, medecin only personal -->
+                        <% if (typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isChefBloc) && !onlyAcheteur) { %>
                         <hr class="text-white-50">
                         
                         <div class="dropdown">
@@ -186,13 +225,48 @@
                                 <i class="bi bi-graph-up me-2"></i> Rapports
                             </a>
                             <ul class="dropdown-menu bg-dark">
-                                <li><a class="dropdown-item text-light" href="/reports/surgeon-fees">Honoraires Chirurgiens</a></li>
-                                <li><a class="dropdown-item text-light" href="/reports/medical-staff-activity">Activité Personnel</a></li>
+                                <% if (typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isChefBloc)) { %>
+                                <li><a class="dropdown-item text-light" href="/reports/clinic-revenue">Revenus Cliniques</a></li>
                                 <li><a class="dropdown-item text-light" href="/reports/material-consumption">Consommation Matériaux</a></li>
                                 <li><a class="dropdown-item text-light" href="/reports/statistics">Statistiques</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <% } %>
+                                <li><a class="dropdown-item text-light" href="/reports/surgeon-fees">Mes Honoraires</a></li>
+                                <% if (typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isChefBloc)) { %>
+                                <li><a class="dropdown-item text-light" href="/reports/medical-staff-activity">Activité Personnel</a></li>
+                                <% } %>
                             </ul>
                         </div>
+                        <% } %>
                     </nav>
+
+                    <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+                    <hr class="text-white-50">
+                    <% if (typeof permissions !== 'undefined' && permissions.isAdmin) { %>
+                    <hr class="text-white-50">
+                    
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-shield-check me-2"></i> Administration
+                        </a>
+                        <ul class="dropdown-menu bg-dark">
+                            <li><a class="dropdown-item text-light" href="/register">
+                                <i class="bi bi-person-plus me-2"></i> Créer Utilisateur
+                            </a></li>
+                            <li><a class="dropdown-item text-light" href="/users">
+                                <i class="bi bi-people-fill me-2"></i> Gérer Utilisateurs
+                            </a></li>
+                            <li><hr class="dropdown-divider bg-secondary"></li>
+                            <li><a class="dropdown-item text-light" href="/admin/settings">
+                                <i class="bi bi-gear me-2"></i> Paramètres Système
+                            </a></li>
+                        </ul>
+                    </div>
+                    <% } %>
+                    <a class="nav-link text-danger" href="/logout">
+                        <i class="bi bi-box-arrow-right me-2"></i> Déconnexion
+                    </a>
+                    <% } %>
                 </div>
             </div>
             
@@ -217,7 +291,7 @@
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Paramètres</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+                                    <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
                                 </ul>
                             </div>
                         </div>

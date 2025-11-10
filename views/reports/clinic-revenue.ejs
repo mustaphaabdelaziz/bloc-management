@@ -1,0 +1,371 @@
+<% layout('layouts/boilerplate') %>
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-cash-stack text-success me-2"></i>
+                        Rapport des Revenus Cliniques
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Analyse séparée des revenus par type de contrat chirurgien
+                    </p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">
+                        Période: <%= moment(filters.startDate).format('DD/MM/YYYY') %> - <%= moment(filters.endDate).format('DD/MM/YYYY') %>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="startDate" class="form-label">Date début</label>
+                            <input type="date" class="form-control" id="startDate" name="startDate"
+                                   value="<%= filters.startDate %>">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="endDate" class="form-label">Date fin</label>
+                            <input type="date" class="form-control" id="endDate" name="endDate"
+                                   value="<%= filters.endDate %>">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-search me-1"></i>Filtrer
+                            </button>
+                            <a href="/reports/clinic-revenue" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Réinitialiser
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Résumé global -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-cash me-2"></i>
+                        Revenus Allocation
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-success mb-1">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.totalRevenue) %>
+                                </h3>
+                                <p class="text-muted small mb-0">Total Revenus</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h4 class="text-primary mb-1"><%= revenueByContractType.allocation.totalSurgeries %></h4>
+                                <p class="text-muted small mb-0">Chirurgies</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-percent me-2"></i>
+                        Revenus Pourcentage
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-primary mb-1">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.totalRevenue) %>
+                                </h3>
+                                <p class="text-muted small mb-0">Total Revenus</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h4 class="text-info mb-1"><%= revenueByContractType.percentage.totalSurgeries %></h4>
+                                <p class="text-muted small mb-0">Chirurgies</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets pour les détails -->
+    <div class="row">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="revenueTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="allocation-tab" data-bs-toggle="tab" data-bs-target="#allocation" type="button" role="tab">
+                        <i class="bi bi-cash me-1"></i>Contrats Allocation
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="percentage-tab" data-bs-toggle="tab" data-bs-target="#percentage" type="button" role="tab">
+                        <i class="bi bi-percent me-1"></i>Contrats Pourcentage
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="revenueTabsContent">
+                <!-- Onglet Allocation -->
+                <div class="tab-pane fade show active" id="allocation" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Détail des Revenus - Contrats d'Allocation</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Ventilation des revenus allocation -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6 class="text-success mb-3">Ventilation des Revenus</h6>
+                                    <div class="row">
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-success mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.allocationFees) %>
+                                                </div>
+                                                <small class="text-muted">Allocation</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-danger mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.materialCosts) %>
+                                                </div>
+                                                <small class="text-muted">Matériaux</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-info mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.personnelFees) %>
+                                                </div>
+                                                <small class="text-muted">Personnel</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-warning mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.urgentFees) %>
+                                                </div>
+                                                <small class="text-muted">Urgents</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-danger mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.extraFees) %>
+                                                </div>
+                                                <small class="text-muted">Suppl.</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-success rounded">
+                                                <div class="h5 text-white mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.totalRevenue) %>
+                                                </div>
+                                                <small class="text-white">Total</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Table des détails allocation -->
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Chirurgie</th>
+                                            <th>Chirurgien</th>
+                                            <th>Date</th>
+                                            <th>Durée</th>
+                                            <th>Allocation</th>
+                                            <th>Matériaux</th>
+                                            <th>Personnel</th>
+                                            <th>Urgents</th>
+                                            <th>Suppl.</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% revenueByContractType.allocation.details.forEach(detail => { %>
+                                            <tr>
+                                                <td><strong><%= detail.surgeryCode %></strong></td>
+                                                <td><%= detail.surgeonName %></td>
+                                                <td><%= moment(detail.date).format('DD/MM/YYYY') %></td>
+                                                <td><%= detail.duration %> min</td>
+                                                <td class="text-success">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.allocationCost) %>
+                                                </td>
+                                                <td class="text-danger">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.materialCost) %>
+                                                </td>
+                                                <td class="text-info">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.personnelCost) %>
+                                                </td>
+                                                <td class="text-warning">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.urgentFee) %>
+                                                </td>
+                                                <td class="text-danger">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.extraFees) %>
+                                                </td>
+                                                <td class="text-success fw-bold">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.totalRevenue) %>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Pourcentage -->
+                <div class="tab-pane fade" id="percentage" role="tabpanel">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Détail des Revenus - Contrats de Pourcentage</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Ventilation des revenus pourcentage -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6 class="text-primary mb-3">Ventilation des Revenus</h6>
+                                    <div class="row">
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-primary mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.baseRevenue) %>
+                                                </div>
+                                                <small class="text-muted">Base</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-danger mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.materialCosts) %>
+                                                </div>
+                                                <small class="text-muted">Matériaux</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-info mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.personnelFees) %>
+                                                </div>
+                                                <small class="text-muted">Personnel</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-warning mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.urgentFees) %>
+                                                </div>
+                                                <small class="text-muted">Urgents</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-light rounded">
+                                                <div class="h5 text-danger mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.extraFees) %>
+                                                </div>
+                                                <small class="text-muted">Suppl.</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-center p-2 bg-primary rounded">
+                                                <div class="h5 text-white mb-0">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.totalRevenue) %>
+                                                </div>
+                                                <small class="text-white">Total</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Table des détails pourcentage -->
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Chirurgie</th>
+                                            <th>Chirurgien</th>
+                                            <th>Date</th>
+                                            <th>Durée</th>
+                                            <th>Base</th>
+                                            <th>Hon. Chir.</th>
+                                            <th>%</th>
+                                            <th>Matériaux</th>
+                                            <th>Personnel</th>
+                                            <th>Urgents</th>
+                                            <th>Suppl.</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% revenueByContractType.percentage.details.forEach(detail => { %>
+                                            <tr>
+                                                <td><strong><%= detail.surgeryCode %></strong></td>
+                                                <td><%= detail.surgeonName %></td>
+                                                <td><%= moment(detail.date).format('DD/MM/YYYY') %></td>
+                                                <td><%= detail.duration %> min</td>
+                                                <td class="text-primary">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.baseRevenue) %>
+                                                </td>
+                                                <td class="text-secondary">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.surgeonAmount) %>
+                                                </td>
+                                                <td class="text-info">
+                                                    <%= detail.percentage %>%
+                                                </td>
+                                                <td class="text-danger">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.clinicMaterials) %>
+                                                </td>
+                                                <td class="text-info">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.clinicPersonnel) %>
+                                                </td>
+                                                <td class="text-warning">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.urgentFee) %>
+                                                </td>
+                                                <td class="text-danger">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.extraFees) %>
+                                                </td>
+                                                <td class="text-primary fw-bold">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(detail.totalRevenue) %>
+                                                </td>
+                                            </tr>
+                                        <% }); %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

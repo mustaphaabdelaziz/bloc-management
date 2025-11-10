@@ -31,7 +31,7 @@ const surgerySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["urgent", "planned", "in-progress", "completed", "cancelled"],
+      enum: ["urgent", "planned"],
       default: "planned",
     },
     medicalStaff: [
@@ -56,19 +56,19 @@ const surgerySchema = new mongoose.Schema(
           type: Number,
           required: true,
         },
+        priceUsed: {
+          type: Number, // Price of the material at the time of surgery
+          required: true,
+        },
       },
     ],
     applyExtraFees: {
       type: Boolean,
       default: false,
     },
-    surgeonAmount: {
-      type: Number,
-      default: 0,
-    },
-    clinicAmount: {
-      type: Number,
-      default: 0,
+    adjustedPrice: {
+      type: Number, // Prix ajusté pour cette chirurgie spécifique (si différent du prix de base)
+      default: null,
     },
     notes: {
       type: String,

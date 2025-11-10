@@ -66,6 +66,52 @@
   </div>
 </div>
 
+<% if (typeof permissions !== 'undefined' && permissions.isAdmin) { %>
+<!-- Admin Actions Section -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-warning">
+      <div class="card-header bg-warning text-dark d-flex align-items-center">
+        <i class="bi bi-shield-check me-2"></i>
+        <h5 class="mb-0">Actions Administrateur</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <a href="/register" class="btn btn-success btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+              <i class="bi bi-person-plus fa-2x mb-2"></i>
+              <span class="fw-bold">Créer Utilisateur</span>
+              <small class="text-muted">Ajouter un nouveau compte</small>
+            </a>
+          </div>
+          <div class="col-md-3">
+            <a href="/users" class="btn btn-primary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+              <i class="bi bi-people-fill fa-2x mb-2"></i>
+              <span class="fw-bold">Gérer Utilisateurs</span>
+              <small class="text-muted">Modifier et supprimer</small>
+            </a>
+          </div>
+          <div class="col-md-3">
+            <a href="/admin/settings" class="btn btn-info btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+              <i class="bi bi-gear fa-2x mb-2"></i>
+              <span class="fw-bold">Paramètres</span>
+              <small class="text-muted">Configuration système</small>
+            </a>
+          </div>
+          <div class="col-md-3">
+            <a href="/reports" class="btn btn-secondary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+              <i class="bi bi-graph-up fa-2x mb-2"></i>
+              <span class="fw-bold">Rapports</span>
+              <small class="text-muted">Statistiques avancées</small>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
 <div class="row">
   <!-- Chirurgies du jour -->
   <div class="col-lg-8">
@@ -321,4 +367,14 @@
           }
       });
   });
+
+  // Debug: Check login status
+  const currentUserData = <%- JSON.stringify(currentUser || null) %>;
+  console.log('=== LOGIN DEBUG ===');
+  console.log('Current User:', currentUserData);
+  console.log('Is User Defined:', typeof currentUserData !== 'undefined' && currentUserData !== null);
+  console.log('Is User Object:', !!currentUserData);
+  console.log('User Privileges:', currentUserData ? currentUserData.privileges : 'No user');
+  // Admin privilege flag available on server side as `permissions.isAdmin`
+  console.log('===================');
 </script>

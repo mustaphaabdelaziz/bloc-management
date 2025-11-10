@@ -9,11 +9,12 @@ const methodOverride = require("method-override");
 
 const session = require("express-session");
 const flash = require("connect-flash");
-// const passport = require("passport");
-// const LocalStrategy = require("passport-local");
+
+const LocalStrategy = require("passport-local").Strategy;
 const mongoSanitize = require("express-mongo-sanitize");
 const cookieParser = require("cookie-parser");
 const { sessionConfig } = require("./config/sessionConfig");
+const passport = require("./config/passportConfig");
 const { locals } = require("./config/local");
 const connectDB = require("./database/connection");
 const app = express();
@@ -30,9 +31,16 @@ const startApp = async () => {
     app.use(express.static(path.join(__dirname, "public")));
     app.use(cookieParser());
     app.use(mongoSanitize({ replaceWith: "_" }));
-    app.use(session(sessionConfig));
-    app.use(flash());
-    app.use(locals); // Move locals middleware before routes
+  app.use(session(sessionConfig));
+  app.use(flash());
+
+  // Passport configuration
+  // require("./config/passportConfig");
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Locals middleware must run after passport.session so req.user is available
+  app.use(locals);
 
     // Import des routes
     const indexRoutes = require("./routes/index.routes");
@@ -45,6 +53,8 @@ const startApp = async () => {
     const specialtyRoutes = require("./routes/speciality.routes");
     const fonctionRoutes = require("./routes/fonction.routes");
     const reportRoutes = require("./routes/report.routes");
+    const authRoutes = require("./routes/auth.routes");
+    const usersRoutes = require("./routes/users.routes");
  
 
     // Utilisation des routes
@@ -58,6 +68,8 @@ const startApp = async () => {
     app.use("/specialties", specialtyRoutes);
     app.use("/fonctions", fonctionRoutes);
     app.use("/reports", reportRoutes);
+    app.use("/", authRoutes);
+    app.use("/users", usersRoutes);
     // Gestion d'erreurs
 
     // app.use((req, res) => {

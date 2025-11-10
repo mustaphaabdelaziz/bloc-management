@@ -59,10 +59,18 @@
                             <% } %>
                         </td>
                     </tr>
-                    <% if (material.specialty) { %>
+                    <% if (material.specialty && ((Array.isArray(material.specialty) && material.specialty.length > 0) || (!Array.isArray(material.specialty)))) { %>
                     <tr>
-                        <td><strong>Spécialité:</strong></td>
-                        <td><span class="badge bg-info"><%= material.specialty.name %></span></td>
+                        <td><strong>Spécialité<%= Array.isArray(material.specialty) && material.specialty.length > 1 ? 's' : '' %>:</strong></td>
+                        <td>
+                            <% if (Array.isArray(material.specialty)) { %>
+                                <% material.specialty.forEach(spec => { %>
+                                    <span class="badge bg-info me-1"><%= spec.name %></span>
+                                <% }); %>
+                            <% } else { %>
+                                <span class="badge bg-info"><%= material.specialty.name %></span>
+                            <% } %>
+                        </td>
                     </tr>
                     <% } %>
                     <tr>

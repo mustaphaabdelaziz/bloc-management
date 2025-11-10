@@ -6,6 +6,7 @@ const {
   materialConsumptionReport,
   medicalStaffActivityReport,
   surgeonFeesReport,
+  clinicRevenueReport,
   mainPageReports,
 } = require("../controller/report.controller");
 
@@ -20,6 +21,9 @@ router.get("/medical-staff-activity", catchAsync(medicalStaffActivityReport));
 
 // Rapport de consommation des matériaux
 router.get("/material-consumption", catchAsync(materialConsumptionReport));
+
+// Rapport des revenus cliniques
+router.get("/clinic-revenue", catchAsync(clinicRevenueReport));
 
 // Rapport statistiques générales
 router.get("/statistics", catchAsync(statisticsReport));

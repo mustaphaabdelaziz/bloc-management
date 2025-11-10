@@ -1,0 +1,123 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Tableau de bord</a></li>
+                    <li class="breadcrumb-item"><a href="/users">Utilisateurs</a></li>
+                    <li class="breadcrumb-item active"><%= user.firstname %> <%= user.lastname %></li>
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="mb-0">
+                    <i class="bi bi-person-circle me-2 text-primary"></i>
+                    <%= user.firstname %> <%= user.lastname %>
+                </h3>
+                <div>
+                    <a href="/users/<%= user._id %>/edit" class="btn btn-warning me-2">
+                        <i class="bi bi-pencil me-1"></i>
+                        Modifier
+                    </a>
+                    <a href="/users" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Retour
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Informations de l'utilisateur
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Nom d'utilisateur</label>
+                                        <p class="form-control-plaintext"><%= user.username %></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Prénom</label>
+                                        <p class="form-control-plaintext"><%= user.firstname %></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Nom</label>
+                                        <p class="form-control-plaintext"><%= user.lastname %></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Créé le</label>
+                                        <p class="form-control-plaintext"><%= moment(user.createdAt).format('DD/MM/YYYY à HH:mm') %></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Privilèges</label>
+                                        <div>
+                                            <% if (user.privileges && user.privileges.length > 0) { %>
+                                                <% user.privileges.forEach(privilege => { %>
+                                                    <span class="badge bg-primary me-2 mb-1"><%= privilege %></span>
+                                                <% }) %>
+                                            <% } else { %>
+                                                <span class="text-muted">Aucun privilège</span>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Actions dangereuses
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <% if (currentUser && !user._id.equals(currentUser._id)) { %>
+                            <p class="text-muted small mb-3">
+                                Attention : Cette action est irréversible.
+                            </p>
+                            <form method="POST" action="/users/<%= user._id %>?_method=DELETE"
+                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.')">
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="bi bi-trash me-2"></i>
+                                    Supprimer l'utilisateur
+                                </button>
+                            </form>
+                            <% } else { %>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Vous ne pouvez pas supprimer votre propre compte.
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include("../layouts/footer") %>

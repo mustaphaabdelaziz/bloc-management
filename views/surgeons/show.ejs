@@ -106,9 +106,38 @@
                                             <span class="badge bg-secondary"><%= surgery.prestation.designation %></span>
                                         </td>
                                         <td>
-                                            <% if (surgery.surgeonAmount > 0) { %>
+                                            <% 
+                                            let surgeonFee = 0;
+                                            if (surgery.surgeon && surgery.prestation) {
+                                                if (surgery.surgeon.contractType === 'allocation') {
+                                                    const allocationRate = surgery.surgeon.allocationRate || 0;
+                                                    const durationH = (surgery.actualDuration || 0) / 60;
+                                                    surgeonFee = allocationRate * durationH;
+                                                } else {
+                                                    // Percentage contract
+                                                    const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT;
+                                                    const urgentRate = surgery.status === 'urgent' ? (surgery.prestation.urgentFeePercentage || 0) : 0;
+                                                    const effectivePrice = basePrice * (1 + urgentRate);
+                                                    const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
+                                                        return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
+                                                    }, 0) || 0;
+                                                    const surgeonRate = (surgery.surgeon.percentageRate || 45) / 100;
+                                                    const surgeonBase = (effectivePrice - patientMaterials) * surgeonRate;
+                                                    // Deduct extra fees from surgeon share
+                                                    let extraFeeDeduction = 0;
+                                                    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
+                                                        const extraDuration = surgery.actualDuration - surgery.prestation.duration;
+                                                        const durationUnit = surgery.prestation.exceededDurationUnit || 15;
+                                                        const extraUnits = Math.ceil(extraDuration / durationUnit);
+                                                        extraFeeDeduction = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
+                                                    }
+                                                    surgeonFee = surgeonBase - extraFeeDeduction;
+                                                }
+                                            }
+                                            %>
+                                            <% if (surgeonFee > 0) { %>
                                                 <strong class="text-success">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.surgeonAmount) %>
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeonFee) %>
                                                 </strong>
                                             <% } else { %>
                                                 <span class="text-muted">Non calculé</span>

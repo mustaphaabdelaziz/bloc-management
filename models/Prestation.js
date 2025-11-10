@@ -37,10 +37,12 @@ const prestationSchema = new mongoose.Schema({
         type: Number, // frais par unité de dépassement
         default: 0
     },
-    urgentFee: {
-        type: Number, // frais pour chirurgie urgente
-        default: 0
-    }
+    urgentFeePercentage: {
+        type: Number, // pourcentage des frais urgents (ex: 0.10 pour 10%)
+        default: 0,
+        min: 0,
+        max: 1
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Prestation', prestationSchema);

@@ -12,8 +12,22 @@ module.exports.dashboard = async (req, res) => {
     const totalMedicalStaff = await MedicalStaff.countDocuments();
     const totalSurgeries = await Surgery.countDocuments();
 
-    // Chirurgies récentes
-    const recentSurgeries = await Surgery.find()
+    // Chirurgies récentes - filter by user role
+    let recentSurgeriesQuery = {};
+    if (req.user && req.user.privileges) {
+      // If user is medecin, only show their surgeries
+      if (req.user.privileges.includes('medecin') &&
+          !req.user.privileges.includes('admin') &&
+          !req.user.privileges.includes('chefBloc')) {
+        const Surgeon = require("../models/Surgeon");
+        const surgeon = await Surgeon.findOne({ email: req.user.email });
+        if (surgeon) {
+          recentSurgeriesQuery.surgeon = surgeon._id;
+        }
+      }
+    }
+
+    const recentSurgeries = await Surgery.find(recentSurgeriesQuery)
       .populate("patient", "firstName lastName code")
       .populate("surgeon", "firstName lastName")
       .populate("prestation", "designation")
@@ -50,6 +64,7 @@ module.exports.dashboard = async (req, res) => {
 
     res.render("dashboard", {
       title: "Tableau de bord - Gestion Bloc Opératoire",
+      currentUser: req.user, // Pass the authenticated user to the template
       stats: {
         totalPatients,
         totalSurgeons,

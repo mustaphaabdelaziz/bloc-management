@@ -96,10 +96,10 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="urgentFee" class="form-label">Frais Urgents (DA)</label>
-                                        <input type="number" class="form-control" id="urgentFee" name="urgentFee" 
-                                               value="<%= prestation.urgentFee || 0 %>" min="0" step="0.01">
-                                        <div class="form-text">Frais supplémentaires pour les chirurgies urgentes</div>
+                                        <label for="urgentFeePercentage" class="form-label">Frais Urgents (%)</label>
+                                        <input type="number" class="form-control" id="urgentFeePercentage" name="urgentFeePercentage"
+                                               value="<%= (prestation.urgentFeePercentage * 100) || 0 %>" min="0" max="100" step="0.01">
+                                        <div class="form-text">Pourcentage du prix HT pour les chirurgies urgentes (ex: 10 pour 10%)</div>
                                     </div>
                                 </div>
                             </div>

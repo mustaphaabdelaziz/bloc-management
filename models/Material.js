@@ -21,8 +21,25 @@ const materialSchema = new mongoose.Schema({
         default: 0.19
     },
     specialty: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Specialty'
+        type: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Specialty'
+        }],
+        set: function(value) {
+            // Handle empty strings, null, or empty arrays
+            if (value === '' || value === null || (Array.isArray(value) && value.length === 0)) {
+                return undefined;
+            }
+            // If it's a single value, convert to array
+            if (!Array.isArray(value) && value) {
+                return [value];
+            }
+            // Filter out empty strings from array
+            if (Array.isArray(value)) {
+                return value.filter(v => v !== '' && v !== null);
+            }
+            return value;
+        }
     },
     stock: {
         type: Number,
@@ -50,14 +67,19 @@ const materialSchema = new mongoose.Schema({
 
 // Calcul du prix pondéré
 materialSchema.virtual('weightedPrice').get(function() {
-    if (this.arrivals.length === 0) return this.priceHT;
+    // Vérifier si arrivals existe et est un tableau
+    if (!this.arrivals || !Array.isArray(this.arrivals) || this.arrivals.length === 0) {
+        return this.priceHT;
+    }
     
     let totalValue = 0;
     let totalQuantity = 0;
     
     this.arrivals.forEach(arrival => {
-        totalValue += arrival.quantity * arrival.unitPrice;
-        totalQuantity += arrival.quantity;
+        if (arrival.quantity && arrival.unitPrice) {
+            totalValue += arrival.quantity * arrival.unitPrice;
+            totalQuantity += arrival.quantity;
+        }
     });
     
     return totalQuantity > 0 ? totalValue / totalQuantity : this.priceHT;
@@ -65,18 +87,36 @@ materialSchema.virtual('weightedPrice').get(function() {
 materialSchema.pre('save', async function(next) {
   try {
     if (!this.code) {
-      const Specialty = mongoose.model('Specialty');
-      
       let specialtyCode = 'GEN';
-      if (this.specialty) {
+
+      if (this.specialty && Array.isArray(this.specialty) && this.specialty.length > 0) {
+        if (this.specialty.length === 1) {
+          // Single specialty
+          try {
+            const Specialty = mongoose.model('Specialty');
+            const specialty = await Specialty.findById(this.specialty[0]);
+            if (specialty && specialty.code) {
+              specialtyCode = specialty.code;
+            }
+          } catch (error) {
+            console.warn('Could not find specialty for code generation, using GEN:', error.message);
+            specialtyCode = 'GEN';
+          }
+        } else {
+          // Multiple specialties
+          specialtyCode = 'MUL';
+        }
+      } else if (this.specialty && !Array.isArray(this.specialty)) {
+        // Single specialty (backward compatibility)
         try {
+          const Specialty = mongoose.model('Specialty');
           const specialty = await Specialty.findById(this.specialty);
           if (specialty && specialty.code) {
             specialtyCode = specialty.code;
           }
         } catch (error) {
-          // If specialty lookup fails, use default
-          console.warn('Could not find specialty for code generation:', error.message);
+          console.warn('Could not find specialty for code generation, using GEN:', error.message);
+          specialtyCode = 'GEN';
         }
       }
 
@@ -87,7 +127,7 @@ materialSchema.pre('save', async function(next) {
         .limit(1);
 
       let nextNumber = 1;
-      if (lastMaterial) {
+      if (lastMaterial && lastMaterial.code) {
         const lastCode = lastMaterial.code;
         const parts = lastCode.split('-');
         if (parts.length >= 3) {
@@ -102,6 +142,7 @@ materialSchema.pre('save', async function(next) {
     }
     next();
   } catch (error) {
+    console.error('Error in material pre-save hook:', error);
     next(error);
   }
 });

@@ -46,20 +46,48 @@ module.exports.renderCreateMateirialForm = async (req, res) => {
 };
 module.exports.createMaterial = async (req, res) => {
   try {
+    console.log('Creating material with data:', req.body);
+
     // Remove code from req.body since it will be auto-generated
     const materialData = { ...req.body };
     delete materialData.code;
-    
+
+    // Handle specialty field - can be array or single value
+    console.log('Specialty field value:', materialData.specialty, 'Type:', typeof materialData.specialty, 'Length:', materialData.specialty ? materialData.specialty.length : 'N/A');
+
+    if (materialData.specialty === '' || materialData.specialty === null || materialData.specialty === undefined) {
+      console.log('Setting specialty to undefined');
+      materialData.specialty = undefined;
+    } else if (Array.isArray(materialData.specialty)) {
+      // Filter out empty strings from array
+      materialData.specialty = materialData.specialty.filter(s => s !== '' && s !== null && s !== undefined);
+      if (materialData.specialty.length === 0) {
+        materialData.specialty = undefined;
+      }
+      console.log('Filtered specialty array:', materialData.specialty);
+    } else if (typeof materialData.specialty === 'string' && materialData.specialty.trim() === '') {
+      materialData.specialty = undefined;
+    }
+
+    console.log('Material data after processing:', materialData);
+
     const material = new Material(materialData);
+    console.log('Material instance created:', material);
+
     await material.save();
+    console.log('Material saved successfully');
+
     res.redirect("/materials?success=Matériau créé avec succès");
   } catch (error) {
+    console.error('Error creating material:', error);
+    console.error('Error stack:', error.stack);
+
     const specialties = await Specialty.find().sort({ name: 1 });
     res.render("materials/new", {
       title: "Nouveau Matériau",
       material: req.body,
       specialties,
-      error: "Erreur lors de la création",
+      error: `Erreur lors de la création: ${error.message}`,
     });
   }
 };
@@ -112,6 +140,11 @@ module.exports.updateMaterial = async (req, res) => {
     // Remove code from update data since it should not be changed
     const updateData = { ...req.body };
     delete updateData.code;
+
+    // Handle empty specialty field
+    if (updateData.specialty === '') {
+      updateData.specialty = undefined;
+    }
     
     Object.assign(material, updateData);
     await material.save();

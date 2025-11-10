@@ -23,8 +23,11 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <!-- Patient Management -->
-        <% if(!currentUser.privileges.includes('acheteur')) { %>
+  <% // Use centralized permission flags provided by config/local.js (available as `permissions`) %>
+  <% const onlyAcheteur = (typeof permissions !== 'undefined' && permissions.onlyAcheteur) || false; %>
+
+      <!-- Patient Management -->
+      <% if(!onlyAcheteur) { %>
         <li class="nav-item dropdown">
           <a
             class="nav-link dropdown-toggle text-dark"
@@ -37,11 +40,14 @@
             Patients <i class="bi bi-heart-pulse-fill text-danger"></i>
           </a>
           <ul class="dropdown-menu shadow-sm border-0 rounded-3">
+            <% // Only head chief and admin can create new patients %>
+            <% if (permissions.isChefBloc || permissions.isAdmin) { %>
             <li>
               <a class="dropdown-item text-greenSea" href="/patient/new">
                 Nouveau Patient <i class="bi bi-person-plus-fill"></i>
               </a>
             </li>
+            <% } %>
             <li>
               <a class="dropdown-item text-greenSea" href="/patient">
                 Liste des Patients <i class="bi bi-list"></i>
@@ -120,10 +126,20 @@
             <% } %>
           </ul>
         </li>
-        <% } %>
+  <% } %>
 
-        <!-- Admin Specific Links -->
-        <% if(currentUser.privileges.includes('admin')) { %>
+  <!-- Surgeon-specific quick links (only surgeons) -->
+  <% if (typeof permissions !== 'undefined' && permissions.isMedecin && !permissions.isAdmin) { %>
+    <li class="nav-item">
+      <a class="nav-link text-dark" href="/surgeries">Mes Chirurgies</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-dark" href="/surgeries/revenues">Mes Revenus</a>
+    </li>
+  <% } %>
+
+  <!-- Admin Specific Links -->
+  <% if(typeof permissions !== 'undefined' && permissions.isAdmin) { %>
         <li class="nav-item">
           <a class="nav-link text-dark" href="/staffs">
             Personnel <i class="bi bi-person-vcard"></i>
@@ -138,12 +154,12 @@
           </a>
         </li>
         <% } %>
-        <% if(currentUser.privileges.includes('admin') || currentUser.privileges.includes('medecin')) { %>
+  <% if(typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isMedecin)) { %>
           <li class="nav-item">
             <a class="nav-link text-dark" href="/medicaments">Medicaments <i class="ri-medicine-bottle-line text-greenSea"></i></a>
           </li>
           <% } %>
-          <% if(currentUser.privileges.includes('admin') || currentUser.privileges.includes('acheteur') || currentUser.privileges.includes('medecin') || currentUser.privileges.includes('technicien'))  { %>
+          <% if(typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isAcheteur || permissions.isTechnicien))  { %>
           <li class="nav-item dropdown">
             <a
             class="nav-link dropdown-toggle text-dark"
@@ -159,13 +175,13 @@
               aria-labelledby="navbarDropdown"
             >
               <li>
-                <% if(currentUser.privileges.includes('admin')|| currentUser.privileges.includes('acheteur')) {%>
+                <% if(typeof permissions !== 'undefined' && permissions.canManageMaterials) {%>
                 <a class="dropdown-item text-greenSea" href="/materiels">Matériels entrants</a>
                 <% } %>
-                <% if(!currentUser.privileges.includes('assistant')) {%>
+                <% if(!(typeof permissions !== 'undefined' && permissions.isAssistant)) {%>
                 <a class="dropdown-item text-greenSea" href="/KT">Matériels sortants</a>
                 <% } %>
-                <% if(currentUser.privileges.includes('admin')|| currentUser.privileges.includes('acheteur')) {%>
+                <% if(typeof permissions !== 'undefined' && permissions.canManageMaterials) {%>
                 <a class="dropdown-item text-greenSea" href="/fournisseur">Fournisseurs</a>
                 <% } %>
               </li>
@@ -177,7 +193,7 @@
         <a href="/user/<%= currentUser._id %>/profile" class="btn btn-outline-greenSea me-2">
           Mon Profil
         </a>
-        <a href="/user/logout" class="btn btn-danger">
+        <a href="/logout" class="btn btn-danger">
           Déconnexion
         </a>
       </div>

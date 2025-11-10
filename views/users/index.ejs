@@ -1,0 +1,92 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="mb-0">
+                    <i class="bi bi-people-fill me-2 text-primary"></i>
+                    Gestion des Utilisateurs
+                </h3>
+                <a href="/register" class="btn btn-success">
+                    <i class="bi bi-person-plus me-2"></i>
+                    Nouveau Utilisateur
+                </a>
+            </div>
+
+            <% if (users && users.length > 0) { %>
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="bi bi-person-circle me-1"></i> Nom d'utilisateur</th>
+                                    <th><i class="bi bi-person me-1"></i> Prénom</th>
+                                    <th><i class="bi bi-person me-1"></i> Nom</th>
+                                    <th><i class="bi bi-shield-check me-1"></i> Privilèges</th>
+                                    <th><i class="bi bi-calendar me-1"></i> Créé le</th>
+                                    <th><i class="bi bi-gear me-1"></i> Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% users.forEach(user => { %>
+                                <tr>
+                                    <td>
+                                        <strong><%= user.username %></strong>
+                                    </td>
+                                    <td><%= user.firstname %></td>
+                                    <td><%= user.lastname %></td>
+                                    <td>
+                                        <% if (user.privileges && user.privileges.length > 0) { %>
+                                            <% user.privileges.forEach(privilege => { %>
+                                                <span class="badge bg-primary me-1"><%= privilege %></span>
+                                            <% }) %>
+                                        <% } else { %>
+                                            <span class="text-muted">Aucun</span>
+                                        <% } %>
+                                    </td>
+                                    <td><%= moment(user.createdAt).format('DD/MM/YYYY') %></td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/users/<%= user._id %>" class="btn btn-sm btn-outline-info" title="Voir détails">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="/users/<%= user._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <% if (currentUser && !user._id.equals(currentUser._id)) { %>
+                                            <form method="POST" action="/users/<%= user._id %>?_method=DELETE" class="d-inline"
+                                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-people display-4 text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun utilisateur trouvé</h5>
+                    <p class="text-muted">Commencez par créer votre premier utilisateur.</p>
+                    <a href="/register" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Créer le premier utilisateur
+                    </a>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%- include("../layouts/footer") %>

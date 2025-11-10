@@ -75,8 +75,8 @@ module.exports.createPrestation = async (req, res) => {
       exceededDurationFee: req.body.exceededDurationFee
         ? parseFloat(req.body.exceededDurationFee)
         : 0,
-      urgentFee: req.body.urgentFee
-        ? parseFloat(req.body.urgentFee)
+      urgentFeePercentage: req.body.urgentFeePercentage
+        ? parseFloat(req.body.urgentFeePercentage) / 100 // Convert percentage to decimal
         : 0,
     };
 
@@ -186,10 +186,10 @@ module.exports.updatePrestation = async (req, res) => {
         req.body.exceededDurationFee !== undefined
           ? parseFloat(req.body.exceededDurationFee)
           : existingPrestation.exceededDurationFee,
-      urgentFee:
-        req.body.urgentFee !== undefined
-          ? parseFloat(req.body.urgentFee)
-          : existingPrestation.urgentFee,
+      urgentFeePercentage:
+        req.body.urgentFeePercentage !== undefined
+          ? parseFloat(req.body.urgentFeePercentage) / 100 // Convert percentage to decimal
+          : existingPrestation.urgentFeePercentage,
     };
 
     await Prestation.findByIdAndUpdate(prestationId, updateData, {

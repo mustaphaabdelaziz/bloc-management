@@ -1,4 +1,5 @@
 <% layout('layouts/boilerplate') %>
+<% var surgery = (typeof surgery !== 'undefined') ? surgery : {}; %>
 <div class="row justify-content-center">
   <div class="col-lg-10">
     <div class="card">
@@ -63,16 +64,32 @@
             </div>
             <div class="col-md-6">
               <div class="mb-3">
+                <label for="adjustedPrice" class="form-label">Prix ajusté (DA)</label>
+                <input type="number" class="form-control" id="adjustedPrice" name="adjustedPrice"
+                       value="<%= surgery.adjustedPrice || '' %>" min="0" step="0.01" placeholder="Laisser vide pour utiliser le prix de base">
+                <div class="form-text">
+                  <small class="text-muted">
+                    Prix spécifique pour cette chirurgie (si différent du prix de base de la prestation)
+                  </small>
+                </div>
+                <div class="form-text">
+                  <small class="text-info">
+                    Prix de base: <span id="basePrice">Sélectionnez une prestation</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
                 <label for="status" class="form-label">Statut *</label>
                 <select name="status" id="status" class="form-select" required>
                   <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
                   <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
-                  <option value="in-progress" <%= surgery.status === 'in-progress' ? 'selected' : '' %>>En cours</option>
-                  <option value="completed" <%= surgery.status === 'completed' ? 'selected' : '' %>>Terminée</option>
                 </select>
               </div>
             </div>
-          </div>
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
@@ -171,38 +188,76 @@
           </div>
           <div class="card mb-4">
             <div class="card-header bg-warning text-dark">
-              <h6 class="mb-0"><i class="bi bi-box me-2"></i>Matériaux Consommés</h6>
+              <h6 class="mb-0"><i class="bi bi-box me-2"></i>Matériaux Consommables</h6>
             </div>
             <div class="card-body">
-              <div id="materialsContainer">
-                <div class="row mb-3 material-row">
+              <div id="consumableMaterialsContainer">
+                <div class="row mb-3 consumable-material-row">
                   <div class="col-md-6">
-                    <select class="form-select" name="materialId" required>
-                      <option value="">Choisir un matériau...</option>
-                      <% materials.forEach(mat => { %>
+                    <select class="form-select" name="consumableMaterialId">
+                      <option value="">Choisir un matériau consommable...</option>
+                      <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
                         <option
                           value="<%= mat._id %>"
-                          data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+                          data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
                           data-category="<%= mat.category %>"
                           data-price="<%= mat.priceHT %>"
                           data-unit="<%= mat.unitOfMeasure %>">
-                          <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                          <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
                         </option>
                       <% }) %>
                     </select>
                   </div>
                   <div class="col-md-4">
-                    <input type="number" name="materialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité" required>
+                    <input type="number" name="consumableMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
                   </div>
                   <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+                    <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </div>
                 </div>
               </div>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addMaterialRow()">
-                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addConsumableMaterialRow()">
+                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau consommable
+              </button>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+              <h6 class="mb-0"><i class="bi bi-person me-2"></i>Matériaux Patient</h6>
+            </div>
+            <div class="card-body">
+              <div id="patientMaterialsContainer">
+                <div class="row mb-3 patient-material-row">
+                  <div class="col-md-6">
+                    <select class="form-select" name="patientMaterialId">
+                      <option value="">Choisir un matériau patient...</option>
+                      <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+                        <option
+                          value="<%= mat._id %>"
+                          data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                          data-category="<%= mat.category %>"
+                          data-price="<%= mat.priceHT %>"
+                          data-unit="<%= mat.unitOfMeasure %>">
+                          <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <input type="number" name="patientMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
+                  </div>
+                  <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addPatientMaterialRow()">
+                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau patient
               </button>
             </div>
           </div>
@@ -225,14 +280,27 @@
 </div>
 
 <script>
-// STRICT specialty filter: only show materials with exact same specialty as surgeon
+// Filter materials by specialty: consumables are always shown, patient materials filtered by specialty
 function filterMaterialsBySpecialty(specialtyId) {
-  document.querySelectorAll('#materialsContainer select[name="materialId"]').forEach(select => {
+  // Filter consumable materials - ALWAYS SHOW ALL CONSUMABLES (no specialty filter)
+  document.querySelectorAll('#consumableMaterialsContainer select[name="consumableMaterialId"]').forEach(select => {
+    const options = select.querySelectorAll('option');
+    options.forEach((option, idx) => {
+      if (idx === 0) return option.hidden = false;  // always show placeholder
+      // Consumables are always visible regardless of specialty
+      option.hidden = false;
+    });
+  });
+
+  // Filter patient materials by specialty
+  document.querySelectorAll('#patientMaterialsContainer select[name="patientMaterialId"]').forEach(select => {
     const options = select.querySelectorAll('option');
     options.forEach((option, idx) => {
       if (idx === 0) return option.hidden = false;  // always show placeholder
       const optionSpecialty = option.getAttribute('data-specialty');
-      option.hidden = optionSpecialty !== specialtyId;
+      // Check if specialtyId is in the comma-separated list or if optionSpecialty is empty (general materials)
+      const specialtyList = optionSpecialty ? optionSpecialty.split(',') : [];
+      option.hidden = optionSpecialty && !specialtyList.includes(specialtyId);
     });
     // Reset selection if selection is not visible
     if (select.value) {
@@ -275,32 +343,32 @@ document.addEventListener('DOMContentLoaded', function() {
   applySpecialtyFilter();
 });
 
-function addMaterialRow() {
-  const container = document.getElementById('materialsContainer');
+function addConsumableMaterialRow() {
+  const container = document.getElementById('consumableMaterialsContainer');
   if (!container) return;
   const newRow = document.createElement('div');
-  newRow.className = 'row mb-3 material-row';
+  newRow.className = 'row mb-3 consumable-material-row';
   newRow.innerHTML = `
     <div class="col-md-6">
-      <select class="form-select" name="materialId" required>
-        <option value="">Choisir un matériau...</option>
-        <% materials.forEach(mat => { %>
+      <select class="form-select" name="consumableMaterialId">
+        <option value="">Choisir un matériau consommable...</option>
+        <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
           <option
             value="<%= mat._id %>"
             data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
             data-category="<%= mat.category %>"
             data-price="<%= mat.priceHT %>"
             data-unit="<%= mat.unitOfMeasure %>">
-            <%= mat.designation %> - <%= mat.category === 'consumable' ? 'Consommable' : 'Patient' %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+            <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
           </option>
         <% }) %>
       </select>
     </div>
     <div class="col-md-4">
-      <input type="number" name="materialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité" required>
+      <input type="number" name="consumableMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
     </div>
     <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removeMaterialRow(this)">
+      <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
         <i class="bi bi-trash"></i>
       </button>
     </div>
@@ -313,9 +381,56 @@ function addMaterialRow() {
   }
   filterMaterialsBySpecialty(specialtyId);
 }
-function removeMaterialRow(button) {
-  const row = button.closest('.material-row');
-  if (row && document.querySelectorAll('.material-row').length > 1) {
+
+function removeConsumableMaterialRow(button) {
+  const row = button.closest('.consumable-material-row');
+  if (row && document.querySelectorAll('.consumable-material-row').length > 1) {
+    row.remove();
+  }
+}
+
+function addPatientMaterialRow() {
+  const container = document.getElementById('patientMaterialsContainer');
+  if (!container) return;
+  const newRow = document.createElement('div');
+  newRow.className = 'row mb-3 patient-material-row';
+  newRow.innerHTML = `
+    <div class="col-md-6">
+      <select class="form-select" name="patientMaterialId">
+        <option value="">Choisir un matériau patient...</option>
+        <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+          <option
+            value="<%= mat._id %>"
+            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+            data-category="<%= mat.category %>"
+            data-price="<%= mat.priceHT %>"
+            data-unit="<%= mat.unitOfMeasure %>">
+            <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+          </option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <input type="number" name="patientMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
+    </div>
+    <div class="col-md-2">
+      <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(newRow);
+  const surgeonInput = document.getElementById('surgeon');
+  let specialtyId = '';
+  if (surgeonInput) {
+    specialtyId = surgeonInput.getAttribute('data-selected-specialty') || '';
+  }
+  filterMaterialsBySpecialty(specialtyId);
+}
+
+function removePatientMaterialRow(button) {
+  const row = button.closest('.patient-material-row');
+  if (row && document.querySelectorAll('.patient-material-row').length > 1) {
     row.remove();
   }
 }
@@ -391,19 +506,16 @@ function validateSurgeryForm() {
     beginDateTime.focus();
     return false;
   }
-  const materialRows = document.querySelectorAll('.material-row');
+  const materialRows = document.querySelectorAll('.consumable-material-row, .patient-material-row');
   for (let row of materialRows) {
-    const select = row.querySelector('select[name="materialId"]');
-    const quantityInput = row.querySelector('input[name="materialQuantity"]');
-    if (!select.value) {
-      alert('Veuillez sélectionner un matériau valide.');
-      select.focus();
-      return false;
-    }
-    if (!quantityInput.value || quantityInput.value <= 0) {
-      alert('Veuillez saisir une quantité valide pour le matériau.');
-      quantityInput.focus();
-      return false;
+    const select = row.querySelector('select[name="consumableMaterialId"], select[name="patientMaterialId"]');
+    const quantityInput = row.querySelector('input[name="consumableMaterialQuantity"], input[name="patientMaterialQuantity"]');
+    if (select && select.value) {
+      if (!quantityInput.value || quantityInput.value <= 0) {
+        alert('Veuillez saisir une quantité valide pour le matériau.');
+        quantityInput.focus();
+        return false;
+      }
     }
   }
   return true;
@@ -432,5 +544,40 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   datalistToHidden('patient','patientsList','patientId');
   datalistToHidden('surgeon','surgeonsList','surgeonId');
+
+  // Update base price display
+  function updateBasePrice() {
+    const prestationSelect = document.getElementById('prestation');
+    const basePriceDisplay = document.getElementById('basePrice');
+
+    if (!basePriceDisplay || !prestationSelect) return;
+
+    const selectedOption = prestationSelect.selectedOptions[0];
+    if (selectedOption && selectedOption.value) {
+      // Get base price from selected prestation
+      const basePriceValue = selectedOption.getAttribute('data-price');
+      if (basePriceValue && !isNaN(parseFloat(basePriceValue))) {
+        const basePrice = parseFloat(basePriceValue);
+        basePriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', {
+          style: 'currency',
+          currency: 'DZD'
+        }).format(basePrice);
+      } else {
+        basePriceDisplay.textContent = 'Prix non disponible';
+      }
+    } else {
+      basePriceDisplay.textContent = 'Sélectionnez une prestation';
+    }
+  }
+
+  // Add event listeners
+  const prestationSelect = document.getElementById('prestation');
+
+  if (prestationSelect) {
+    prestationSelect.addEventListener('change', updateBasePrice);
+  }
+
+  // Initial update
+  updateBasePrice();
 });
 </script>

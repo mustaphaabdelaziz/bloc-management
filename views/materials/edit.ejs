@@ -66,15 +66,21 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="specialty" class="form-label">Spécialité</label>
-                                <select name="specialty" id="specialty" class="form-select">
-                                    <option value="">Matériau général</option>
+                                <label for="specialty" class="form-label">Spécialités</label>
+                                <select name="specialty" id="specialty" class="form-select" multiple size="4">
                                     <% specialties.forEach(specialty => { %>
-                                        <option value="<%= specialty._id %>" <%= material.specialty && material.specialty._id.toString() === specialty._id.toString() ? 'selected' : '' %>>
-                                            <%= specialty.name %>
+                                        <option value="<%= specialty._id %>"
+                                            <%= material.specialty && (
+                                                (Array.isArray(material.specialty) && material.specialty.some(s => s._id.toString() === specialty._id.toString())) ||
+                                                (!Array.isArray(material.specialty) && material.specialty._id.toString() === specialty._id.toString())
+                                            ) ? 'selected' : '' %>>
+                                            <%= specialty.name %> (<%= specialty.code %>)
                                         </option>
                                     <% }); %>
                                 </select>
+                                <div class="form-text">
+                                    <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">

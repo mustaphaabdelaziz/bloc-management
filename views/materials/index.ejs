@@ -96,7 +96,11 @@
                                     <small class="text-muted d-block"><%= material.unitOfMeasure %></small>
                                 </td>
                                 <td>
-                                    <% if (material.specialty) { %>
+                                    <% if (material.specialty && Array.isArray(material.specialty) && material.specialty.length > 0) { %>
+                                        <% material.specialty.forEach(spec => { %>
+                                            <span class="badge bg-info me-1"><%= spec.name %></span>
+                                        <% }); %>
+                                    <% } else if (material.specialty && !Array.isArray(material.specialty)) { %>
                                         <span class="badge bg-info"><%= material.specialty.name %></span>
                                     <% } else { %>
                                         <span class="text-muted">Général</span>

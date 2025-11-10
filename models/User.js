@@ -1,15 +1,15 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-
+//  This strategy integrates Mongoose with the passport-local strategy.
+const passportLocalMongoose = require("passport-local-mongoose");
+const Schema = mongoose.Schema;
 const userSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true
-    },
+
+    // raw `password` should not be stored in DB for security; keep for compatibility if needed
+    // but don't require it. We store `hash` and `salt` instead.
     password: {
         type: String,
-        required: true
+        required: false
     },
     firstname: {
         type: String,
@@ -21,20 +21,39 @@ const userSchema = new mongoose.Schema({
     },
     privileges: [{
         type: String,
-        enum: ['admin', 'medecin', 'acheteur', 'technicien', 'assistant']
-    }]
+        // Add additional roles that views and seeds use
+        enum: ['admin', 'medecin', 'acheteur', 'chefBloc', 'technicien', 'assistant']
+    }],
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+    },
+
+    hash: {
+        type: String,
+        required: true,
+    },
+    salt: {
+        type: String,
+        required: true,
+        default: "undefined",
+    },
 }, { timestamps: true });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
+
+// Remove passport-local-mongoose plugin to avoid username index
+
+// Virtual field for fullname
+userSchema.virtual("fullname").get(function () {
+    return this.firstname + " " + this.lastname;
 });
 
-// Method to check password
-userSchema.methods.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
-};
+// Remove pre-save hook (hashing is done in seeding and registration)
 
-module.exports = mongoose.model('User', userSchema);
+// comparer function
+userSchema.methods.verifyPassword = function (password, hash) {
+    return bcrypt.compareSync(password, hash);
+};
+module.exports = mongoose.model("User", userSchema);
