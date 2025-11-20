@@ -3,24 +3,24 @@
 <!-- views/patients/edit.ejs -->
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
+        <div class="card patient-card">
+            <div class="card-header bg-primary text-white patient-header">
                 <h5 class="mb-0">
                     <i class="bi bi-pencil me-2"></i>Modifier Patient
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="/patients/<%= patient._id %>?_method=PUT">
+                <form method="POST" action="/patients/<%= patient._id %>?_method=PUT" class="patient-form">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="firstName" class="form-label">Prénom *</label>
+                                <label for="firstName" class="form-label"><i class="bi bi-person me-1"></i>Prénom *</label>
                                 <input type="text" class="form-control" id="firstName" name="firstName" value="<%= patient.firstName %>" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="lastName" class="form-label">Nom *</label>
+                                <label for="lastName" class="form-label"><i class="bi bi-person me-1"></i>Nom *</label>
                                 <input type="text" class="form-control" id="lastName" name="lastName" value="<%= patient.lastName %>" required>
                             </div>
                         </div>
@@ -29,13 +29,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="fatherName" class="form-label">Nom du père</label>
+                                <label for="fatherName" class="form-label"><i class="bi bi-person me-1"></i>Nom du père</label>
                                 <input type="text" class="form-control" id="fatherName" name="fatherName" value="<%= patient.fatherName || '' %>">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="nin" class="form-label">NIN *</label>
+                                <label for="nin" class="form-label"><i class="bi bi-card-text me-1"></i>NIN *</label>
                                 <input type="text" class="form-control" id="nin" name="nin" value="<%= patient.nin %>" required>
                             </div>
                         </div>
@@ -44,14 +44,14 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="dateOfBirth" class="form-label">Date de naissance</label>
+                                <label for="dateOfBirth" class="form-label"><i class="bi bi-calendar me-1"></i>Date de naissance</label>
                                 <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
                                        value="<%= patient.dateOfBirth ? moment(patient.dateOfBirth).format('YYYY-MM-DD') : '' %>">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="presumedAge" class="form-label">Âge présumé</label>
+                                <label for="presumedAge" class="form-label"><i class="bi bi-question-circle me-1"></i>Âge présumé</label>
                                 <input type="number" class="form-control" id="presumedAge" name="presumedAge" 
                                        value="<%= patient.presumedAge || '' %>" min="0" max="120">
                             </div>
@@ -59,7 +59,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Téléphone</label>
+                        <label for="phone" class="form-label"><i class="bi bi-telephone me-1"></i>Téléphone</label>
                         <input type="tel" class="form-control" id="phone" name="phone" value="<%= patient.phone || '' %>">
                     </div>
                     

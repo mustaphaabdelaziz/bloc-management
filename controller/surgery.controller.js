@@ -15,6 +15,8 @@ module.exports.surgeryList = async (req, res) => {
 
     const statusFilter = req.query.status || "";
     const dateFilter = req.query.date || "";
+    const searchQuery = req.query.search || "";
+    const surgeonFilter = req.query.surgeon || "";
 
     let query = {};
     if (statusFilter) query.status = statusFilter;
@@ -23,6 +25,15 @@ module.exports.surgeryList = async (req, res) => {
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
       query.beginDateTime = { $gte: date, $lt: nextDay };
+    }
+    if (surgeonFilter) query.surgeon = surgeonFilter;
+
+    // Add search functionality
+    if (searchQuery) {
+      query.$or = [
+        { code: { $regex: searchQuery, $options: 'i' } },
+        { notes: { $regex: searchQuery, $options: 'i' } }
+      ];
     }
 
     // If the user is a medecin (and not admin/chefBloc), filter surgeries to their own
@@ -42,17 +53,38 @@ module.exports.surgeryList = async (req, res) => {
       .limit(limit);
 
     const totalSurgeries = await Surgery.countDocuments(query);
+
+    // Calculate additional statistics for the dashboard
+    const completedSurgeries = await Surgery.countDocuments({ ...query, endDateTime: { $exists: true, $ne: null } });
+    const plannedSurgeries = await Surgery.countDocuments({ ...query, status: 'planned' });
+    const urgentSurgeries = await Surgery.countDocuments({ ...query, status: 'urgent' });
+
+    // Get surgeons list for filter dropdown
+    const surgeons = await Surgeon.find({}).sort({ firstName: 1, lastName: 1 });
+
     const totalPages = Math.ceil(totalSurgeries / limit);
+
+    // Check if user can view financial information
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canViewFinancialInfo = userPrivileges.includes('admin') || userPrivileges.includes('direction');
 
     res.render("surgeries/index", {
       title: "Gestion des Chirurgies",
       surgeries,
+      surgeons,
       currentPage: page,
+      canViewFinancialInfo,
       totalPages,
       statusFilter,
       dateFilter,
+      searchQuery,
+      surgeonFilter,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
+      totalSurgeries,
+      completedSurgeries,
+      plannedSurgeries,
+      urgentSurgeries,
     });
   } catch (error) {
     console.error("Erreur liste chirurgies:", error);
@@ -68,31 +100,42 @@ module.exports.createSurgery = async (req, res) => {
     return res.redirect('/surgeries');
   }
 
-  const mongoose = require('mongoose');
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  console.log('DEBUG createSurgery - req.body:', req.body);
 
   try {
-    // Validate surgeon and prestation specialties (use session reads for consistency)
-    const surgeonDoc = await Surgeon.findById(req.body.surgeon).populate('specialty').session(session);
-    const prestationDoc = await Prestation.findById(req.body.prestation).populate('specialty').session(session);
+    console.log('DEBUG - Full request body:', JSON.stringify(req.body, null, 2));
+    console.log('DEBUG - Surgeon ID:', req.body.surgeon);
+    console.log('DEBUG - Patient ID:', req.body.patient);
+    console.log('DEBUG - Prestation ID:', req.body.prestation);
+    
+    // Trim IDs to remove any whitespace
+    const surgeonId = String(req.body.surgeon || '').trim();
+    const patientId = String(req.body.patient || '').trim();
+    const prestationId = String(req.body.prestation || '').trim();
+    
+    if (!surgeonId || !patientId || !prestationId) {
+      throw new Error(`Missing required IDs - patient: ${!!patientId}, surgeon: ${!!surgeonId}, prestation: ${!!prestationId}`);
+    }
+    
+    // Validate surgeon and prestation specialties
+    const surgeonDoc = await Surgeon.findById(surgeonId).populate('specialty');
+    const prestationDoc = await Prestation.findById(prestationId).populate('specialty');
+
+    console.log('DEBUG - Surgeon found:', surgeonDoc ? 'YES' : 'NO');
+    console.log('DEBUG - Prestation found:', prestationDoc ? 'YES' : 'NO');
 
     if (!surgeonDoc || !prestationDoc) {
-      await session.abortTransaction();
-      session.endSession();
       return res.redirect('/surgeries/new?error=Chirurgien ou prestation introuvable');
     }
 
     if (String(surgeonDoc.specialty._id) !== String(prestationDoc.specialty._id)) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.redirect('/surgeries/new?error=La prestation choisie ne correspond pas \u00e0 la sp\u00e9cialit\u00e9 du chirurgien');
+      return res.redirect('/surgeries/new?error=La prestation choisie ne correspond pas à la spécialité du chirurgien');
     }
 
     const surgeryData = {
-      patient: req.body.patient,
-      surgeon: req.body.surgeon,
-      prestation: req.body.prestation,
+      patient: patientId,
+      surgeon: surgeonId,
+      prestation: prestationId,
       beginDateTime: req.body.beginDateTime,
       endDateTime: req.body.endDateTime,
       status: req.body.status,
@@ -109,21 +152,30 @@ module.exports.createSurgery = async (req, res) => {
       const beginDate = new Date(req.body.beginDateTime);
       const endDate = new Date(req.body.endDateTime);
       if (beginDate >= endDate) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.redirect('/surgeries/new?error=La date de d\u00e9but doit \u00eatre ant\u00e9rieure \u00e0 la date de fin');
+        return res.redirect('/surgeries/new?error=La date de début doit être antérieure à la date de fin');
       }
     }
 
-    // Personnel médical
+    // Personnel médical - only add if both staff and role are selected
     if (req.body.medicalStaff && req.body.rolePlayedId) {
       const staffArray = Array.isArray(req.body.medicalStaff) ? req.body.medicalStaff : [req.body.medicalStaff];
       const roleArray = Array.isArray(req.body.rolePlayedId) ? req.body.rolePlayedId : [req.body.rolePlayedId];
 
-      surgeryData.medicalStaff = staffArray.map((staff, index) => ({
-        staff: staff,
-        rolePlayedId: roleArray[index],
-      }));
+      // Filter out empty entries
+      const medicalStaffEntries = [];
+      for (let i = 0; i < staffArray.length; i++) {
+        const staff = staffArray[i];
+        const role = roleArray[i];
+        if (staff && staff.trim() && role && role.trim()) {
+          medicalStaffEntries.push({
+            staff: staff,
+            rolePlayedId: role,
+          });
+        }
+      }
+      if (medicalStaffEntries.length > 0) {
+        surgeryData.medicalStaff = medicalStaffEntries;
+      }
     }
 
     // Matériaux consommés
@@ -135,16 +187,18 @@ module.exports.createSurgery = async (req, res) => {
       const consumableQuantityArray = Array.isArray(req.body.consumableMaterialQuantity) ? req.body.consumableMaterialQuantity : [req.body.consumableMaterialQuantity];
 
       for (let index = 0; index < consumableArray.length; index++) {
-        const materialId = consumableArray[index];
-        const quantity = consumableQuantityArray[index];
+        const materialId = consumableArray[index] ? String(consumableArray[index]).trim() : '';
+        const quantity = consumableQuantityArray[index] ? String(consumableQuantityArray[index]).trim() : '';
         if (materialId && quantity) {
-          // Get current material price to store it permanently (use session reads)
-          const materialDoc = await Material.findById(materialId).session(session);
-          consumedMaterials.push({
-            material: materialId,
-            quantity: parseFloat(quantity),
-            priceUsed: materialDoc ? (materialDoc.weightedPrice || materialDoc.priceHT || 0) : 0,
-          });
+          // Get current material price to store it permanently
+          const materialDoc = await Material.findById(materialId);
+          if (materialDoc) {
+            consumedMaterials.push({
+              material: materialId,
+              quantity: parseFloat(quantity),
+              priceUsed: materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            });
+          }
         }
       }
     }
@@ -155,15 +209,17 @@ module.exports.createSurgery = async (req, res) => {
       const patientQuantityArray = Array.isArray(req.body.patientMaterialQuantity) ? req.body.patientMaterialQuantity : [req.body.patientMaterialQuantity];
 
       for (let index = 0; index < patientArray.length; index++) {
-        const material = patientArray[index];
-        const qty = patientQuantityArray[index];
+        const material = patientArray[index] ? String(patientArray[index]).trim() : '';
+        const qty = patientQuantityArray[index] ? String(patientQuantityArray[index]).trim() : '';
         if (material && qty) {
-          const materialDoc = await Material.findById(material).session(session);
-          consumedMaterials.push({
-            material: material,
-            quantity: parseFloat(qty),
-            priceUsed: materialDoc ? (materialDoc.weightedPrice || materialDoc.priceHT || 0) : 0,
-          });
+          const materialDoc = await Material.findById(material);
+          if (materialDoc) {
+            consumedMaterials.push({
+              material: material,
+              quantity: parseFloat(qty),
+              priceUsed: materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            });
+          }
         }
       }
     }
@@ -172,45 +228,51 @@ module.exports.createSurgery = async (req, res) => {
       surgeryData.consumedMaterials = consumedMaterials;
     }
 
-    // Create and save surgery within transaction
+    // Create and save surgery
     const surgery = new Surgery(surgeryData);
-    await surgery.save({ session, validateBeforeSave: false });
+    await surgery.save({ validateBeforeSave: false });
 
-    // Update material stock within same transaction
+    // Update material stock - do this separately, don't fail if it has issues
     if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) {
       for (const consumed of surgery.consumedMaterials) {
         try {
-          await Material.findByIdAndUpdate(consumed.material, { $inc: { stock: -Math.abs(consumed.quantity) } }, { session });
+          // Fetch material to get current weighted price for stockValue adjustment
+          const material = await Material.findById(consumed.material);
+          if (material) {
+            // Decrease stock quantity
+            material.stock = Math.max(0, material.stock - Math.abs(consumed.quantity));
+            
+            // Decrease stock value proportionally using weighted price
+            // This maintains perpetual inventory accuracy
+            const weightedPrice = material.stock > 0 && material.stockValue > 0 
+              ? material.stockValue / material.stock 
+              : material.priceHT;
+            material.stockValue = Math.max(0, material.stockValue - (Math.abs(consumed.quantity) * weightedPrice));
+            
+            await material.save();
+          }
         } catch (err) {
-          console.error('Erreur mise \u00e0 jour stock materiel:', err);
-          // If stock update fails, abort the whole transaction
-          await session.abortTransaction();
-          session.endSession();
-          return res.redirect('/surgeries/new?error=Erreur lors de la mise \u00e0 jour du stock');
+          console.error('Erreur mise à jour stock materiel:', err);
+          // Log error but don't fail - surgery has been created
         }
       }
     }
 
-    // Commit transaction before running heavier async post-processing
-    await session.commitTransaction();
-    session.endSession();
-
-    // Post-commit: calculate fees (kept outside transaction to avoid long-running transactions)
+    // Post-creation: calculate fees
     try {
       await calculateSurgeonFees(surgery._id);
     } catch (feeErr) {
-      console.error('Erreur calcul honoraires (post-commit):', feeErr);
-      // Do not rollback transaction here - surgery has been created. Notify user.
+      console.error('Erreur calcul honoraires (post-creation):', feeErr);
+      // Do not fail - surgery has been created
     }
 
-    res.redirect('/surgeries?success=Chirurgie cr\u00e9e avec succ\u00e8s');
+    res.redirect('/surgeries?success=Chirurgie créée avec succès');
   } catch (error) {
-    console.error('Erreur cr\u00e9ation chirurgie transaction:', error);
-    try {
-      await session.abortTransaction();
-    } catch (e) {}
-    session.endSession();
-    res.redirect('/surgeries/new?error=Erreur lors de la cr\u00e9ation');
+    console.error('Erreur création chirurgie:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    res.redirect('/surgeries/new?error=Erreur lors de la création');
   }
 };
 
@@ -224,8 +286,12 @@ module.exports.renderCreateSurgeryForm = async (req, res) => {
     const fonctions = await Fonction.find().sort({ name: 1 });
     const materials = await Material.find().sort({ designation: 1 });
 
+    // Check if user can edit financial fields
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canEditSurgeryFinancials = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+
     // Provide default empty surgery object so template can safely reference surgery properties
-    const localsForRender = { title: 'Nouvelle Chirurgie', patients, surgeons, prestations, medicalStaff, fonctions, materials, surgery: {} };
+    const localsForRender = { title: 'Nouvelle Chirurgie', patients, surgeons, prestations, medicalStaff, fonctions, materials, surgery: {}, canEditSurgeryFinancials };
     console.log('DEBUG renderCreateSurgeryForm locals keys:', Object.keys(localsForRender));
     res.render('surgeries/new', localsForRender);
   } catch (error) {
@@ -249,8 +315,12 @@ module.exports.viewSurgery = async (req, res) => {
       return res.status(404).render("404", { title: "Chirurgie non trouvée" });
     }
 
-    // Calculer automatiquement les honoraires si non calculés
-    if (!surgery.surgeonAmount || surgery.surgeonAmount === 0) {
+    // Check if user can view financial information
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canViewFinancialInfo = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+
+    // Calculer automatiquement les honoraires si non calculés (only for admin/direction)
+    if (canViewFinancialInfo && (!surgery.surgeonAmount || surgery.surgeonAmount === 0)) {
       try {
         await calculateSurgeonFees(surgery._id);
         // Recharger la chirurgie avec les honoraires calculés
@@ -265,6 +335,7 @@ module.exports.viewSurgery = async (req, res) => {
         res.render("surgeries/show", {
           title: `Chirurgie: ${updatedSurgery.code}`,
           surgery: updatedSurgery,
+          canViewFinancialInfo,
         });
       } catch (calcError) {
         console.error("Erreur calcul automatique honoraires:", calcError);
@@ -272,12 +343,14 @@ module.exports.viewSurgery = async (req, res) => {
         res.render("surgeries/show", {
           title: `Chirurgie: ${surgery.code}`,
           surgery,
+          canViewFinancialInfo,
         });
       }
     } else {
       res.render("surgeries/show", {
         title: `Chirurgie: ${surgery.code}`,
         surgery,
+        canViewFinancialInfo,
       });
     }
   } catch (error) {
@@ -422,6 +495,10 @@ async function calculateSurgeonFees(surgeryId) {
     clinicAmount: Math.round(clinicAmount * 100) / 100,
   });
 
+  // Create or update payment tracking record
+  const paymentController = require('./payment.controller');
+  await paymentController.createOrUpdatePaymentRecord(surgeryId);
+
   return surgeonAmount;
 }
 
@@ -450,6 +527,10 @@ module.exports.renderEditSurgeryForm = async (req, res) => {
     const fonctions = await Fonction.find().sort({ name: 1 });
     const materials = await Material.find().sort({ designation: 1 });
 
+    // Check if user can edit financial fields
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canEditSurgeryFinancials = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+
     res.render("surgeries/edit", {
       title: "Modifier Chirurgie",
       surgery,
@@ -459,6 +540,7 @@ module.exports.renderEditSurgeryForm = async (req, res) => {
       medicalStaff,
       fonctions,
       materials,
+      canEditSurgeryFinancials,
     });
   } catch (error) {
     console.error("Erreur formulaire édition chirurgie:", error);

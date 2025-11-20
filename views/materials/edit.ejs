@@ -1,106 +1,159 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/materials/edit.ejs -->
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-pencil me-2"></i>Modifier Matériau
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/materials/<%= material._id %>?_method=PUT">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="code" class="form-label">Code (Auto-généré)</label>
-                                <input type="text" class="form-control" id="code" name="code" value="<%= material.code %>" readonly disabled>
-                                <div class="form-text">Le code ne peut pas être modifié</div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="material-card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="bi bi-pencil"></i>Modifier Matériau
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/materials/<%= material._id %>?_method=PUT">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="code" class="form-label">Code (Auto-généré)</label>
+                                    <input type="text" class="form-control" id="code" name="code" value="<%= material.code %>" readonly disabled>
+                                    <div class="form-text">Le code ne peut pas être modifié</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="category" class="form-label">Catégorie *</label>
-                                <select name="category" id="category" class="form-select" required>
-                                    <option value="consumable" <%= material.category === 'consumable' ? 'selected' : '' %>>
-                                        Consommable
-                                    </option>
-                                    <option value="patient" <%= material.category === 'patient' ? 'selected' : '' %>>
-                                        Matériel patient
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="designation" class="form-label">Désignation *</label>
-                        <input type="text" class="form-control" id="designation" name="designation" value="<%= material.designation %>" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="priceHT" class="form-label">Prix HT (DA) *</label>
-                                <input type="number" class="form-control" id="priceHT" name="priceHT" value="<%= material.priceHT %>" min="0" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="tva" class="form-label">TVA *</label>
-                                <select name="tva" id="tva" class="form-select" required>
-                                    <option value="0" <%= material.tva === 0 ? 'selected' : '' %>>0% (Exonéré)</option>
-                                    <option value="0.09" <%= material.tva === 0.09 ? 'selected' : '' %>>9%</option>
-                                    <option value="0.19" <%= material.tva === 0.19 ? 'selected' : '' %>>19% (Standard)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="unitOfMeasure" class="form-label">Unité de mesure *</label>
-                                <input type="text" class="form-control" id="unitOfMeasure" name="unitOfMeasure" value="<%= material.unitOfMeasure %>" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="specialty" class="form-label">Spécialités</label>
-                                <select name="specialty" id="specialty" class="form-select" multiple size="4">
-                                    <% specialties.forEach(specialty => { %>
-                                        <option value="<%= specialty._id %>"
-                                            <%= material.specialty && (
-                                                (Array.isArray(material.specialty) && material.specialty.some(s => s._id.toString() === specialty._id.toString())) ||
-                                                (!Array.isArray(material.specialty) && material.specialty._id.toString() === specialty._id.toString())
-                                            ) ? 'selected' : '' %>>
-                                            <%= specialty.name %> (<%= specialty.code %>)
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label required-field">Catégorie</label>
+                                    <select name="category" id="category" class="form-select" required>
+                                        <option value="consumable" <%= material.category === 'consumable' ? 'selected' : '' %>>
+                                            Consommable
                                         </option>
-                                    <% }); %>
-                                </select>
-                                <div class="form-text">
-                                    <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                        <option value="patient" <%= material.category === 'patient' ? 'selected' : '' %>>
+                                            Matériel patient
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="stock" class="form-label">Stock actuel</label>
-                                <input type="number" class="form-control" id="stock" name="stock" value="<%= material.stock %>" min="0" step="0.01">
-                                <div class="form-text">Stock physique actuel</div>
+                        
+                        <div class="mb-3">
+                            <label for="designation" class="form-label required-field">Désignation</label>
+                            <input type="text" class="form-control" id="designation" name="designation" value="<%= material.designation %>" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tva" class="form-label required-field">TVA</label>
+                                    <select name="tva" id="tva" class="form-select" required>
+                                        <option value="0" <%= material.tva === 0 ? 'selected' : '' %>>0% (Exonéré)</option>
+                                        <option value="0.09" <%= material.tva === 0.09 ? 'selected' : '' %>>9%</option>
+                                        <option value="0.19" <%= material.tva === 0.19 ? 'selected' : '' %>>19% (Standard)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="unitOfMeasure" class="form-label required-field">Unité de mesure</label>
+                                    <input type="text" class="form-control" id="unitOfMeasure" name="unitOfMeasure" value="<%= material.unitOfMeasure %>" required>
+                                </div>
                             </div>
                         </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="specialty" class="form-label">Spécialités</label>
+                                    <select name="specialty" id="specialty" class="form-select" multiple size="4">
+                                        <% specialties.forEach(specialty => { %>
+                                            <option value="<%= specialty._id %>"
+                                                <%= material.specialty && (
+                                                    (Array.isArray(material.specialty) && material.specialty.some(s => s._id.toString() === specialty._id.toString())) ||
+                                                    (!Array.isArray(material.specialty) && material.specialty._id.toString() === specialty._id.toString())
+                                                ) ? 'selected' : '' %>>
+                                                <%= specialty.name %> (<%= specialty.code %>)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                    <div class="form-text">
+                                        <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="brand" class="form-label">Marque</label>
+                                    <input type="text" class="form-control" id="brand" name="brand" value="<%= material.brand || '' %>">
+                                    <div class="form-text">Nom du fabricant ou de la marque</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="stock" class="form-label">Stock actuel</label>
+                                    <div class="form-control-plaintext fw-bold text-info">
+                                        <%= material.stock %> <%= material.unitOfMeasure %>
+                                    </div>
+                                    <small class="form-text text-muted">Modifiez le stock via "Ajouter Stock"</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="stockMinimum" class="form-label required-field">Stock Minimum</label>
+                                    <input type="number" class="form-control" id="stockMinimum" name="stockMinimum" value="<%= material.stockMinimum || 10 %>" min="0" step="1" required>
+                                    <div class="form-text">Seuil d'alerte bas</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="alertLevel" class="form-label required-field">Alerte Critique</label>
+                                    <input type="number" class="form-control" id="alertLevel" name="alertLevel" value="<%= material.alertLevel || 5 %>" min="0" step="1" required>
+                                    <div class="form-text">Seuil d'alerte critique</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    <!-- Barcode info for patient materials -->
+                    <div id="barcodeField" class="alert alert-info" style="display: none;">
+                        <i class="bi bi-qr-code"></i>
+                        Pour les matériels patients, vous pouvez ajouter des numéros de série et codes-barres pour chaque unité individuellement.
                     </div>
-                    
+
                     <div class="d-flex justify-content-between">
                         <a href="/materials/<%= material._id %>" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Annuler
+                            <i class="bi bi-arrow-left"></i>Annuler
                         </a>
                         <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-save me-2"></i>Sauvegarder
+                            <i class="bi bi-save"></i>Sauvegarder
                         </button>
                     </div>
-                </form>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide barcode field based on category
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    const barcodeField = document.getElementById('barcodeField');
+    
+    function updateBarcodeDisplay() {
+        if (categorySelect.value === 'patient') {
+            barcodeField.style.display = 'block';
+        } else {
+            barcodeField.style.display = 'none';
+        }
+    }
+    
+    updateBarcodeDisplay();
+    categorySelect.addEventListener('change', updateBarcodeDisplay);
+});
+</script>
+
+                </div>
             </div>
         </div>
     </div>

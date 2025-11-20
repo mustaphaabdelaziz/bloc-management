@@ -1,4 +1,5 @@
 <% layout('layouts/boilerplate') %>
+<div class="report-page-container">
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
@@ -24,24 +25,28 @@
     <!-- Filtres -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
+            <div class="report-card">
                 <div class="card-body">
                     <form method="GET" class="row g-3">
                         <div class="col-md-4">
-                            <label for="startDate" class="form-label">Date début</label>
+                            <label for="startDate" class="form-label">
+                                <i class="bi bi-calendar-event me-1"></i>Date début
+                            </label>
                             <input type="date" class="form-control" id="startDate" name="startDate"
                                    value="<%= filters.startDate %>">
                         </div>
                         <div class="col-md-4">
-                            <label for="endDate" class="form-label">Date fin</label>
+                            <label for="endDate" class="form-label">
+                                <i class="bi bi-calendar-check me-1"></i>Date fin
+                            </label>
                             <input type="date" class="form-control" id="endDate" name="endDate"
                                    value="<%= filters.endDate %>">
                         </div>
                         <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                            <button type="submit" class="report-btn btn-primary">
                                 <i class="bi bi-search me-1"></i>Filtrer
                             </button>
-                            <a href="/reports/clinic-revenue" class="btn btn-outline-secondary">
+                            <a href="/reports/clinic-revenue" class="report-btn btn-outline-secondary">
                                 <i class="bi bi-arrow-clockwise me-1"></i>Réinitialiser
                             </a>
                         </div>
@@ -54,8 +59,8 @@
     <!-- Résumé global -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card border-success">
-                <div class="card-header bg-success text-white">
+            <div class="report-summary-card allocation-summary">
+                <div class="card-header">
                     <h6 class="mb-0">
                         <i class="bi bi-cash me-2"></i>
                         Revenus Allocation
@@ -64,17 +69,17 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-6">
-                            <div class="text-center">
-                                <h3 class="text-success mb-1">
+                            <div class="metric-item">
+                                <h3 class="metric-value">
                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.totalRevenue) %>
                                 </h3>
-                                <p class="text-muted small mb-0">Total Revenus</p>
+                                <p class="metric-label">Total Revenus</p>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="text-center">
-                                <h4 class="text-primary mb-1"><%= revenueByContractType.allocation.totalSurgeries %></h4>
-                                <p class="text-muted small mb-0">Chirurgies</p>
+                            <div class="metric-item">
+                                <h4 class="metric-value text-primary"><%= revenueByContractType.allocation.totalSurgeries %></h4>
+                                <p class="metric-label">Chirurgies</p>
                             </div>
                         </div>
                     </div>
@@ -82,8 +87,8 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card border-primary">
-                <div class="card-header bg-primary text-white">
+            <div class="report-summary-card percentage-summary">
+                <div class="card-header">
                     <h6 class="mb-0">
                         <i class="bi bi-percent me-2"></i>
                         Revenus Pourcentage
@@ -92,11 +97,11 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-6">
-                            <div class="text-center">
-                                <h3 class="text-primary mb-1">
+                            <div class="metric-item">
+                                <h3 class="metric-value">
                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.totalRevenue) %>
                                 </h3>
-                                <p class="text-muted small mb-0">Total Revenus</p>
+                                <p class="metric-label">Total Revenus</p>
                             </div>
                         </div>
                         <div class="col-6">
@@ -114,101 +119,95 @@
     <!-- Onglets pour les détails -->
     <div class="row">
         <div class="col-12">
-            <ul class="nav nav-tabs" id="revenueTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="allocation-tab" data-bs-toggle="tab" data-bs-target="#allocation" type="button" role="tab">
-                        <i class="bi bi-cash me-1"></i>Contrats Allocation
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="percentage-tab" data-bs-toggle="tab" data-bs-target="#percentage" type="button" role="tab">
-                        <i class="bi bi-percent me-1"></i>Contrats Pourcentage
-                    </button>
-                </li>
-            </ul>
+            <div class="report-tabs">
+                <ul class="nav nav-tabs" id="revenueTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="allocation-tab" data-bs-toggle="tab" data-bs-target="#allocation" type="button" role="tab">
+                            <i class="bi bi-cash me-1"></i>Contrats Allocation
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="percentage-tab" data-bs-toggle="tab" data-bs-target="#percentage" type="button" role="tab">
+                            <i class="bi bi-percent me-1"></i>Contrats Pourcentage
+                        </button>
+                    </li>
+                </ul>
 
-            <div class="tab-content" id="revenueTabsContent">
-                <!-- Onglet Allocation -->
-                <div class="tab-pane fade show active" id="allocation" role="tabpanel">
-                    <div class="card mt-3">
-                        <div class="card-header">
-                            <h6 class="mb-0">Détail des Revenus - Contrats d'Allocation</h6>
-                        </div>
-                        <div class="card-body">
-                            <!-- Ventilation des revenus allocation -->
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <h6 class="text-success mb-3">Ventilation des Revenus</h6>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-success mb-0">
+                <div class="tab-content" id="revenueTabsContent">
+                    <!-- Onglet Allocation -->
+                    <div class="tab-pane fade show active" id="allocation" role="tabpanel">
+                        <div class="report-card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>Détail des Revenus - Contrats d'Allocation
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Ventilation des revenus allocation -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-success mb-3">
+                                            <i class="bi bi-pie-chart me-2"></i>Ventilation des Revenus
+                                        </h6>
+                                        <div class="revenue-breakdown">
+                                            <div class="breakdown-item">
+                                                <div class="breakdown-value text-success">
                                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.allocationFees) %>
                                                 </div>
-                                                <small class="text-muted">Allocation</small>
+                                                <div class="breakdown-label">Allocation</div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-danger mb-0">
+                                            <div class="breakdown-item">
+                                                <div class="breakdown-value text-danger">
                                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.materialCosts) %>
                                                 </div>
-                                                <small class="text-muted">Matériaux</small>
+                                                <div class="breakdown-label">Matériaux</div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-info mb-0">
+                                            <div class="breakdown-item">
+                                                <div class="breakdown-value text-info">
                                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.personnelFees) %>
                                                 </div>
-                                                <small class="text-muted">Personnel</small>
+                                                <div class="breakdown-label">Personnel</div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-warning mb-0">
+                                            <div class="breakdown-item">
+                                                <div class="breakdown-value text-warning">
                                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.urgentFees) %>
                                                 </div>
-                                                <small class="text-muted">Urgents</small>
+                                                <div class="breakdown-label">Urgents</div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-danger mb-0">
+                                            <div class="breakdown-item">
+                                                <div class="breakdown-value text-danger">
                                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.breakdown.extraFees) %>
                                                 </div>
-                                                <small class="text-muted">Suppl.</small>
+                                                <div class="breakdown-label">Suppl.</div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-success rounded">
-                                                <div class="h5 text-white mb-0">
+                                            <div class="breakdown-item total">
+                                                <div class="breakdown-value">
                                                     <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.allocation.totalRevenue) %>
                                                 </div>
-                                                <small class="text-white">Total</small>
+                                                <div class="breakdown-label">Total</div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
                             <!-- Table des détails allocation -->
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Chirurgie</th>
-                                            <th>Chirurgien</th>
-                                            <th>Date</th>
-                                            <th>Durée</th>
-                                            <th>Allocation</th>
-                                            <th>Matériaux</th>
-                                            <th>Personnel</th>
-                                            <th>Urgents</th>
-                                            <th>Suppl.</th>
-                                            <th>Total</th>
-                                        </tr>
-                                    </thead>
+                            <div class="report-table">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th><i class="bi bi-hash me-1"></i>Chirurgie</th>
+                                                <th><i class="bi bi-person me-1"></i>Chirurgien</th>
+                                                <th><i class="bi bi-calendar me-1"></i>Date</th>
+                                                <th><i class="bi bi-clock me-1"></i>Durée</th>
+                                                <th><i class="bi bi-cash me-1"></i>Allocation</th>
+                                                <th><i class="bi bi-box me-1"></i>Matériaux</th>
+                                                <th><i class="bi bi-people me-1"></i>Personnel</th>
+                                                <th><i class="bi bi-exclamation-triangle me-1"></i>Urgents</th>
+                                                <th><i class="bi bi-plus-circle me-1"></i>Suppl.</th>
+                                                <th><i class="bi bi-trophy me-1"></i>Total</th>
+                                            </tr>
+                                        </thead>
                                     <tbody>
                                         <% revenueByContractType.allocation.details.forEach(detail => { %>
                                             <tr>
@@ -242,88 +241,82 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Onglet Pourcentage -->
+            <!-- Onglet Pourcentage -->
                 <div class="tab-pane fade" id="percentage" role="tabpanel">
-                    <div class="card mt-3">
+                    <div class="report-card mt-3">
                         <div class="card-header">
-                            <h6 class="mb-0">Détail des Revenus - Contrats de Pourcentage</h6>
+                            <h6 class="mb-0">
+                                <i class="bi bi-list-ul me-2"></i>Détail des Revenus - Contrats de Pourcentage
+                            </h6>
                         </div>
                         <div class="card-body">
                             <!-- Ventilation des revenus pourcentage -->
                             <div class="row mb-4">
                                 <div class="col-12">
-                                    <h6 class="text-primary mb-3">Ventilation des Revenus</h6>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-primary mb-0">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.baseRevenue) %>
-                                                </div>
-                                                <small class="text-muted">Base</small>
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-pie-chart me-2"></i>Ventilation des Revenus
+                                    </h6>
+                                    <div class="revenue-breakdown">
+                                        <div class="breakdown-item">
+                                            <div class="breakdown-value text-primary">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.baseRevenue) %>
                                             </div>
+                                            <div class="breakdown-label">Base</div>
                                         </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-danger mb-0">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.materialCosts) %>
-                                                </div>
-                                                <small class="text-muted">Matériaux</small>
+                                        <div class="breakdown-item">
+                                            <div class="breakdown-value text-danger">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.materialCosts) %>
                                             </div>
+                                            <div class="breakdown-label">Matériaux</div>
                                         </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-info mb-0">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.personnelFees) %>
-                                                </div>
-                                                <small class="text-muted">Personnel</small>
+                                        <div class="breakdown-item">
+                                            <div class="breakdown-value text-info">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.personnelFees) %>
                                             </div>
+                                            <div class="breakdown-label">Personnel</div>
                                         </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-warning mb-0">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.urgentFees) %>
-                                                </div>
-                                                <small class="text-muted">Urgents</small>
+                                        <div class="breakdown-item">
+                                            <div class="breakdown-value text-warning">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.urgentFees) %>
                                             </div>
+                                            <div class="breakdown-label">Urgents</div>
                                         </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-light rounded">
-                                                <div class="h5 text-danger mb-0">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.extraFees) %>
-                                                </div>
-                                                <small class="text-muted">Suppl.</small>
+                                        <div class="breakdown-item">
+                                            <div class="breakdown-value text-danger">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.breakdown.extraFees) %>
                                             </div>
+                                            <div class="breakdown-label">Suppl.</div>
                                         </div>
-                                        <div class="col-md-2">
-                                            <div class="text-center p-2 bg-primary rounded">
-                                                <div class="h5 text-white mb-0">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.totalRevenue) %>
-                                                </div>
-                                                <small class="text-white">Total</small>
+                                        <div class="breakdown-item total">
+                                            <div class="breakdown-value">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(revenueByContractType.percentage.totalRevenue) %>
                                             </div>
+                                            <div class="breakdown-label">Total</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Table des détails pourcentage -->
-                            <div class="table-responsive">
-                                <table class="table table-striped">
+                            <div class="report-table">
+                                <div class="table-responsive">
+                                    <table class="table">
                                     <thead>
                                         <tr>
-                                            <th>Chirurgie</th>
-                                            <th>Chirurgien</th>
-                                            <th>Date</th>
-                                            <th>Durée</th>
-                                            <th>Base</th>
-                                            <th>Hon. Chir.</th>
-                                            <th>%</th>
-                                            <th>Matériaux</th>
-                                            <th>Personnel</th>
-                                            <th>Urgents</th>
-                                            <th>Suppl.</th>
-                                            <th>Total</th>
+                                            <th><i class="bi bi-hash me-1"></i>Chirurgie</th>
+                                            <th><i class="bi bi-person me-1"></i>Chirurgien</th>
+                                            <th><i class="bi bi-calendar me-1"></i>Date</th>
+                                            <th><i class="bi bi-clock me-1"></i>Durée</th>
+                                            <th><i class="bi bi-cash me-1"></i>Base</th>
+                                            <th><i class="bi bi-person-badge me-1"></i>Hon. Chir.</th>
+                                            <th><i class="bi bi-percent me-1"></i>%</th>
+                                            <th><i class="bi bi-box me-1"></i>Matériaux</th>
+                                            <th><i class="bi bi-people me-1"></i>Personnel</th>
+                                            <th><i class="bi bi-exclamation-triangle me-1"></i>Urgents</th>
+                                            <th><i class="bi bi-plus-circle me-1"></i>Suppl.</th>
+                                            <th><i class="bi bi-trophy me-1"></i>Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -368,4 +361,5 @@
             </div>
         </div>
     </div>
+</div>
 </div>

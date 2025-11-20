@@ -1,0 +1,235 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Suivi des Paiements</h1>
+                <p class="page-subtitle">Gestion des paiements chirurgiens</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Code chirurgie, chirurgien, patient..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/payments" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des paiements -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Paiements
+                <span class="badge bg-light text-primary ms-2"><%= payments.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (payments.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code Chirurgie</th>
+                                <th>Chirurgien</th>
+                                <th>Patient</th>
+                                <th>Type</th>
+                                <th>Montant Total</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% payments.forEach(payment => { %>
+                                <tr>
+                                    <td>
+                                        <a href="/surgeries/<%= payment.surgery._id %>"><%= payment.surgery.code %></a>
+                                    </td>
+                                    <td>
+                                        Dr. <%= payment.surgeon.lastName %> <%= payment.surgeon.firstName %>
+                                    </td>
+                                    <td>
+                                        <%= payment.surgery.patient.lastName %> <%= payment.surgery.patient.firstName %>
+                                    </td>
+                                    <td>
+                                        <% if(payment.paymentType === 'outgoing') { %>
+                                            <span class="badge bg-danger">Sortie</span>
+                                        <% } else { %>
+                                            <span class="badge bg-success">Entrée</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <%= payment.totalAmount.toFixed(2) %> DA
+                                    </td>
+                                    <td>
+                                        <% if(payment.status === 'complete') { %>
+                                            <span class="badge bg-success">Complet</span>
+                                        <% } else if(payment.status === 'partial') { %>
+                                            <span class="badge bg-warning">Partiel</span>
+                                        <% } else if(payment.status === 'pending') { %>
+                                            <span class="badge bg-secondary">En attente</span>
+                                        <% } else { %>
+                                            <span class="badge bg-dark">Annulé</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="material-actions">
+                                            <a href="/payments/<%= payment._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <% if(payment.status !== 'complete' && payment.status !== 'cancelled') { %>
+                                                <button class="btn btn-outline-success btn-sm" title="Ajouter paiement"
+                                                        data-bs-toggle="modal" data-bs-target="#recordPaymentModal"
+                                                        data-payment-id="<%= payment._id %>"
+                                                        data-remaining="<%= payment.amountRemaining %>"
+                                                        data-surgery-code="<%= payment.surgery.code %>">
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </button>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h5 class="empty-title">Aucun paiement trouvé</h5>
+                    <p class="empty-description">Commencez par enregistrer des paiements</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal fade" id="recordPaymentModal" tabindex="-1" aria-labelledby="recordPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="recordPaymentForm">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="recordPaymentModalLabel">
+                        <i class="bi bi-cash me-2"></i>Enregistrer un Paiement
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <strong>Chirurgie:</strong> <span id="surgeryCode"></span><br>
+                        <strong>Montant restant:</strong> <span id="remainingAmount"></span> DA
+                    </div>
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">
+                            Montant <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number"
+                                   class="form-control"
+                                   id="amount"
+                                   name="amount"
+                                   step="0.01"
+                                   min="0.01"
+                                   required>
+                            <span class="input-group-text">DA</span>
+                        </div>
+                        <div class="form-text">Entrez le montant du paiement reçu</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">Méthode de paiement</label>
+                        <select name="paymentMethod" id="paymentMethod" class="form-select">
+                            <option value="cash">Espèces</option>
+                            <option value="check">Chèque</option>
+                            <option value="transfer">Virement</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reference" class="form-label">Référence</label>
+                        <input type="text"
+                               class="form-control"
+                               id="reference"
+                               name="reference"
+                               placeholder="Numéro de chèque, ID virement, etc.">
+                        <div class="form-text">Référence de la transaction (optionnel)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control"
+                                  id="notes"
+                                  name="notes"
+                                  rows="3"
+                                  placeholder="Notes additionnelles..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle modal data population
+document.getElementById('recordPaymentModal').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    const paymentId = button.getAttribute('data-payment-id');
+    const remaining = parseFloat(button.getAttribute('data-remaining'));
+    const surgeryCode = button.getAttribute('data-surgery-code');
+
+    const form = document.getElementById('recordPaymentForm');
+    form.action = `/payments/${paymentId}/record`;
+
+    document.getElementById('remainingAmount').textContent = remaining.toFixed(2);
+    document.getElementById('surgeryCode').textContent = surgeryCode;
+
+    const amountInput = form.querySelector('input[name="amount"]');
+    amountInput.max = remaining.toFixed(2);
+    amountInput.value = '';
+
+    // Reset form
+    form.reset();
+});
+
+// Validate amount doesn't exceed remaining
+document.getElementById('recordPaymentForm').addEventListener('submit', function(event) {
+    const amountInput = this.querySelector('input[name="amount"]');
+    const maxAmount = parseFloat(amountInput.max);
+    const enteredAmount = parseFloat(amountInput.value);
+
+    if (enteredAmount > maxAmount) {
+        event.preventDefault();
+        alert(`Le montant ne peut pas dépasser ${maxAmount.toFixed(2)} DA`);
+        return false;
+    }
+});
+</script>

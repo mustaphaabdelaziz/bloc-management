@@ -432,12 +432,13 @@ module.exports.clinicRevenueReport = async (req, res) => {
                     duration: surgery.actualDuration,
                     surgeonAmount: surgeonAllocationAmount,
                     allocationRate: surgery.surgeon.allocationRate,
+                    allocationCost: allocationCost,
                     materialCost,
                     personnelCost,
                     personnelCostWithUrgent,
                     urgentFee: 0, // Always 0 for allocation method (urgent impact applied via personnel uplift/allocationRate)
                     extraFees: 0, // Always 0 for allocation method
-                    clinicRevenue: clinicRevenue
+                    totalRevenue: clinicRevenue
                 });
 
             } else if (contractType === 'percentage') {

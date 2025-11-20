@@ -28,7 +28,7 @@ module.exports.createfonction = async (req, res) => {
     res.render("fonctions/new", {
       title: "Nouvelle Fonction",
       fonction: req.body,
-      error: "Erreur lors de la création",
+      error: error.message || "Erreur lors de la création",
     });
   }
 };

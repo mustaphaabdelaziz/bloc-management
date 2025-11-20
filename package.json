@@ -6,6 +6,8 @@
   "scripts": {
     "start": "nodemon app.js",
     "dev": "nodemon app.js",
+    "build-css": "sass public/css/layout.scss public/css/layout.css --style=compressed && sass public/css/materials.scss public/css/materials.css --style=compressed && sass public/css/patient.scss public/css/patient.css --style=compressed && sass public/css/specialties.scss public/css/specialties.css --style=compressed",
+    "build": "npm run build-css",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -23,14 +25,17 @@
     "method-override": "^3.0.0",
     "moment": "^2.30.1",
     "mongoose": "^8.18.0",
+    "multer": "^2.0.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "^8.0.0",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
-    "prettier-plugin-ejs": "^1.0.3"
+    "nodemon": "^3.1.11",
+    "prettier-plugin-ejs": "^1.0.3",
+    "sass": "^1.77.8"
   },
   "keywords": [
     "healthcare",

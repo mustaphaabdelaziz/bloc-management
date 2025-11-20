@@ -1,39 +1,80 @@
 <% layout('layouts/boilerplate') %>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="mb-0">
-                    <i class="bi bi-people-fill me-2 text-primary"></i>
-                    Gestion des Utilisateurs
-                </h3>
-                <a href="/register" class="btn btn-success">
-                    <i class="bi bi-person-plus me-2"></i>
-                    Nouveau Utilisateur
-                </a>
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Utilisateurs</h1>
+                <p class="page-subtitle">Administration des comptes utilisateurs</p>
             </div>
+            <% if (permissions.canManageUsers) { %>
+            <a href="/register" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouveau Utilisateur
+            </a>
+            <% } %>
+        </div>
+    </div>
+</div>
 
-            <% if (users && users.length > 0) { %>
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th><i class="bi bi-person-circle me-1"></i> Nom d'utilisateur</th>
-                                    <th><i class="bi bi-person me-1"></i> Prénom</th>
-                                    <th><i class="bi bi-person me-1"></i> Nom</th>
-                                    <th><i class="bi bi-shield-check me-1"></i> Privilèges</th>
-                                    <th><i class="bi bi-calendar me-1"></i> Créé le</th>
-                                    <th><i class="bi bi-gear me-1"></i> Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% users.forEach(user => { %>
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Email, nom ou prénom..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/users" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des utilisateurs -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Utilisateurs
+                <span class="badge bg-light text-primary ms-2"><%= users.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (users.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Prénom</th>
+                                <th>Nom</th>
+                                <th>Privilèges</th>
+                                <th>Créé le</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% users.forEach(user => { %>
                                 <tr>
                                     <td>
-                                        <strong><%= user.username %></strong>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-person-circle"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= user.email %></h6>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td><%= user.firstname %></td>
                                     <td><%= user.lastname %></td>
@@ -46,47 +87,55 @@
                                             <span class="text-muted">Aucun</span>
                                         <% } %>
                                     </td>
-                                    <td><%= moment(user.createdAt).format('DD/MM/YYYY') %></td>
+                                    <td><%= typeof moment !== 'undefined' ? moment(user.createdAt).format('DD/MM/YYYY') : user.createdAt.toLocaleDateString() %></td>
                                     <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="/users/<%= user._id %>" class="btn btn-sm btn-outline-info" title="Voir détails">
+                                        <% if (permissions.canManageUsers) { %>
+                                        <div class="material-actions">
+                                            <a href="/users/<%= user._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="/users/<%= user._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
+                                            <a href="/users/<%= user._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <% if (currentUser && !user._id.equals(currentUser._id)) { %>
-                                            <form method="POST" action="/users/<%= user._id %>?_method=DELETE" class="d-inline"
-                                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteUser('<%= user._id %>')" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                             <% } %>
                                         </div>
+                                        <% } else { %>
+                                        <span class="text-muted">-</span>
+                                        <% } %>
                                     </td>
                                 </tr>
-                                <% }) %>
-                            </tbody>
-                        </table>
-                    </div>
+                            <% }); %>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
             <% } else { %>
-            <div class="card shadow-sm">
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-people display-4 text-muted mb-3"></i>
-                    <h5 class="text-muted">Aucun utilisateur trouvé</h5>
-                    <p class="text-muted">Commencez par créer votre premier utilisateur.</p>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h5 class="empty-title">Aucun utilisateur trouvé</h5>
+                    <p class="empty-description">Commencez par créer votre premier utilisateur pour administrer le système</p>
                     <a href="/register" class="btn btn-primary">
-                        <i class="bi bi-person-plus me-2"></i>
-                        Créer le premier utilisateur
+                        <i class="bi bi-plus-circle"></i>Créer le premier utilisateur
                     </a>
                 </div>
-            </div>
             <% } %>
         </div>
     </div>
 </div>
 
-<%- include("../layouts/footer") %>
+<script>
+function deleteUser(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/users/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>

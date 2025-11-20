@@ -1,148 +1,274 @@
-# AI Coding Agent Instructions for Bloc Management
+﻿# AI Coding Agent Instructions for Bloc Management
 
-## Project Overview
-**Système de Gestion de Bloc Opératoire** – A healthcare management system for operating room activity, including surgeries, patients, surgeons, medical staff, materials, and financial calculations.
+**Operating Room Management System**  Healthcare management for surgeries, patients, surgeons, staff, materials, and dynamic fee calculations (allocation vs. percentage contracts).
 
-**Stack:** Node.js/Express, MongoDB/Mongoose, EJS templating, Passport.js authentication
+**Stack:** Node.js/Express, MongoDB/Mongoose, EJS+ejs-mate, Passport.js (local strategy)
 
 ---
 
-## Critical Architectural Patterns
+## Architecture & Critical Patterns
 
 ### 1. **Role-Based Access Control (RBAC)**
-- **Location:** `middleware/rbac.js`, `middleware/auth.js`
-- **Key Roles:** `admin`, `medecin` (surgeon), `acheteur` (purchaser), `chefBloc` (operating room manager)
-- **Pattern:** All auth checks via `req.user.privileges` array. Admin always bypasses role checks.
-- **Route Protection:** Use `catchAsync()` wrapper with `isLoggedIn`, then role middleware like `ensureHeadChief`, `ensureSurgeon`, `requireAny()`
-- **Ownership Guards:** `ensureOwnerOrRole()` factory allows medecin to view own surgeries only (filtered by linked surgeon ID)
-- **Example:**
-  ```javascript
-  router.put("/:id", isLoggedIn, ensureHeadChief, catchAsync(updateSurgery));
-  ```
+- **Current Roles:** 
+  - `admin` (full system access)
+  - `direction` (all access except users & system config)
+  - `assistante` (patients/surgeries management, view-only sensitive data)
+  - `buyer` (materials management specialist)
+  - Legacy: `medecin` (surgeons), `chefBloc` (OR manager), `acheteur` (old purchaser)
+- **Location:** `middleware/auth.js` (basic checks), `middleware/rbac.js` (comprehensive factories)
+- **Pattern:** All roles stored as `req.user.privileges` array. Admin **always bypasses** role checks.
+- **Route Guards:**
+  - `isLoggedIn` – checks `req.isAuthenticated()`
+  - `requireAny('admin', 'direction', 'assistante')` – factory for any-of multiple roles
+  - `ensureAdminOrDirection` – common management access
+  - `ensureManagementAccess` – admin/direction/chefBloc
+  - `ensureMaterialsAccess` – admin/buyer
+  - `ensureViewPatients` – admin/direction/chefBloc/assistante
+  - `ensureViewSurgeries` – above + medecin
+  - `ensureOwnerOrRole(getResourceOwnerId)` – allows admin/chefBloc; surgeons see only their own surgeries
+- **Data Filtering:** Controllers filter sensitive data (pricing, contract info) for assistante role
+- **View Permissions:** `res.locals.permissions` flags (canViewPricing, canSeeContractInfo, etc.)
+- **Documentation:** See `RBAC_IMPLEMENTATION.md` for complete details
 
-### 2. **Complex Fee Calculation System**
-- **Two Contract Types:** `allocation` (hourly rate) vs `percentage` (share of prestation price)
-- **Key Formula Variations:**
-  - **Allocation:** Surgeon pays clinic allocation (duration × rate) + materials + personnel fees (with urgent uplift)
-  - **Percentage:** Surgeon receives (netAmount × percentage) - extraFees; clinic gets remainder + personnel + materials
-- **Urgent Fee:** Applied as percentage of prestation price when `surgery.status === 'urgent'`
-- **Extra Duration Fees:** Only for percentage contracts; applied when `applyExtraFees && actualDuration > prestation.duration`
-- **Files:** `controller/surgery.controller.js` (function `calculateSurgeonFees`), `controller/report.controller.js` (revenue aggregation)
-- **Critical:** Always use `surgery.adjustedPrice || prestation.priceHT` for dynamic pricing; material cost categorization matters (patient vs clinic)
+### 2. **Complex Fee Calculation (Dual Contracts)**
+- **Two models:** `allocation` (clinic hourly cost) vs `percentage` (surgeon profit-share)
+- **Stored on Surgery:** `surgeonAmount`, `clinicAmount` (calculated via `calculateSurgeonFees(surgeryId)`)
+- **Allocation contract:**
+  - Surgeon: $0 (clinic collects)
+  - Clinic: `(duration_hrs  allocationRate) + totalMaterials + personalFees(urgentMultiplier) + extraFees`
+- **Percentage contract:**
+  - Net amount = `prestationPrice  (1 + urgentRate) - patientMaterials`
+  - Surgeon: `(net  surgeonPercent) - extraFees`
+  - Clinic: `(net  clinicPercent) + patientMaterials + extraFees`
+- **Extra Fees:** Only when `applyExtraFees=true` and `actualDuration > prestation.duration`
+- **Critical:** Always use `surgery.adjustedPrice || prestation.priceHT` (frozen at creation); `material.category === 'patient'` determines cost treatment
+- **Location:** `controller/surgery.controller.js` (lines 301450)
 
-### 3. **Async Error Handling & Route Pattern**
-- **Location:** `utils/catchAsync.js`, `utils/ExpressError.js`
-- **Pattern:** All async controllers wrapped in `catchAsync()` → errors auto-propagate to Express error handler
-- **No Global Error Handler:** Error handling commented out in `app.js`; add status codes to views as `statusCode` prop
-- **Example:**
-  ```javascript
-  module.exports.surgeryList = catchAsync(async (req, res) => { ... })
-  // Usage: router.get("/", isLoggedIn, catchAsync(surgeryList));
-  ```
+### 3. **Data Model Hub: Surgery**
+- **Surgery refs:** `patient`, `surgeon`, `prestation` (always populate before calculations)
+- **Embedded:** `consumedMaterials[]` (with frozen `priceUsed`), `medicalStaff[]` (staff + rolePlayedId)
+- **Computed:** `actualDuration` = `(endDateTime - beginDateTime)` in minutes
+- **Key fields:** `status` (enum: 'urgent'|'planned'), `code` (unique), `applyExtraFees` (bool)
 
-### 4. **Data Population & Relationships**
-- **Core Models:** Patient, Surgeon, Surgery (main hub), Prestation, MedicalStaff, Material, User
-- **Surgery Schema:** Central aggregator – references patient, surgeon, prestation; embeds consumedMaterials and medicalStaff arrays
-- **Pattern:** Always `.populate()` nested refs before calculations (e.g., `populate('surgeon prestation consumedMaterials.material')`)
-- **Dates:** Use `moment.js` for formatting; `beginDateTime` stores surgery start, `endDateTime` stores end, `actualDuration` computed field (in minutes)
+### 4. **Error Handling & Async Routes**
+- **Pattern:** Wrap all async controllers in `catchAsync()` (in `utils/catchAsync.js`)
+- **No global error handler** (commented out in `app.js`)
+- **Flash messages:** Stored via `req.flash()` or query params (`?error=msg&success=msg`); injected by `config/local.js`
 
-### 5. **View Locals & Permission Flags**
-- **Location:** `config/local.js`
-- **Pattern:** Middleware injects `res.locals.currentUser` (req.user) and permission flags (isAdmin, isMedecin, isAcheteur, isChefBloc, etc.)
-- **Usage in EJS:** Conditionally render menu items/buttons based on `<% if (permissions.isChefBloc) { ... } %>`
-- **Flash Messages:** Support both middleware flash and query params (`?success=` or `?error=`)
+### 5. **View Locals & Permission Rendering**
+- **Middleware:** `config/local.js` injects `res.locals` after passport session
+### 5. **View Locals & Permission Rendering**
+- **Middleware:** `config/local.js` injects `res.locals` after passport session
+- **Flags:** `permissions.isAdmin`, `.isDirection`, `.isAssistante`, `.isBuyer`, `.isMedecin`, `.isChefBloc`, etc.
+- **Derived abilities:** 
+  - `canManageMaterials` (admin|buyer)
+  - `canManageSurgeries` (admin|direction|chefBloc)
+  - `canViewPricing` (admin|direction)
+  - `canSeeContractInfo` (admin|direction)
+  - `canManageUsers` (admin only)
+  - `canViewPatients`, `canViewSurgeries`, `canViewReports`, etc.
+- **Usage in views:** `<% if (permissions.canViewPricing) { %> ... <% } %>`
 
 ---
 
-## Developer Workflows
+## Running & Development
 
-### Running the Application
+### Start Server
 ```bash
-npm install                    # Install dependencies
-npm run dev                    # Start with nodemon (watches for changes)
-# Or: npm start               # Direct start
-# Server runs on PORT env var or defaults to 3000
+npm install && npm run dev          # nodemon watches changes
+npm start                            # direct (no watch)
 ```
 
-### Database Setup
-- Connection: `database/connection.js` (reads `MONGODB_URI` env var)
-- Seeding: `seeds/` folder contains pre-configured users (admin/test, medecin@example.com, acheteur@example.com, chefbloc@example.com)
-- Run seeds manually if needed: execute with node CLI
+### Database
+- **Connection:** `database/connection.js` reads `DB_URL` env var
+- **Seeding:** `seeds/users.js`, `seeds/liste_actes.js`, etc.  run manually if needed
+- **Session store:** MongoDB via `connect-mongo`
 
-### Common Development Tasks
-- **Add New Entity:** Create model in `models/`, route in `routes/`, controller in `controller/`, view templates in `views/`
-- **Add Permission:** Update `User.privileges` enum in `models/User.js`, add middleware factory in `middleware/rbac.js`, update permission flags in `config/local.js`
-- **Modify Fee Calculation:** Update `calculateSurgeonFees()` function and revenue report aggregations in `controller/report.controller.js` simultaneously
-- **Add Report:** Create controller method, route, and EJS template in `views/reports/`
-
----
-
-## Project-Specific Conventions
-
-### Naming & Structure
-- **Model Collections:** Singular names in code (Patient, Surgery) → MongoDB auto-pluralizes for DB (patients, surgeries)
-- **Route Pattern:** `router.route("/").get(...).post(...)` for list+create; `router.route("/:id").get().put().delete()` for CRUD
-- **View Naming:** Match route segment + action (e.g., `/surgeries/new` → `views/surgeries/new.ejs`)
-- **Controller Methods:** Suffixed with entity + action (e.g., `surgeryList`, `surgeryList`, `createSurgery`, `viewSurgery`)
-
-### Authentication & Authorization
-- **Passport Strategy:** Local strategy using email + bcrypt hash (no passport-local-mongoose); see `config/passportConfig.js`
-- **User Model:** Stores `email`, `firstname`, `lastname`, `hash`, `salt`, `privileges` array
-- **Password Verification:** `user.verifyPassword(plaintext, hash)` method using bcrypt
-- **Session:** Uses MongoDB session store via `connect-mongo`; config in `config/sessionConfig.js`
-
-### Material Management
-- **Category Field:** Materials marked as `'patient'` (patient-specific cost) vs clinic-provided
-- **Pricing:** Use `weightedPrice` if available, fall back to `priceHT`; critical for allocation vs percentage calculations
-- **Seeding:** `seeds/liste_actes.js` initializes prestations; materials must be seeded separately
-
-### Surgery Statuses & Fields
-- **Status:** `'planned'` or `'urgent'` (stored in DB as enum)
-- **Timestamps:** `createdAt`, `updatedAt` auto-managed by Mongoose
-- **Duration:** `beginDateTime`, `endDateTime` set manually; `actualDuration` computed from end - begin (in minutes)
-- **Fees Tracking:** `surgeonAmount`, `clinicAmount` calculated and saved on demand via `calculateFees` route
+### Add New Capability
+1. **Entity CRUD:** Create model  controller  route  EJS views (follow `surgeries/` pattern)
+2. **New Role:** Add to `User.privileges` enum  update `config/local.js` permission flags
+3. **Fee Formula Change:** Update `calculateSurgeonFees()` and report aggregations in sync
+4. **Report:** Add controller method + route + template
 
 ---
 
-## Integration Points & External Dependencies
+## Code Organization & Modular Structure
 
-### Key Dependencies
-- **express:** Web framework
-- **mongoose:** MongoDB ODM (version 8.18.0)
-- **passport + passport-local:** Authentication
-- **ejs + ejs-mate:** Templating (ejs-mate for layout support)
-- **moment.js:** Date formatting & calculations
-- **bcrypt:** Password hashing
-- **connect-mongo:** MongoDB session persistence
+### Per-Entity File Structure
+For each entity (Patient, Surgery, Surgeon, etc.), follow this strict pattern:
 
-### Data Flows
-1. **Surgery Creation:** Route validates, populates refs, saves to DB, returns view
-2. **Fee Calculation:** Async POST route calls `calculateSurgeonFees()`, updates surgery doc, redirects with flash message
-3. **Reports:** Aggregate queries with $match, $lookup, $group stages; filter by date range and contract type
-4. **Role-Based Filtering:** Controllers check `req.user.privileges`, query constructor modifies `find()` filters (e.g., medecin sees own surgeries only)
+```
+models/Entity.js                    # Mongoose schema (singular name)
+routes/entity.routes.js             # Express routes
+controller/entity.controller.js      # Business logic
+views/entity/
+  ├── index.ejs                     # List view
+  ├── new.ejs                       # Bootstrap modal (create form)
+  ├── edit.ejs                      # Bootstrap modal (edit form)
+  └── delete.ejs                    # Bootstrap modal (confirm delete)
+public/css/entity.scss              # SCSS stylesheet (not CSS)
+public/css/entity.css               # Compiled CSS from SCSS
+public/js/entity.js                 # Entity-specific JavaScript
+public/assets/entity/               # Entity-specific images/files
+```
 
-### File Organization
-- **Routes:** Import controllers and middlewares, define route handlers
-- **Controllers:** Business logic; handle req/res, call models, render views
-- **Models:** Mongoose schemas with references and methods
-- **Middleware:** Auth checks, permission guards, locals injection
-- **Views:** EJS templates organized by entity (patients/, surgeries/, reports/)
-- **Config:** Environment-specific and framework configurations
+### Views Best Practices
+- **Modals:** Use Bootstrap modals for `new.ejs`, `edit.ejs`, `delete.ejs` (not page redirects)
+- **Partials:** Extract reusable components to `views/partials/` (e.g., `_form.ejs`, `_header.ejs`, `_footer.ejs`)
+- **Layouts:** Use ejs-mate layout inheritance via `<%- contentFor('body') %>` in main layout file
+
+### Styling
+- **SCSS only:** Always use `.scss` files (Sass), never plain CSS
+- **File organization:** One `.scss` file per entity (e.g., `public/css/patient.scss`)
+- **Build step:** Compile SCSS to CSS before deployment (add npm script: `"sass": "sass public/css:public/css"`)
+- **Global styles:** `public/css/main.scss` for shared utilities
+
+### JavaScript Organization
+- **Entity-specific logic:** Put in `public/js/entity.js` (e.g., `public/js/patient.js`)
+- **Global utilities:** `public/js/validate-form.js`, `public/js/filter.js`, etc. in `public/js/`
+- **DRY principle:** Avoid duplicating validation/logic between server and client
+
+### Configuration & Environment
+- **Environment variables:** Must use `.env` file (read by `dotenv` in `app.js`)
+- **Template:** Create `.env.example` with all required vars documented
+- **Database connection:** `database/connection.js` reads `DB_URL` from `.env`
+- **Middleware:** All middleware in `middleware/` folder; import pattern in `app.js` as `require('./middleware/auth')`
+
+### Assets Organization
+- **Images/PDFs:** Place in `public/assets/` (entity-specific: `public/assets/patient/`, `public/assets/surgery/`, etc.)
+- **Icons:** Use Bootstrap icons or store in `public/assets/icons/`
 
 ---
 
-## Common Pitfalls & Debugging Tips
+## Fee Calculation Logic (Critical)
 
-1. **Missing Populate:** Surgery views fail if surgeon/prestation not populated → always chain `.populate()` in queries
-2. **Fee Calculation Mismatch:** Allocation vs percentage calculations differ significantly; check `surgery.surgeon.contractType` before math
-3. **Role Bypass:** Admin always bypasses role checks (by design) → test with non-admin user to verify RBAC
-4. **Patient Materials:** Filter by `material.category === 'patient'` for net amount calc; mix-up causes clinic losses
-5. **Async/Await:** Controllers must use `await` on Mongoose queries; wrap in `catchAsync()` to auto-catch errors
-6. **Session Storage:** If session not persisting, verify `MONGODB_URI` and check `connect-mongo` configuration in `config/sessionConfig.js`
+### Workflow: When Fees Are Calculated
+1. **Surgery Creation:** Fees auto-calculated post-transaction via `calculateSurgeonFees(surgeryId)`
+2. **Manual Route:** POST `/:id/calculate-fees` explicitly recalculates and saves fees
+3. **Auto-Recalc on View:** `viewSurgery` checks if `surgeonAmount === 0`, triggers auto-calculation if missing
+
+### Price Freezing Pattern
+- **At creation:** Store `adjustedPrice = req.body.adjustedPrice || prestation.priceHT`
+- **At materials:** Store `priceUsed` on each consumedMaterial entry (not current price)
+- **Reason:** Insulates historical surgeries from price changes; always recalculate to get current values
+
+### Material Cost Aggregation
+```javascript
+// Aggregate material costs
+for (const consumedMaterial of surgery.consumedMaterials) {
+  const materialCost = (material.weightedPrice || material.priceHT) * quantity;
+  totalMaterialCost += materialCost;
+  
+  // Separate tracking for patient vs clinic materials
+  if (material.category === "patient") {
+    totalPatientMaterialCost += materialCost;
+  }
+}
+```
+- **Patient materials:** Reduce net income base for percentage contracts
+- **Clinic materials:** Included in clinic cost for allocation contracts
+
+### Personal Fees (Hourly)
+- Aggregated from all medical staff: `staff.personalFee * durationInHours`
+- For **allocation contracts:** Gets urgent uplift: `personalFees × (1 + urgentPercent)`
+- For **percentage contracts:** No uplift; fixed into surgeon's margin
+
+### Contract Type: ALLOCATION
+```
+surgeonAmount = 0
+clinicAmount = (durationHours × allocationRate) 
+              + totalMaterialCost 
+              + (totalPersonalFees × (1 + urgentPercent))
+              + extraFees
+```
+- **surgeonAmount:** Always 0 (clinic covers surgeon via allocation)
+- **extraFees:** Charged to clinic if `applyExtraFees && actualDuration > prestation.duration`
+- **Formula:** `extraFees = (exceededDurationFee × (actualDuration - prestation.duration)) / exceededDurationUnit`
+
+### Contract Type: PERCENTAGE
+```
+// 1. Net Amount (base for split)
+netAmount = prestationPrice × (1 + urgentRate) - patientMaterials
+
+// 2. Surgeon's Share
+surgeonAmount = (netAmount × surgeonPercent) - extraFees
+
+// 3. Clinic's Share
+clinicAmount = (netAmount × clinicPercent) + patientMaterials + extraFees
+```
+- **urgentRate:** Applied only if `status === 'urgent'` (prestation.urgentFeePercentage)
+- **extraFees:** Deducted from surgeon if `applyExtraFees && actualDuration > prestation.duration`
+- **Patient Materials:** Excluded from surgeon share; added back to clinic (clinic absorbs cost)
+- **Non-patient Materials:** Already deducted in net; doesn't affect split
+
+### Key Fields Required for Calculation
+- `surgery.adjustedPrice` – Frozen prestation price
+- `surgery.actualDuration` – Computed: `(endDateTime - beginDateTime)` in minutes
+- `surgery.status` – `'urgent'` or `'planned'` (enum)
+- `surgery.applyExtraFees` – Boolean flag
+- `surgery.consumedMaterials[].priceUsed` – Frozen at creation
+- `surgeon.contractType` – `'allocation'` or `'percentage'`
+- `surgeon.allocationRate` – For allocation contracts (numeric, hourly rate)
+- `surgeon.percentageRate` – For percentage contracts (e.g., 45 = 45%)
+- `prestation.duration` – Expected duration in minutes
+- `prestation.urgentFeePercentage` – Urgent uplift (e.g., 0.1 = 10%)
+- `prestation.exceededDurationUnit` – Fee unit (e.g., 15 minutes)
+- `prestation.exceededDurationFee` – Fee per unit
+- `material.category` – `'patient'` or other (affects net amount)
+- `medicalStaff[].staff.personalFee` – Hourly rate per staff member
+
+### Rounding & Safety
+```javascript
+surgeonAmount = Math.max(0, surgeonAmount);  // Never negative
+clinicAmount = Math.max(0, clinicAmount);    // Never negative
+surgeonAmount = Math.round(surgeonAmount * 100) / 100;  // 2 decimals
+```
+
+### Location & Updates
+- **Function:** `controller/surgery.controller.js` line 301: `calculateSurgeonFees(surgeryId)`
+- **Storage:** Saves to `Surgery.surgeonAmount` and `Surgery.clinicAmount`
+- **Reports:** Aggregated in `controller/report.controller.js` for surgeon/clinic revenue
 
 ---
 
-## Testing & QA Notes
-- **No unit/integration tests configured** – manual testing only currently
-- **Mock Data:** Pre-seeded users; add surgeries via UI to test calculations
-- **Console Logging:** Extensive logging in `controller/report.controller.js` and `config/passportConfig.js` for debugging
+## Project Conventions
+
+### Files & Naming
+- **Models:** Singular (`Surgery`), MongoDB auto-pluralizes to `surgeries`
+- **Routes:** `router.route(''/').get(...).post(...)` for list/create; `/:id` for show/update/delete
+- **Controllers:** Method names `surgeryList`, `createSurgery`, `viewSurgery`, `updateSurgery`
+- **Views:** Folder per entity; `views/surgeries/{index,new,show,edit}.ejs` where new/edit/delete are Bootstrap modals
+
+### Authentication
+- **Strategy:** `passport-local` with email + bcrypt hash
+- **User fields:** `email` (unique, lowercase), `firstname`, `lastname`, `hash`, `salt`, `privileges[]`
+- **Session:** MongoDB via `express-session` + `connect-mongo`
+
+### Materials & Pricing
+- **Category:** `'patient'` (patient-paid) vs. clinic-provided; affects fee math
+- **Pricing priority:** `weightedPrice`  `priceHT` (fallback)
+- **Frozen costs:** Store `priceUsed` on consumedMaterials at surgery creation
+
+### Surgery Fields
+- **Dates:** `beginDateTime` (manual), `endDateTime` (manual), `actualDuration` (computed, in minutes)
+- **Status:** `'planned'` or `'urgent'` (enum)
+- **Fees:** `surgeonAmount`, `clinicAmount` (calculated; not auto-updated on price change)
+
+---
+
+## Common Pitfalls
+
+1. **Missing populate:** Surgery views crash if `surgeon`, `prestation` not populated
+2. **Fee calc mismatch:** Allocation and percentage formulas differ; verify `surgeon.contractType`
+3. **Material category:** Using wrong category  clinic takes losses; check `material.category`
+4. **Price freezing:** Old surgeries keep `adjustedPrice` (by design)  recalculate manually if needed
+5. **Admin bypass:** Admin always passes auth checks; test permissions with non-admin user
+6. **Async without await:** Mongoose queries must be awaited; wrap in `catchAsync()`
+7. **Session lost:** Verify `DB_URL` env var and `connect-mongo` config
+
+---
+
+## Testing Notes
+- **No automated tests**  manual testing via UI
+- **Pre-seeded users:** Check `seeds/users.js` for test credentials
+- **Debug logging:** `controller/report.controller.js` and `config/passportConfig.js` have extensive logging

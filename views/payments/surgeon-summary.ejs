@@ -1,0 +1,382 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="container-fluid mt-4">
+  <!-- Enhanced Header -->
+  <div class="mb-4">
+    <a href="/payments" class="btn btn-outline-secondary btn-sm mb-3">
+      <i class="bi bi-arrow-left me-1"></i>Retour aux paiements
+    </a>
+
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h3 class="mb-1">
+          <i class="bi bi-person-circle me-2"></i>Paiements - Dr. <%= surgeon.lastname %> <%= surgeon.firstname %>
+        </h3>
+        <p class="text-muted mb-0">
+          Type de contrat: <strong><%= surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %></strong>
+        </p>
+      </div>
+      <a href="/surgeons/<%= surgeon._id %>" class="btn btn-outline-primary">
+        <i class="bi bi-person-badge me-1"></i>Voir Chirurgien
+      </a>
+    </div>
+  </div>
+
+  <!-- Enhanced Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="payment-summary-card outgoing">
+        <div class="card-body">
+          <div class="summary-icon">
+            <i class="bi bi-arrow-up-right"></i>
+          </div>
+          <div class="summary-title">Sorties (à payer au chirurgien)</div>
+          <div class="summary-amount text-danger"><%= summary.outgoing.total.toFixed(2) %> DA</div>
+          <div class="summary-details">
+            <div class="detail-item positive">Payé: <%= summary.outgoing.paid.toFixed(2) %> DA</div>
+            <div class="detail-item negative">Reste: <%= summary.outgoing.remaining.toFixed(2) %> DA</div>
+            <div class="detail-item"><%= summary.outgoing.count %> chirurgie(s)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="payment-summary-card incoming">
+        <div class="card-body">
+          <div class="summary-icon">
+            <i class="bi bi-arrow-down-left"></i>
+          </div>
+          <div class="summary-title">Entrées (à recevoir du chirurgien)</div>
+          <div class="summary-amount text-success"><%= summary.incoming.total.toFixed(2) %> DA</div>
+          <div class="summary-details">
+            <div class="detail-item positive">Reçu: <%= summary.incoming.paid.toFixed(2) %> DA</div>
+            <div class="detail-item warning">Reste: <%= summary.incoming.remaining.toFixed(2) %> DA</div>
+            <div class="detail-item"><%= summary.incoming.count %> chirurgie(s)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="payment-summary-card net-balance">
+        <div class="card-body">
+          <div class="summary-icon">
+            <i class="bi bi-calculator"></i>
+          </div>
+          <div class="summary-title">Solde Net</div>
+          <div class="summary-amount <%= summary.netBalance >= 0 ? 'text-success' : 'text-danger' %>">
+            <%= summary.netBalance.toFixed(2) %> DA
+          </div>
+          <div class="summary-details">
+            <div class="detail-item">
+              <% if(summary.netBalance > 0) { %>
+                Clinique doit recevoir
+              <% } else if(summary.netBalance < 0) { %>
+                Clinique doit payer
+              <% } else { %>
+                Comptes équilibrés
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="payment-summary-card">
+        <div class="card-body">
+          <div class="summary-icon">
+            <i class="bi bi-pie-chart"></i>
+          </div>
+          <div class="summary-title">Statuts</div>
+          <div class="summary-details">
+            <div class="detail-item">
+              <span class="payment-status-badge status-pending">
+                <i class="bi bi-clock"></i> <%= summary.byStatus.pending %>
+              </span> En attente
+            </div>
+            <div class="detail-item">
+              <span class="payment-status-badge status-partial">
+                <i class="bi bi-dash-circle"></i> <%= summary.byStatus.partial %>
+              </span> Partiels
+            </div>
+            <div class="detail-item">
+              <span class="payment-status-badge status-complete">
+                <i class="bi bi-check-circle"></i> <%= summary.byStatus.complete %>
+              </span> Complets
+            </div>
+            <% if(summary.byStatus.cancelled > 0) { %>
+              <div class="detail-item">
+                <span class="payment-status-badge status-cancelled">
+                  <i class="bi bi-x-circle"></i> <%= summary.byStatus.cancelled %>
+                </span> Annulés
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payments List -->
+  <div class="payment-table-container">
+    <div class="card">
+      <div class="card-header payment-table-header">
+        <h5 class="mb-0">
+          <i class="bi bi-list-ul me-2"></i>Liste des Paiements
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="payment-table">
+            <thead class="payment-table-header">
+              <tr>
+                <th>Code</th>
+                <th>Patient</th>
+                <th>Date Chirurgie</th>
+                <th>Type</th>
+                <th>Montant Total</th>
+                <th>Payé</th>
+                <th>Reste</th>
+                <th>Statut</th>
+                <th>Progression</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (payments.length === 0) { %>
+                <tr>
+                  <td colspan="10" class="payment-table-empty">
+                    <div class="empty-state">
+                      <i class="bi bi-inbox"></i>
+                      <p>Aucun paiement trouvé pour ce chirurgien</p>
+                    </div>
+                  </td>
+                </tr>
+              <% } else { %>
+                <% for(let payment of payments) { %>
+                  <tr class="payment-table-row">
+                    <td>
+                      <a href="/surgeries/<%= payment.surgery._id %>" class="payment-link">
+                        <%= payment.surgery.code %>
+                      </a>
+                    </td>
+                    <td class="payment-patient">
+                      <%= payment.surgery.patient.lastName %> <%= payment.surgery.patient.firstName %>
+                    </td>
+                    <td><%= moment(payment.surgery.beginDateTime).format('DD/MM/YYYY') %></td>
+                    <td>
+                      <% if(payment.paymentType === 'outgoing') { %>
+                        <span class="payment-type-badge outgoing">
+                          <i class="bi bi-arrow-up-right"></i> Sortie
+                        </span>
+                      <% } else { %>
+                        <span class="payment-type-badge incoming">
+                          <i class="bi bi-arrow-down-left"></i> Entrée
+                        </span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <div class="amount-display">
+                        <span class="amount-value"><%= payment.totalAmount.toFixed(2) %></span>
+                        <span class="amount-currency">DA</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="amount-display positive">
+                        <span class="amount-value"><%= payment.amountPaid.toFixed(2) %></span>
+                        <span class="amount-currency">DA</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="amount-display warning">
+                        <span class="amount-value"><%= payment.amountRemaining.toFixed(2) %></span>
+                        <span class="amount-currency">DA</span>
+                      </div>
+                    </td>
+                    <td>
+                      <% if(payment.status === 'complete') { %>
+                        <span class="payment-status-badge status-complete">
+                          <i class="bi bi-check-circle"></i> Complet
+                        </span>
+                      <% } else if(payment.status === 'partial') { %>
+                        <span class="payment-status-badge status-partial">
+                          <i class="bi bi-hourglass-split"></i> Partiel
+                        </span>
+                      <% } else if(payment.status === 'cancelled') { %>
+                        <span class="payment-status-badge status-cancelled">
+                          <i class="bi bi-x-circle"></i> Annulé
+                        </span>
+                      <% } else { %>
+                        <span class="payment-status-badge status-pending">
+                          <i class="bi bi-clock"></i> Attente
+                        </span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <div class="payment-progress">
+                        <div class="progress-bar-container">
+                          <div class="progress-bar-fill" style="width: <%= payment.completionPercentage %>%">
+                            <span class="progress-text"><%= payment.completionPercentage %>%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="payment-actions">
+                        <a href="/payments/<%= payment._id %>" class="btn btn-outline-primary btn-sm" title="Voir détails">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                        <% if(payment.status !== 'complete' && payment.status !== 'cancelled') { %>
+                          <button class="btn btn-outline-success btn-sm"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#recordPaymentModal"
+                                  data-payment-id="<%= payment._id %>"
+                                  data-remaining="<%= payment.amountRemaining %>"
+                                  data-surgery-code="<%= payment.surgery.code %>"
+                                  title="Enregistrer paiement">
+                            <i class="bi bi-cash"></i>
+                          </button>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% } %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <% if (totalPages > 1) { %>
+          <nav aria-label="Pagination" class="payment-pagination">
+            <ul class="pagination justify-content-center">
+              <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= currentPage - 1 %>">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+              <% for(let i = 1; i <= totalPages; i++) { %>
+                <% if(i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) { %>
+                  <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                  </li>
+                <% } else if(i === currentPage - 3 || i === currentPage + 3) { %>
+                  <li class="page-item disabled"><span class="page-link">...</span></li>
+                <% } %>
+              <% } %>
+              <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= currentPage + 1 %>">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal fade payment-modal" id="recordPaymentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="recordPaymentForm">
+        <div class="modal-header payment-modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-cash me-2"></i>Enregistrer un Paiement
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body payment-modal-body">
+          <div class="payment-modal-alert">
+            <div class="alert-icon">
+              <i class="bi bi-info-circle"></i>
+            </div>
+            <div class="alert-content">
+              <strong>Chirurgie:</strong> <span id="surgeryCode"></span><br>
+              <strong>Montant restant:</strong> <span id="remainingAmount"></span> DA
+            </div>
+          </div>
+
+          <div class="payment-form-group">
+            <label for="amount" class="payment-form-label">
+              Montant <span class="required">*</span>
+            </label>
+            <div class="payment-input-group">
+              <input type="number" 
+                     class="payment-form-input" 
+                     id="amount" 
+                     name="amount" 
+                     step="0.01" 
+                     min="0.01"
+                     required>
+              <span class="payment-input-addon">DA</span>
+            </div>
+          </div>
+
+          <div class="payment-form-group">
+            <label for="paymentMethod" class="payment-form-label">Méthode de paiement</label>
+            <select name="paymentMethod" id="paymentMethod" class="payment-form-select">
+              <option value="cash">Espèces</option>
+              <option value="check">Chèque</option>
+              <option value="transfer">Virement</option>
+              <option value="other">Autre</option>
+            </select>
+          </div>
+
+          <div class="payment-form-group">
+            <label for="reference" class="payment-form-label">Référence</label>
+            <input type="text" class="payment-form-input" id="reference" name="reference">
+          </div>
+
+          <div class="payment-form-group">
+            <label for="notes" class="payment-form-label">Notes</label>
+            <textarea class="payment-form-textarea" id="notes" name="notes" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer payment-modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-success payment-submit-btn">
+            <i class="bi bi-check-circle me-1"></i>Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('recordPaymentModal').addEventListener('show.bs.modal', function(event) {
+  const button = event.relatedTarget;
+  const paymentId = button.getAttribute('data-payment-id');
+  const remaining = parseFloat(button.getAttribute('data-remaining'));
+  const surgeryCode = button.getAttribute('data-surgery-code');
+  
+  const form = document.getElementById('recordPaymentForm');
+  form.action = `/payments/${paymentId}/record`;
+  
+  document.getElementById('remainingAmount').textContent = remaining.toFixed(2);
+  document.getElementById('surgeryCode').textContent = surgeryCode;
+  
+  const amountInput = form.querySelector('input[name="amount"]');
+  amountInput.max = remaining.toFixed(2);
+  amountInput.value = '';
+  
+  form.reset();
+});
+
+document.getElementById('recordPaymentForm').addEventListener('submit', function(event) {
+  const amountInput = this.querySelector('input[name="amount"]');
+  const maxAmount = parseFloat(amountInput.max);
+  const enteredAmount = parseFloat(amountInput.value);
+  
+  if (enteredAmount > maxAmount) {
+    event.preventDefault();
+    alert(`Le montant ne peut pas dépasser ${maxAmount.toFixed(2)} DA`);
+    return false;
+  }
+});
+</script>

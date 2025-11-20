@@ -45,6 +45,18 @@ const materialSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    stockValue: {
+        type: Number,
+        default: 0
+    },
+    brand: {
+        type: String,
+        required: false
+    },
+    stockMinimum: {
+        type: Number,
+        default: 10
+    },
     category: {
         type: String,
         enum: ['consumable', 'patient'],
@@ -55,34 +67,128 @@ const materialSchema = new mongoose.Schema({
         required: true
     },
     arrivals: [{
+        _id: {
+            type: mongoose.Schema.Types.ObjectId,
+            auto: true
+        },
         date: Date,
         quantity: Number,
-        unitPrice: Number
+        unitPrice: Number,
+        purchaseDate: Date
     }],
     alertLevel: {
         type: Number, // niveau d'alerte pour le stock
         default: 10
-    }
-}, { timestamps: true });
-
-// Calcul du prix pondéré
-materialSchema.virtual('weightedPrice').get(function() {
-    // Vérifier si arrivals existe et est un tableau
-    if (!this.arrivals || !Array.isArray(this.arrivals) || this.arrivals.length === 0) {
-        return this.priceHT;
-    }
-    
-    let totalValue = 0;
-    let totalQuantity = 0;
-    
-    this.arrivals.forEach(arrival => {
-        if (arrival.quantity && arrival.unitPrice) {
-            totalValue += arrival.quantity * arrival.unitPrice;
-            totalQuantity += arrival.quantity;
+    },
+    // Unit tracking for patient-type materials
+    units: [{
+        arrivalId: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: false  // Allow existing units without arrivalId to remain
+        },
+        serialNumber: {
+            type: String,
+            required: false  // Allow temp/empty serial numbers during initial creation
+        },
+        barcode: {
+            type: String,
+            required: false
+        },
+        purchaseDate: {
+            type: Date,
+            required: true
+        },
+        expirationDate: {
+            type: Date,
+            required: false
+        },
+        unitPrice: {
+            type: Number,
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ['in_stock', 'used', 'damaged', 'lost', 'expired'],
+            default: 'in_stock'
+        },
+        usedInSurgery: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Surgery',
+            required: false
+        },
+        patient: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Patient',
+            required: false
+        },
+        notes: {
+            type: String,
+            required: false
+        },
+        batch: {
+            type: String,
+            required: false
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
         }
-    });
+    }]
+}, { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+// Calcul du prix moyen pondéré (Perpetual Weighted Average)
+materialSchema.virtual('weightedPrice').get(function() {
+    // Use perpetual inventory method: current stock value / current stock quantity
+    // This ensures the weighted price reflects only the materials currently in stock,
+    // not all historical arrivals including consumed quantities
+    if (this.stock > 0 && this.stockValue > 0) {
+        return this.stockValue / this.stock;
+    }
     
-    return totalQuantity > 0 ? totalValue / totalQuantity : this.priceHT;
+    // Fallback to base price if no stock or no stock value recorded
+    return this.priceHT;
+});
+
+// Check if stock is at or below alert level
+materialSchema.virtual('isLowStock').get(function() {
+    return this.stock <= this.stockMinimum;
+});
+
+// Check if stock is critically low (at or below alertLevel)
+materialSchema.virtual('isCriticalStock').get(function() {
+    return this.stock <= this.alertLevel;
+});
+
+// Get count of units by status
+materialSchema.virtual('unitsInStock').get(function() {
+    if (!this.units || !Array.isArray(this.units)) return 0;
+    return this.units.filter(u => u.status === 'in_stock').length;
+});
+
+materialSchema.virtual('unitsExpired').get(function() {
+    if (!this.units || !Array.isArray(this.units)) return 0;
+    return this.units.filter(u => u.status === 'expired' || (u.expirationDate && new Date() > new Date(u.expirationDate))).length;
+});
+
+materialSchema.virtual('unitsExpiringSoon').get(function() {
+    if (!this.units || !Array.isArray(this.units)) return 0;
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return this.units.filter(u => 
+        u.expirationDate && 
+        u.status === 'in_stock' &&
+        new Date(u.expirationDate) <= thirtyDaysFromNow && 
+        new Date(u.expirationDate) > now
+    ).length;
+});
+
+materialSchema.virtual('unitsUsed').get(function() {
+    if (!this.units || !Array.isArray(this.units)) return 0;
+    return this.units.filter(u => u.status === 'used').length;
 });
 materialSchema.pre('save', async function(next) {
   try {

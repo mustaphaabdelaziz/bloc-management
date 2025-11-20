@@ -1,72 +1,126 @@
 <% layout('layouts/boilerplate') %>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="mb-0">Gestion des Fonctions</h3>
-        <p class="text-muted">Configuration des rôles du personnel médical</p>
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Fonctions</h1>
+                <p class="page-subtitle">Configuration et gestion des rôles du personnel médical</p>
+            </div>
+            <% if (permissions.canManageData) { %>
+            <a href="/fonctions/new" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouvelle Fonction
+            </a>
+            <% } %>
+        </div>
     </div>
-    <a href="/fonctions/new" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Nouvelle Fonction
-    </a>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <% if (fonctions.length > 0) { %>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Code</th>
-                            <th>Nom</th>
-                            <th>Date création</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% fonctions.forEach(fonction => { %>
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Nom ou code de la fonction..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/fonctions" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des fonctions -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Fonctions
+                <span class="badge bg-light text-primary ms-2"><%= fonctions.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (fonctions.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
                             <tr>
-                                <td><strong><%= fonction.code %></strong></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-person-workspace fa-2x text-info me-3"></i>
-                                        <div>
-                                            <div class="fw-bold"><%= fonction.name %></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><%= moment(fonction.createdAt).format('DD/MM/YYYY') %></td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="/fonctions/<%= fonction._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteFonction('<%= fonction._id %>')" title="Supprimer">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                <th>Fonction</th>
+                                <th>Description</th>
+                                <th>Créé le</th>
+                                <th>Actions</th>
                             </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
-        <% } else { %>
-            <div class="text-center py-5">
-                <i class="bi bi-person-workspace fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Aucune fonction trouvée</h5>
-                <p class="text-muted">Commencez par ajouter une fonction</p>
-                <a href="/fonctions/new" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-2"></i>Ajouter la première fonction
-                </a>
-            </div>
-        <% } %>
+                        </thead>
+                        <tbody>
+                            <% fonctions.forEach(fonction => { %>
+                                <tr>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-person-workspace"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= fonction.name %></h6>
+                                                <small>Code: <%= fonction.code %></small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <% if (fonction.description) { %>
+                                            <%= fonction.description %>
+                                        <% } else { %>
+                                            <span class="text-muted">Aucune description</span>
+                                        <% } %>
+                                    </td>
+                                    <td><%= typeof moment !== 'undefined' ? moment(fonction.createdAt).format('DD/MM/YYYY') : fonction.createdAt.toLocaleDateString() %></td>
+                                    <td>
+                                        <% if (permissions.canManageData) { %>
+                                        <div class="material-actions">
+                                            <a href="/fonctions/<%= fonction._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFonction('<%= fonction._id %>')" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <% } else { %>
+                                        <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-person-workspace"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune fonction trouvée</h5>
+                    <p class="empty-description">Commencez par ajouter des fonctions pour définir les rôles du personnel médical</p>
+                    <a href="/fonctions/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Ajouter la première fonction
+                    </a>
+                </div>
+            <% } %>
+        </div>
     </div>
 </div>
 
 <script>
 function deleteFonction(id) {
-    if (confirmDelete('Êtes-vous sûr de vouloir supprimer cette fonction ?')) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette fonction ?')) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/fonctions/' + id + '?_method=DELETE';
@@ -74,4 +128,5 @@ function deleteFonction(id) {
         form.submit();
     }
 }
+</script>
 </script>

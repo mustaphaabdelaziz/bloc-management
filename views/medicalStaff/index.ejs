@@ -1,96 +1,135 @@
 <% layout('layouts/boilerplate') %>
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="mb-0">Personnel Médical</h3>
-        <p class="text-muted">Gestion de l'équipe médicale du bloc opératoire</p>
+<!-- views/medicalStaff/index.ejs -->
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion du Personnel Médical</h1>
+                <p class="page-subtitle">Gestion complète de l'équipe médicale du bloc opératoire</p>
+            </div>
+            <% if (permissions.canManageData) { %>
+            <a href="/medical-staff/new" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouveau Membre
+            </a>
+            <% } %>
+        </div>
     </div>
-    <a href="/medical-staff/new" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Nouveau Personnel
-    </a>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <% if (medicalStaff.length > 0) { %>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Code</th>
-                            <th>Personnel</th>
-                            <th>Fonctions</th>
-                            <th>Téléphone</th>
-                            <th>Date création</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% medicalStaff.forEach(staff => { %>
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-10">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Nom, fonction ou spécialité..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/medical-staff" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste du personnel médical -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste du Personnel Médical
+                <span class="badge bg-light text-primary ms-2"><%= medicalStaff.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (medicalStaff.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
                             <tr>
-                                <td><strong><%= staff.code %></strong></td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-person-check fa-2x text-info me-3"></i>
-                                        <div>
-                                            <div class="fw-bold"><%= staff.firstName %> <%= staff.lastName %></div>
-                                            <small class="text-muted">
-                                                Né le <%= moment(staff.dateOfBirth).format('DD/MM/YYYY') %>
-                                                (<%= moment().diff(staff.dateOfBirth, 'years') %> ans)
-                                            </small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <% if (staff.fonctions && staff.fonctions.length > 0) { %>
-                                        <% staff.fonctions.forEach(fonction => { %>
-                                            <span class="badge bg-secondary me-1"><%= fonction.name %></span>
-                                        <% }); %>
-                                    <% } else { %>
-                                        <span class="text-muted">Aucune fonction</span>
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <% if (staff.phone) { %>
-                                        <i class="bi bi-telephone me-1"></i><%= staff.phone %>
-                                    <% } else { %>
-                                        <span class="text-muted">-</span>
-                                    <% } %>
-                                </td>
-                                <td><%= moment(staff.createdAt).format('DD/MM/YYYY') %></td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="/medical-staff/<%= staff._id %>" class="btn btn-sm btn-outline-primary" title="Voir">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="/medical-staff/<%= staff._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteStaff('<%= staff._id %>')" title="Supprimer">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                <th>Nom</th>
+                                <th>Fonction</th>
+                                <th>Spécialité</th>
+                                <th>Actions</th>
                             </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
-        <% } else { %>
-            <div class="text-center py-5">
-                <i class="bi bi-people fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Aucun personnel trouvé</h5>
-                <p class="text-muted">Commencez par ajouter du personnel médical</p>
-                <a href="/medical-staff/new" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-2"></i>Ajouter le premier membre
-                </a>
-            </div>
-        <% } %>
+                        </thead>
+                        <tbody>
+                            <% medicalStaff.forEach(staff => { %>
+                                <tr>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= staff.firstName %> <%= staff.lastName %></h6>
+                                                <small><%= staff.email || 'N/A' %></small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <% if (staff.fonctions && staff.fonctions.length > 0) { %>
+                                            <span class="badge bg-secondary"><%= staff.fonctions[0].name %></span>
+                                        <% } else { %>
+                                            <span class="text-muted">N/A</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (staff.speciality) { %>
+                                            <span class="badge bg-info"><%= staff.speciality.name %></span>
+                                        <% } else { %>
+                                            <span class="text-muted">Général</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (permissions.canManageData) { %>
+                                        <div class="material-actions">
+                                            <a href="/medical-staff/<%= staff._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="/medical-staff/<%= staff._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteMedicalStaff('<%= staff._id %>')" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <% } else { %>
+                                        <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h5 class="empty-title">Aucun personnel médical trouvé</h5>
+                    <p class="empty-description">Commencez par ajouter des membres à votre équipe médicale</p>
+                    <a href="/medical-staff/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Ajouter le premier membre
+                    </a>
+                </div>
+            <% } %>
+        </div>
     </div>
 </div>
 
 <script>
-function deleteStaff(id) {
-    if (confirmDelete('Êtes-vous sûr de vouloir supprimer ce membre du personnel ?')) {
+function deleteMedicalStaff(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce membre du personnel médical ?')) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/medical-staff/' + id + '?_method=DELETE';
@@ -98,4 +137,5 @@ function deleteStaff(id) {
         form.submit();
     }
 }
+</script>
 </script>

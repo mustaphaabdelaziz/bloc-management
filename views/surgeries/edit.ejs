@@ -1,931 +1,174 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/surgeries/edit.ejs -->
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-pencil me-2"></i>Modifier Chirurgie
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/surgeries/<%= surgery._id %>?_method=PUT" id="surgeryForm">
-                    <!-- Informations de base -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="patient" class="form-label">Patient *</label>
-                                <select name="patient" id="patient" class="form-select searchable-select" required>
-                                    <option value="">Sélectionner un patient</option>
-                                    <% patients.forEach(patient => { %>
-                                        <option value="<%= patient._id %>" <%= surgery.patient._id.toString() === patient._id.toString() ? 'selected' : '' %>>
-                                            <%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>
-                                        </option>
-                                    <% }); %>
-                                </select>
-                                <div class="form-text">
-                                    <a href="/patients/new" target="_blank" class="text-primary">
-                                        <i class="bi bi-plus-circle me-1"></i>Ajouter un nouveau patient
-                                    </a>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="surgery-card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="bi bi-pencil"></i>Modifier Chirurgie
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/surgeries/<%= surgery._id %>?_method=PUT" id="surgeryForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="code" class="form-label">Code (Auto-généré)</label>
+                                    <input type="text" class="form-control" id="code" name="code" value="<%= surgery.code %>" readonly disabled>
+                                    <div class="form-text">Le code ne peut pas être modifié</div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="surgeon" class="form-label">Chirurgien *</label>
-                                <select name="surgeon" id="surgeon" class="form-select searchable-select" required>
-                                    <option value="">Sélectionner un chirurgien</option>
-                                    <% surgeons.forEach(surgeon => { %>
-                                        <option value="<%= surgeon._id %>" data-specialty="<%= surgeon.specialty._id %>" data-contract="<%= surgeon.contractType %>" <%= surgery.surgeon._id.toString() === surgeon._id.toString() ? 'selected' : '' %>>
-                                            Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>
-                                        </option>
-                                    <% }); %>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="prestation" class="form-label">Prestation *</label>
-                                <select name="prestation" id="prestation" class="form-select searchable-select" required>
-                                    <option value="">Sélectionner une prestation</option>
-                                    <% prestations.forEach(prestation => { %>
-                                        <option value="<%= prestation._id %>"
-                                                data-specialty="<%= prestation.specialty._id %>"
-                                                data-duration="<%= prestation.duration %>"
-                                                data-price="<%= prestation.priceHT %>"
-                                                <%= surgery.prestation._id.toString() === prestation._id.toString() ? 'selected' : '' %>>
-                                            <%= prestation.designation %> - <%= prestation.specialty.name %> (<%=prestation.duration%> min)
-                                        </option>
-                                    <% }); %>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="adjustedPrice" class="form-label">Prix ajusté (DA)</label>
-                                <input type="number" class="form-control" id="adjustedPrice" name="adjustedPrice"
-                                       value="<%= surgery.adjustedPrice || '' %>" min="0" step="0.01" placeholder="Laisser vide pour utiliser le prix de base">
-                                <div class="form-text">
-                                    <small class="text-muted">
-                                        Prix spécifique pour cette chirurgie (si différent du prix de base de la prestation)
-                                    </small>
-                                </div>
-                                <div class="form-text">
-                                    <small class="text-info">
-                                        Prix de base: <span id="basePrice">
-                                            <% if (surgery.prestation && surgery.prestation.priceHT && !isNaN(parseFloat(surgery.prestation.priceHT))) {%>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(parseFloat(surgery.prestation.priceHT)) %>
-                                                <% } else { %> 
-                                                    Prix non disponible
-                                            <% } %>
-                                        </span>
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="status" class="form-label">Statut *</label>
-                                <select name="status" id="status" class="form-select" required>
-                                    <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
-                                    <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
-                                </select>
-                                <div class="form-text">
-                                    <small id="statusHelp" class="text-muted">
-                                        Changer le statut affecte automatiquement les calculs des honoraires
-                                    </small>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label required-field">Statut</label>
+                                    <select name="status" id="status" class="form-select" required>
+                                        <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
+                                        <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
 
-                    <!-- Dates et heures -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="beginDateTime" class="form-label">Date et heure de début *</label>
-                                <input type="datetime-local" class="form-control" id="beginDateTime" name="beginDateTime" 
-                                       value="<%= surgery.beginDateTime ? moment(surgery.beginDateTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
-                            </div>
+                        <div class="mb-3">
+                            <label for="patient" class="form-label required-field">Patient</label>
+                            <select name="patient" id="patient" class="form-select" required>
+                                <option value="">Sélectionner un patient</option>
+                                <% patients.forEach(patient => { %>
+                                    <option value="<%= patient._id %>" <%= surgery.patient._id.toString() === patient._id.toString() ? 'selected' : '' %>>
+                                        <%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>
+                                    </option>
+                                <% }); %>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="endDateTime" class="form-label">Date et heure de fin</label>
-                                <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime"
-                                       value="<%= surgery.endDateTime ? moment(surgery.endDateTime).format('YYYY-MM-DDTHH:mm') : '' %>">
-                                <div class="form-text">Si renseigné, permettra le calcul de la durée réelle</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Dépassement de durée -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
-                                    <label class="form-check-label" for="applyExtraFees">
-                                        <strong>Appliquer des frais supplémentaires pour dépassement de durée</strong>
-                                    </label>
-                                </div>
-                                <div class="form-text text-warning">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Si la durée dépasse celle prévue pour la prestation, des frais additionnels peuvent être appliqués.
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="surgeon" class="form-label required-field">Chirurgien</label>
+                                    <select name="surgeon" id="surgeon" class="form-select" required>
+                                        <option value="">Sélectionner un chirurgien</option>
+                                        <% surgeons.forEach(surgeon => { %>
+                                            <option value="<%= surgeon._id %>"
+                                                    data-contract="<%= surgeon.contractType %>"
+                                                    <%= surgery.surgeon._id.toString() === surgeon._id.toString() ? 'selected' : '' %>>
+                                                Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>
+                                            </option>
+                                        <% }); %>
+                                    </select>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="prestation" class="form-label required-field">Prestation</label>
+                                    <select name="prestation" id="prestation" class="form-select" required>
+                                        <option value="">Sélectionner une prestation</option>
+                                        <% prestations.forEach(prestation => { %>
+                                            <option value="<%= prestation._id %>"
+                                                    data-duration="<%= prestation.duration %>"
+                                                    data-price="<%= prestation.priceHT %>"
+                                                    <%= surgery.prestation._id.toString() === prestation._id.toString() ? 'selected' : '' %>>
+                                                <%= prestation.designation %> - <%= prestation.specialty.name %> (<%= prestation.duration %> min)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Personnel médical -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-people me-2"></i>Personnel Médical Impliqué</h6>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="beginDateTime" class="form-label required-field">Date et heure de début</label>
+                                    <input type="datetime-local" class="form-control" id="beginDateTime" name="beginDateTime"
+                                           value="<%= surgery.beginDateTime ? moment(surgery.beginDateTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="endDateTime" class="form-label">Date et heure de fin</label>
+                                    <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime"
+                                           value="<%= surgery.endDateTime ? moment(surgery.endDateTime).format('YYYY-MM-DDTHH:mm') : '' %>">
+                                    <div class="form-text">Optionnel - permet le calcul automatique de la durée</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div id="medicalStaffContainer">
-                                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
-                                    <% surgery.medicalStaff.forEach((staff, index) => { %>
-                                        <div class="row mb-3 medical-staff-row">
-                                            <div class="col-md-5">
-                                                <select name="medicalStaff" class="form-select">
-                                                    <option value="">Sélectionner personnel</option>
-                                                    <% medicalStaff.forEach(ms => { %>
-                                                        <option value="<%= ms._id %>" <%= staff.staff._id.toString() === ms._id.toString() ? 'selected' : '' %>>
-                                                            <%= ms.firstName %> <%= ms.lastName %>
-                                                        </option>
-                                                    <% }); %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <select name="rolePlayedId" class="form-select">
-                                                    <option value="">Sélectionner rôle</option>
-                                                    <% fonctions.forEach(fonction => { %>
-                                                        <option value="<%= fonction._id %>" <%= staff.rolePlayedId._id.toString() === fonction._id.toString() ? 'selected' : '' %>>
-                                                            <%= fonction.name %>
-                                                        </option>
-                                                    <% }); %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    <% }); %>
-                                <% } else { %>
-                                    <div class="row mb-3 medical-staff-row">
-                                        <div class="col-md-5">
-                                            <select name="medicalStaff" class="form-select">
-                                                <option value="">Sélectionner personnel</option>
-                                                <% medicalStaff.forEach(ms => { %>
-                                                    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
-                                                <% }); %>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-5">
-                                            <select name="rolePlayedId" class="form-select">
-                                                <option value="">Sélectionner rôle</option>
-                                                <% fonctions.forEach(fonction => { %>
-                                                    <option value="<%= fonction._id %>"><%= fonction.name %></option>
-                                                <% }); %>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
+
+                        <% if (canEditSurgeryFinancials) { %>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="adjustedPrice" class="form-label">Prix ajusté (DA)</label>
+                                    <input type="number" class="form-control" id="adjustedPrice" name="adjustedPrice"
+                                           value="<%= surgery.adjustedPrice || '' %>" min="0" step="0.01" placeholder="Prix spécifique (optionnel)">
+                                    <div class="form-text">Prix de base: <span id="basePrice">
+                                        <% if (surgery.prestation && surgery.prestation.priceHT && !isNaN(parseFloat(surgery.prestation.priceHT))) {%>
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(parseFloat(surgery.prestation.priceHT)) %>
+                                        <% } else { %>
+                                            Prix non disponible
+                                        <% } %>
+                                    </span></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="applyExtraFees">
+                                            Appliquer des frais supplémentaires
+                                        </label>
                                     </div>
-                                <% } %>
+                                    <div class="form-text">Si activé, des frais additionnels seront appliqués en cas de dépassement</div>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStaffRow()">
-                                <i class="bi bi-plus-circle me-2"></i>Ajouter personnel
+                        </div>
+                        <% } %>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes et Observations</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"
+                                      placeholder="Ajouter des notes spécifiques à cette chirurgie..."><%= surgery.notes || '' %></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/surgeries/<%= surgery._id %>" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-save"></i>Sauvegarder
                             </button>
                         </div>
-                    </div>
-                    
-                    <!-- Calcul de Base (affiché uniquement pour contrat 'percentage') -->
-                    <% 
-                        const prestationPriceHT = surgery.prestation ? parseFloat(surgery.prestation.priceHT || 0) : 0;
-                        const usedPriceInitial = surgery.adjustedPrice ? parseFloat(surgery.adjustedPrice) : prestationPriceHT;
-                        const patientMaterialsCostInitial = (surgery.consumedMaterials ? surgery.consumedMaterials.reduce((sum, mat) => {
-                            if (!mat.material || mat.material.category !== 'patient') return sum;
-                            const weightedPrice = mat.material.weightedPrice || mat.material.priceHT || 0;
-                            return sum + (weightedPrice * (mat.quantity || 0));
-                        }, 0) : 0);
-                        const baseForCalculationInitial = usedPriceInitial - patientMaterialsCostInitial;
-                        const surgeonContractType = surgery.surgeon ? surgery.surgeon.contractType : '';
-                        const baseCardHiddenClass = surgeonContractType === 'percentage' ? '' : 'd-none';
-                    %>
-                    <div class="card mb-4 <%= baseCardHiddenClass %>" id="baseCalculationCard">
-                        <div class="card-header bg-light text-dark">
-                            <h6 class="mb-0"><i class="bi bi-calculator me-2"></i>Calcul de Base</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row mb-2">
-                                <div class="col-sm-8 text-muted">Prix de la prestation HT</div>
-                                <div class="col-sm-4 text-end" id="prestationPriceDisplay"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(prestationPriceHT) %></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-sm-8 text-muted">Prix utilisé pour cette chirurgie</div>
-                                <div class="col-sm-4 text-end" id="usedPriceDisplay"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(usedPriceInitial) %></div>
-                            </div>
-                            <div class="row mb-2">
-                                <div class="col-sm-8 text-muted">− Matériaux patient</div>
-                                <div class="col-sm-4 text-end" id="patientMaterialsCostDisplay"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterialsCostInitial) %></div>
-                            </div>
-                            <hr />
-                            <div class="row mb-2">
-                                <div class="col-sm-8"><strong>Base de calcul</strong></div>
-                                <div class="col-sm-4 text-end"><strong id="baseForCalculationDisplay"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseForCalculationInitial) %></strong></div>
-                            </div>
-                            <div class="form-text mt-2">Montant utilisé pour répartir les honoraires (affiché seulement pour le mode <em>pourcentage</em>).</div>
-                        </div>
-                    </div>
-
-                    <!-- Matériaux consommables -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0"><i class="bi bi-box me-2"></i>Matériaux Consommables</h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="consumableMaterialsContainer">
-                                <% const consumableMaterials = surgery.consumedMaterials ? surgery.consumedMaterials.filter(mat => mat.material.category === 'consumable') : []; %>
-                                <% if (consumableMaterials.length > 0) { %>
-                                    <% consumableMaterials.forEach((material, index) => { %>
-                                        <div class="row mb-3 consumable-material-row">
-                                            <div class="col-md-6">
-                                                <select name="consumableMaterialId" class="form-select searchable-select">
-                                                    <option value="">Sélectionner matériau consommable</option>
-                                                    <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
-                                                        <option value="<%= mat._id %>"
-                                                                data-price="<%= mat.priceHT %>"
-                                                                data-unit="<%= mat.unitOfMeasure %>"
-                                                                data-category="<%= mat.category %>"
-                                                                data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
-                                                                <%= material.material._id.toString() === mat._id.toString() ? 'selected' : '' %>>
-                                                            <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                                                        </option>
-                                                    <% }); %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <input type="number" name="consumableMaterialQuantity" class="form-control" placeholder="Quantité"
-                                                       min="1" step="0.01" value="<%= material.quantity %>">
-                                            </div>
-                                            <div class="col-md-2">
-                                                <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    <% }); %>
-                                <% } else { %>
-                                    <div class="row mb-3 consumable-material-row">
-                                        <div class="col-md-6">
-                                            <select name="consumableMaterialId" class="form-select searchable-select">
-                                                <option value="">Sélectionner matériau consommable</option>
-                                                <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
-                                                    <option value="<%= mat._id %>"
-                                                            data-price="<%= mat.priceHT %>"
-                                                            data-unit="<%= mat.unitOfMeasure %>"
-                                                            data-category="<%= mat.category %>"
-                                                            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>">
-                                                        <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                                                    </option>
-                                                <% }); %>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="number" name="consumableMaterialQuantity" class="form-control" placeholder="Quantité"
-                                                   min="1" step="0.01">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                <% } %>
-                            </div>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addConsumableMaterialRow()">
-                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau consommable
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Matériaux patient -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-person me-2"></i>Matériaux Patient</h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="patientMaterialsContainer">
-                                <% const patientMaterials = surgery.consumedMaterials ? surgery.consumedMaterials.filter(mat => mat.material.category === 'patient') : []; %>
-                                <% if (patientMaterials.length > 0) { %>
-                                    <% patientMaterials.forEach((material, index) => { %>
-                                        <div class="row mb-3 patient-material-row">
-                                            <div class="col-md-6">
-                                                <select name="patientMaterialId" class="form-select searchable-select">
-                                                    <option value="">Sélectionner matériau patient</option>
-                                                    <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
-                                                        <option value="<%= mat._id %>"
-                                                                data-price="<%= mat.priceHT %>"
-                                                                data-unit="<%= mat.unitOfMeasure %>"
-                                                                data-category="<%= mat.category %>"
-                                                                data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
-                                                                <%= material.material._id.toString() === mat._id.toString() ? 'selected' : '' %>>
-                                                            <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                                                        </option>
-                                                    <% }); %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <input type="number" name="patientMaterialQuantity" class="form-control" placeholder="Quantité"
-                                                       min="1" step="0.01" value="<%= material.quantity %>">
-                                            </div>
-                                            <div class="col-md-2">
-                                                <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    <% }); %>
-                                <% } else { %>
-                                    <div class="row mb-3 patient-material-row">
-                                        <div class="col-md-6">
-                                            <select name="patientMaterialId" class="form-select searchable-select">
-                                                <option value="">Sélectionner matériau patient</option>
-                                                <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
-                                                    <option value="<%= mat._id %>"
-                                                            data-price="<%= mat.priceHT %>"
-                                                            data-unit="<%= mat.unitOfMeasure %>"
-                                                            data-category="<%= mat.category %>"
-                                                            data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>">
-                                                        <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                                                    </option>
-                                                <% }); %>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="number" name="patientMaterialQuantity" class="form-control" placeholder="Quantité"
-                                                   min="1" step="0.01">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                <% } %>
-                            </div>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addPatientMaterialRow()">
-                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau patient
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Notes -->
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Notes et observations</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3"><%= surgery.notes || '' %></textarea>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/surgeries/<%= surgery._id %>" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Annuler
-                        </a>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-save me-2"></i>Sauvegarder
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// Ajouter une ligne de personnel médical
-function addStaffRow() {
-    const container = document.getElementById('medicalStaffContainer');
-    const newRow = document.createElement('div');
-    newRow.className = 'row mb-3 medical-staff-row';
-    newRow.innerHTML = `
-        <div class="col-md-5">
-            <select name="medicalStaff" class="form-select">
-                <option value="">Sélectionner personnel</option>
-                <% medicalStaff.forEach(ms => { %>
-                    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
-                <% }); %>
-            </select>
-        </div>
-        <div class="col-md-5">
-            <select name="rolePlayedId" class="form-select">
-                <option value="">Sélectionner rôle</option>
-                <% fonctions.forEach(fonction => { %>
-                    <option value="<%= fonction._id %>"><%= fonction.name %></option>
-                <% }); %>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-                <i class="bi bi-trash"></i>
-            </button>
-        </div>
-    `;
-    container.appendChild(newRow);
-}
-
-// Supprimer une ligne de personnel médical
-function removeStaffRow(button) {
-    const row = button.closest('.medical-staff-row');
-    if (document.querySelectorAll('.medical-staff-row').length > 1) {
-        row.remove();
-    }
-}
-
-// Ajouter une ligne de matériau consommable
-function addConsumableMaterialRow() {
-    const container = document.getElementById('consumableMaterialsContainer');
-    const newRow = document.createElement('div');
-    newRow.className = 'row mb-3 consumable-material-row';
-    newRow.innerHTML = `
-        <div class="col-md-6">
-            <select name="consumableMaterialId" class="form-select searchable-select">
-                <option value="">Sélectionner matériau consommable</option>
-                <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
-                    <option value="<%= mat._id %>"
-                            data-price="<%= mat.priceHT %>"
-                            data-unit="<%= mat.unitOfMeasure %>"
-                            data-category="<%= mat.category %>"
-                            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>">
-                        <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                    </option>
-                <% }); %>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <input type="number" name="consumableMaterialQuantity" class="form-control" placeholder="Quantité"
-                   min="1" step="0.01">
-        </div>
-        <div class="col-md-2">
-            <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
-                <i class="bi bi-trash"></i>
-            </button>
-        </div>
-    `;
-    container.appendChild(newRow);
-
-    // Make the new select searchable
-    const newSelect = newRow.querySelector('.searchable-select');
-    if (newSelect) {
-        makeSelectSearchable(newSelect);
-
-        // Apply current specialty filter if surgeon is selected
-        const surgeonSelect = document.getElementById('surgeon');
-        if (surgeonSelect.value) {
-            const selectedSurgeon = surgeonSelect.options[surgeonSelect.selectedIndex];
-            const surgeonSpecialty = selectedSurgeon ? selectedSurgeon.getAttribute('data-specialty') : null;
-            if (surgeonSpecialty) {
-                filterMaterialsBySpecialty(surgeonSpecialty);
-            }
-        }
-    }
-}
-
-// Supprimer une ligne de matériau consommable
-function removeConsumableMaterialRow(button) {
-    const row = button.closest('.consumable-material-row');
-    if (document.querySelectorAll('.consumable-material-row').length > 1) {
-        row.remove();
-    }
-}
-
-// Ajouter une ligne de matériau patient
-function addPatientMaterialRow() {
-    const container = document.getElementById('patientMaterialsContainer');
-    const newRow = document.createElement('div');
-    newRow.className = 'row mb-3 patient-material-row';
-    newRow.innerHTML = `
-        <div class="col-md-6">
-            <select name="patientMaterialId" class="form-select searchable-select">
-                <option value="">Sélectionner matériau patient</option>
-                <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
-                    <option value="<%= mat._id %>"
-                            data-price="<%= mat.priceHT %>"
-                            data-unit="<%= mat.unitOfMeasure %>"
-                            data-category="<%= mat.category %>"
-                            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>">
-                        <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                    </option>
-                <% }); %>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <input type="number" name="patientMaterialQuantity" class="form-control" placeholder="Quantité"
-                   min="1" step="0.01">
-        </div>
-        <div class="col-md-2">
-            <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
-                <i class="bi bi-trash"></i>
-            </button>
-        </div>
-    `;
-    container.appendChild(newRow);
-
-    // Make the new select searchable
-    const newSelect = newRow.querySelector('.searchable-select');
-    if (newSelect) {
-        makeSelectSearchable(newSelect);
-
-        // Apply current specialty filter if surgeon is selected
-        const surgeonSelect = document.getElementById('surgeon');
-        if (surgeonSelect.value) {
-            const selectedSurgeon = surgeonSelect.options[surgeonSelect.selectedIndex];
-            const surgeonSpecialty = selectedSurgeon ? selectedSurgeon.getAttribute('data-specialty') : null;
-            if (surgeonSpecialty) {
-                filterMaterialsBySpecialty(surgeonSpecialty);
-            }
-        }
-    }
-}
-
-// Supprimer une ligne de matériau patient
-function removePatientMaterialRow(button) {
-    const row = button.closest('.patient-material-row');
-    if (document.querySelectorAll('.patient-material-row').length > 1) {
-        row.remove();
-    }
-}
-
-function makeSelectSearchable(select) {
-    // Create a wrapper for the select
-    const wrapper = document.createElement('div');
-    wrapper.className = 'searchable-select-wrapper';
-    wrapper.style.position = 'relative';
-    select.parentNode.insertBefore(wrapper, select);
-    wrapper.appendChild(select);
-    
-    // Create search input
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.className = 'form-control';
-    searchInput.placeholder = 'Rechercher...';
-    searchInput.style.position = 'absolute';
-    searchInput.style.top = '0';
-    searchInput.style.left = '0';
-    searchInput.style.width = '100%';
-    searchInput.style.height = '100%';
-    searchInput.style.zIndex = '1';
-    searchInput.style.background = 'transparent';
-    searchInput.style.border = 'none';
-    searchInput.style.padding = select.style.padding || '0.375rem 0.75rem';
-    searchInput.style.display = 'none';
-    
-    wrapper.appendChild(searchInput);
-    
-    select.style.position = 'relative';
-    select.style.zIndex = '2';
-    
-    let isSearchMode = false;
-    
-    select.addEventListener('click', function() {
-        if (!isSearchMode) {
-            isSearchMode = true;
-            searchInput.style.display = 'block';
-            searchInput.focus();
-            select.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            filterOptions('');
-        }
-    });
-    
-    searchInput.addEventListener('input', function() {
-        filterOptions(this.value.toLowerCase());
-    });
-    
-    searchInput.addEventListener('blur', function() {
-        setTimeout(() => {
-            if (!searchInput.matches(':focus')) {
-                isSearchMode = false;
-                searchInput.style.display = 'none';
-                select.style.backgroundColor = '';
-            }
-        }, 150);
-    });
-    
-    function filterOptions(searchTerm) {
-        const options = Array.from(select.options);
-        options.forEach(option => {
-            if (option.value === '') return;
-            const text = option.textContent.toLowerCase();
-            if (text.includes(searchTerm)) {
-                option.style.display = '';
-            } else {
-                option.style.display = 'none';
-            }
-        });
-    }
-}
-
-function filterPrestationsBySpecialty(specialtyId) {
-    const options = document.querySelectorAll('#prestation option');
-    let hasVisibleOptions = false;
-    
-    options.forEach(option => {
-        if (option.value === '') {
-            option.style.display = '';
-            return;
-        }
-        
-        const optionSpecialty = option.getAttribute('data-specialty');
-        if (optionSpecialty === specialtyId) {
-            option.style.display = '';
-            hasVisibleOptions = true;
-        } else {
-            option.style.display = 'none';
-        }
-    });
-    
-    if (document.getElementById('prestation').value && !hasVisibleOptions) {
-        document.getElementById('prestation').value = '';
-    }
-}
-
-function showAllPrestations() {
-    const options = document.querySelectorAll('#prestation option');
-    options.forEach(option => {
-        option.style.display = '';
-    });
-}
-
-function filterMaterialsBySpecialty(specialtyId) {
-    // Filter consumable materials - ALWAYS SHOW ALL CONSUMABLES (no specialty filter)
-    const consumableSelects = document.querySelectorAll('select[name="consumableMaterialId"]');
-    consumableSelects.forEach(materialSelect => {
-        const options = materialSelect.querySelectorAll('option');
-        options.forEach(option => {
-            // Consumables are always visible regardless of specialty
-            option.style.display = '';
-        });
-    });
-
-    // Filter patient materials by specialty
-    const patientSelects = document.querySelectorAll('select[name="patientMaterialId"]');
-    patientSelects.forEach(materialSelect => {
-        const options = materialSelect.querySelectorAll('option');
-        options.forEach(option => {
-            if (option.value === '') {
-                option.style.display = '';
-                return;
-            }
-            const optionSpecialty = option.getAttribute('data-specialty');
-            // Check if specialtyId is in the comma-separated list or if optionSpecialty is empty (general materials)
-            const specialtyList = optionSpecialty ? optionSpecialty.split(',') : [];
-            if (!optionSpecialty || specialtyList.includes(specialtyId)) {
-                option.style.display = '';
-            } else {
-                option.style.display = 'none';
-            }
-        });
-    });
-}
-
-function showAllMaterials() {
-    // Show all consumable materials
-    const consumableSelects = document.querySelectorAll('select[name="consumableMaterialId"]');
-    consumableSelects.forEach(materialSelect => {
-        const options = materialSelect.querySelectorAll('option');
-        options.forEach(option => {
-            option.style.display = '';
-        });
-    });
-
-    // Show all patient materials
-    const patientSelects = document.querySelectorAll('select[name="patientMaterialId"]');
-    patientSelects.forEach(materialSelect => {
-        const options = materialSelect.querySelectorAll('option');
-        options.forEach(option => {
-            option.style.display = '';
-        });
-    });
-}
-
-// Calcul automatique de la fin basé sur la durée de la prestation
-document.getElementById('beginDateTime').addEventListener('change', updateEndTime);
-document.getElementById('prestation').addEventListener('change', updateEndTime);
-
-function updateEndTime() {
-    const beginDateTime = document.getElementById('beginDateTime').value;
-    const prestationSelect = document.getElementById('prestation');
-    const endDateTime = document.getElementById('endDateTime');
-    
-    if (beginDateTime && prestationSelect.value && !endDateTime.value) {
-        const selectedOption = prestationSelect.options[prestationSelect.selectedIndex];
-        const duration = parseInt(selectedOption.dataset.duration);
-        
-        if (duration) {
-            const startDate = new Date(beginDateTime);
-            const endDate = new Date(startDate.getTime() + duration * 60000);
-            endDateTime.value = endDate.toISOString().slice(0, 16);
-        }
-    }
-}
-
-// Gestion des changements de statut
-document.getElementById('status').addEventListener('change', function() {
-    const status = this.value;
-    const statusAlert = document.querySelector('.alert-info');
-    const statusHelp = document.getElementById('statusHelp');
-    
-    let helpText = '';
-    let alertClass = 'alert-info';
-    
-    switch(status) {
-        case 'urgent':
-            helpText = '⚠️ Frais urgents seront ajoutés directement au montant clinique';
-            alertClass = 'alert-danger';
-            break;
-        case 'planned':
-            helpText = '📅 Statut planifié, honoraires standards appliqués';
-            alertClass = 'alert-info';
-            break;
-        default:
-            helpText = 'Changer le statut affecte automatiquement les calculs des honoraires';
-            alertClass = 'alert-info';
-    }
-    
-    statusHelp.textContent = helpText;
-    statusAlert.className = `alert ${alertClass}`;
-});
-
-// Fonctionnalité de recherche
-function setupSearch(searchInputId, selectId) {
-    const searchInput = document.getElementById(searchInputId);
-    const select = document.getElementById(selectId);
-    const options = Array.from(select.options);
-
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        
-        // Clear current options except the first one
-        select.innerHTML = '<option value="">Sélectionner...</option>';
-        
-        // Filter and add matching options
-        options.forEach(option => {
-            if (option.value && option.text.toLowerCase().includes(searchTerm)) {
-                select.appendChild(option.cloneNode(true));
-            }
-        });
-    });
-}
-
-// Initialiser la recherche pour chaque champ
+// Update base price when prestation changes
 document.addEventListener('DOMContentLoaded', function() {
-    setupSearch('patientSearch', 'patient');
-    setupSearch('surgeonSearch', 'surgeon');
-    setupSearch('prestationSearch', 'prestation');
-    
-    // Initialize searchable dropdowns
-    const searchableSelects = document.querySelectorAll('.searchable-select');
-    searchableSelects.forEach(select => {
-        makeSelectSearchable(select);
-    });
-    
-    // Filter prestations and materials based on surgeon specialty
-    const surgeonSelect = document.getElementById('surgeon');
-    surgeonSelect.addEventListener('change', function() {
-        const selectedSurgeon = this.options[this.selectedIndex];
-        const surgeonSpecialty = selectedSurgeon ? selectedSurgeon.getAttribute('data-specialty') : null;
-        
-        if (surgeonSpecialty) {
-            filterPrestationsBySpecialty(surgeonSpecialty);
-            filterMaterialsBySpecialty(surgeonSpecialty);
-        } else {
-            showAllPrestations();
-            showAllMaterials();
-        }
-    });
-
-    // Update base price display
-    function updateBasePrice() {
-        const prestationSelect = document.getElementById('prestation');
-        const basePriceDisplay = document.getElementById('basePrice');
-
-        if (!basePriceDisplay || !prestationSelect) return;
-
-        const selectedOption = prestationSelect.selectedOptions[0];
-        if (selectedOption && selectedOption.value) {
-            // Get base price from selected prestation
-            const basePriceValue = selectedOption.getAttribute('data-price');
-            if (basePriceValue && !isNaN(parseFloat(basePriceValue))) {
-                const basePrice = parseFloat(basePriceValue);
-                basePriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', {
-                    style: 'currency',
-                    currency: 'DZD'
-                }).format(basePrice);
-            } else {
-                basePriceDisplay.textContent = 'Prix non disponible';
-            }
-        } else {
-            basePriceDisplay.textContent = 'Sélectionnez une prestation';
-        }
-    }
-
-    // Add event listeners
     const prestationSelect = document.getElementById('prestation');
+    const basePriceDisplay = document.getElementById('basePrice');
 
-    if (prestationSelect) {
-        prestationSelect.addEventListener('change', updateBasePrice);
-    }
-
-    // Initial update
-    updateBasePrice();
-    // Compute and toggle base calculation card visibility + values
-    function computeBaseValues() {
-        const surgeonSelect = document.getElementById('surgeon');
-        const prestationSelect = document.getElementById('prestation');
-        const adjustedPriceInput = document.getElementById('adjustedPrice');
-
-        const baseCard = document.getElementById('baseCalculationCard');
-        const prestationPriceDisplay = document.getElementById('prestationPriceDisplay');
-        const usedPriceDisplay = document.getElementById('usedPriceDisplay');
-        const patientMaterialsCostDisplay = document.getElementById('patientMaterialsCostDisplay');
-        const baseForCalculationDisplay = document.getElementById('baseForCalculationDisplay');
-
-        // Determine contract type from selected surgeon option's data-contract
-        let contract = '';
-        if (surgeonSelect && surgeonSelect.value) {
-            const opt = surgeonSelect.options[surgeonSelect.selectedIndex];
-            contract = opt ? opt.getAttribute('data-contract') : '';
-        }
-
-        if (baseCard) {
-            if (contract === 'percentage') {
-                baseCard.classList.remove('d-none');
+    if (prestationSelect && basePriceDisplay) {
+        prestationSelect.addEventListener('change', function() {
+            const selectedOption = this.selectedOptions[0];
+            if (selectedOption && selectedOption.value) {
+                const basePriceValue = selectedOption.getAttribute('data-price');
+                if (basePriceValue && !isNaN(parseFloat(basePriceValue))) {
+                    const basePrice = parseFloat(basePriceValue);
+                    basePriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', {
+                        style: 'currency',
+                        currency: 'DZD'
+                    }).format(basePrice);
+                } else {
+                    basePriceDisplay.textContent = 'Prix non disponible';
+                }
             } else {
-                baseCard.classList.add('d-none');
+                basePriceDisplay.textContent = 'Sélectionnez une prestation';
             }
-        }
-
-        // Compute prices
-        const INITIAL_PRESTATION_PRICE = <%= JSON.stringify(prestationPriceHT || 0) %> || 0;
-        let prestationPrice = 0;
-        if (prestationSelect && prestationSelect.value) {
-            const opt = prestationSelect.options[prestationSelect.selectedIndex];
-            const p = opt ? parseFloat(opt.getAttribute('data-price')) : NaN;
-            prestationPrice = !isNaN(p) ? p : 0;
-        } else {
-            prestationPrice = INITIAL_PRESTATION_PRICE;
-        }
-
-        let usedPrice = prestationPrice;
-        if (adjustedPriceInput && adjustedPriceInput.value !== '') {
-            const ap = parseFloat(adjustedPriceInput.value);
-            if (!isNaN(ap)) usedPrice = ap;
-        }
-
-        // Sum patient materials from DOM patient material rows
-        let patientMaterialsCost = 0;
-        const patientRows = document.querySelectorAll('.patient-material-row');
-        patientRows.forEach(row => {
-            const sel = row.querySelector('select[name="patientMaterialId"]');
-            const qty = row.querySelector('input[name="patientMaterialQuantity"]');
-            if (!sel || !sel.value) return;
-            const price = parseFloat(sel.options[sel.selectedIndex].getAttribute('data-price')) || 0;
-            const q = parseFloat(qty && qty.value ? qty.value : 0) || 0;
-            patientMaterialsCost += price * q;
-        });
-
-        // Update displays safely
-        if (prestationPriceDisplay) prestationPriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(prestationPrice);
-        if (usedPriceDisplay) usedPriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(usedPrice);
-        if (patientMaterialsCostDisplay) patientMaterialsCostDisplay.textContent = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterialsCost);
-        if (baseForCalculationDisplay) baseForCalculationDisplay.textContent = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(Math.max(0, usedPrice - patientMaterialsCost));
-    }
-
-    // Wire events to recompute
-    const surgeonSelectEl = document.getElementById('surgeon');
-    if (surgeonSelectEl) surgeonSelectEl.addEventListener('change', computeBaseValues);
-    if (prestationSelect) prestationSelect.addEventListener('change', function(){ updateBasePrice(); computeBaseValues(); });
-    const adjustedPriceEl = document.getElementById('adjustedPrice');
-    if (adjustedPriceEl) adjustedPriceEl.addEventListener('input', computeBaseValues);
-
-    // Recompute when patient material quantity or selection changes (dynamic rows)
-    const patientContainer = document.getElementById('patientMaterialsContainer');
-    if (patientContainer) {
-        patientContainer.addEventListener('change', function(e){
-            if (e.target && (e.target.name === 'patientMaterialId' || e.target.name === 'patientMaterialQuantity')) computeBaseValues();
         });
     }
-
-    // Initial compute
-    computeBaseValues();
 });
 </script>

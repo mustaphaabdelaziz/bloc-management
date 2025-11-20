@@ -1,36 +1,767 @@
 <% layout('layouts/boilerplate') %>
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-person-workspace me-2"></i>Nouvelle Fonction
-                </h5>
+
+<!-- Fonctions New Page Styles -->
+<link rel="stylesheet" href="/css/fonctions.css">
+
+<div class="container-fluid">
+    <!-- Page Header Section -->
+    <div class="page-header">
+        <div class="page-title">
+            <h1><i class="bi bi-person-workspace me-3"></i>Créer une Nouvelle Fonction</h1>
+            <p>Ajoutez une nouvelle fonction médicale au système de gestion</p>
+        </div>
+        <div class="page-actions">
+            <a href="/fonctions" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la Liste
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+            <!-- Create Form Card -->
+            <div class="create-form-card">
+                <div class="form-card-header">
+                    <div class="form-header-content">
+                        <div class="form-icon-wrapper">
+                            <i class="bi bi-person-workspace"></i>
+                        </div>
+                        <div class="form-info">
+                            <h3 class="form-title">Informations de la Fonction</h3>
+                            <p class="form-subtitle">Renseignez les détails de la nouvelle fonction médicale</p>
+                        </div>
+                    </div>
+                    <div class="form-progress">
+                        <div class="progress-indicator">
+                            <span class="step active">1</span>
+                            <span class="step-label">Détails</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card-body">
+                    <form method="POST" action="/fonctions" id="fonctionForm" novalidate>
+                        <!-- Form Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="bi bi-info-circle me-2"></i>Détails Principaux
+                                </h4>
+                                <p class="section-description">Informations essentielles de la fonction</p>
+                            </div>
+
+                            <div class="form-row-custom">
+                                <div class="form-group-modern">
+                                    <label for="name" class="form-label-modern required">
+                                        <i class="bi bi-tag me-2"></i>Nom de la Fonction
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-person-workspace input-icon"></i>
+                                        </div>
+                                        <input type="text"
+                                               class="form-control-modern"
+                                               id="name"
+                                               name="name"
+                                               value="<%= fonction ? fonction.name || '' : '' %>"
+                                               placeholder="Ex: Anesthésiste, Infirmier, Chirurgien..."
+                                               required
+                                               maxlength="100">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Nom valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Le nom de la fonction est requis (max 100 caractères)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Nom complet et descriptif de la fonction médicale
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Preview -->
+                            <div class="form-preview-section">
+                                <div class="preview-header">
+                                    <h5 class="preview-title">
+                                        <i class="bi bi-eye me-2"></i>Aperçu
+                                    </h5>
+                                </div>
+                                <div class="preview-card">
+                                    <div class="preview-avatar">
+                                        <i class="bi bi-person-workspace"></i>
+                                    </div>
+                                    <div class="preview-details">
+                                        <div class="preview-name" id="previewName">
+                                            <%= fonction && fonction.name ? fonction.name : 'Nom de la fonction' %>
+                                        </div>
+                                        <div class="preview-meta">
+                                            <span class="preview-badge">Nouvelle Fonction</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions-section">
+                            <div class="form-actions-content">
+                                <div class="action-buttons-group">
+                                    <a href="/fonctions" class="btn btn-outline-secondary action-btn">
+                                        <i class="bi bi-x-circle me-2"></i>Annuler
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary action-btn" id="resetBtn">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
+                                    </button>
+                                    <button type="submit" class="btn btn-primary action-btn" id="submitBtn">
+                                        <i class="bi bi-check-circle me-2"></i>Créer la Fonction
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" action="/fonctions">
-                    <div class="mb-3">
-                        <label for="code" class="form-label">Code *</label>
-                        <input type="text" class="form-control" id="code" name="code" value="<%= fonction.code || '' %>" required>
-                        <div class="form-text">Code unique pour identifier la fonction</div>
+
+            <!-- Help Card -->
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="bi bi-question-circle help-icon"></i>
+                    <h5 class="help-title">Besoin d'aide ?</h5>
+                </div>
+                <div class="help-content">
+                    <div class="help-item">
+                        <h6>Exemples de fonctions :</h6>
+                        <ul class="help-examples">
+                            <li><strong>Anesthésiste</strong> - Spécialiste en anesthésie</li>
+                            <li><strong>Infirmier(ère) de bloc</strong> - Personnel soignant spécialisé</li>
+                            <li><strong>Chirurgien</strong> - Médecin pratiquant la chirurgie</li>
+                            <li><strong>Instrumentiste</strong> - Préparation du matériel chirurgical</li>
+                            <li><strong>Aide-soignant(e)</strong> - Assistance aux soins</li>
+                        </ul>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Nom *</label>
-                        <input type="text" class="form-control" id="name" name="name" value="<%= fonction.name || '' %>" required>
-                        <div class="form-text">Nom complet de la fonction (ex: Anesthésiste, Infirmier, etc.)</div>
+                    <div class="help-item">
+                        <h6>Conseils :</h6>
+                        <ul class="help-tips">
+                            <li>Utilisez des termes professionnels et précis</li>
+                            <li>Évitez les abréviations non standard</li>
+                            <li>Vérifiez l'orthographe avant de sauvegarder</li>
+                        </ul>
                     </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/fonctions" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Retour
-                        </a>
-                        <button type="submit" class="btn btn-info">
-                            <i class="bi bi-save me-2"></i>Enregistrer
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Fonctions New Page JavaScript -->
+<script>
+// Form validation and interactions
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('fonctionForm');
+    const nameInput = document.getElementById('name');
+    const previewName = document.getElementById('previewName');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Real-time preview update
+    function updatePreview() {
+        const name = nameInput.value.trim();
+        previewName.textContent = name || 'Nom de la fonction';
+
+        // Update preview avatar color based on name
+        const previewAvatar = document.querySelector('.preview-avatar');
+        if (name) {
+            const colors = ['primary', 'success', 'info', 'warning', 'danger'];
+            const colorIndex = name.length % colors.length;
+            previewAvatar.className = `preview-avatar ${colors[colorIndex]}`;
+        }
+    }
+
+    // Input validation
+    function validateInput(input) {
+        const value = input.value.trim();
+        const isValid = value.length > 0 && value.length <= 100;
+
+        input.classList.toggle('is-valid', isValid);
+        input.classList.toggle('is-invalid', !isValid && input.value.length > 0);
+
+        return isValid;
+    }
+
+    // Form submission handler
+    function handleSubmit(e) {
+        const isValid = validateInput(nameInput);
+
+        if (!isValid) {
+            e.preventDefault();
+            nameInput.focus();
+            showNotification('Veuillez corriger les erreurs avant de continuer.', 'danger');
+            return false;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Création en cours...';
+
+        showNotification('Création de la fonction en cours...', 'info');
+    }
+
+    // Reset form handler
+    function handleReset() {
+        if (confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire ?')) {
+            form.reset();
+            nameInput.classList.remove('is-valid', 'is-invalid');
+            updatePreview();
+            nameInput.focus();
+            showNotification('Formulaire réinitialisé', 'info');
+        }
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.toast-notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        // Create new notification
+        const notification = document.createElement('div');
+        notification.className = `toast-notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="notification-close" onclick="this.parentElement.remove()">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Event listeners
+    nameInput.addEventListener('input', function() {
+        validateInput(this);
+        updatePreview();
+    });
+
+    nameInput.addEventListener('blur', function() {
+        validateInput(this);
+    });
+
+    form.addEventListener('submit', handleSubmit);
+    resetBtn.addEventListener('click', handleReset);
+
+    // Initialize preview
+    updatePreview();
+
+    // Focus on name input
+    nameInput.focus();
+});
+</script>
+
+<style>
+/* Additional styles for the new page */
+.create-form-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.form-card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.form-card-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    50% { transform: translate(-50%, -50%) rotate(180deg); }
+}
+
+.form-header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.form-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-info h3 {
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.form-info p {
+    margin-bottom: 0;
+    opacity: 0.9;
+}
+
+.form-progress {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+}
+
+.progress-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.step.active {
+    background: white;
+    color: #667eea;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.form-card-body {
+    padding: 2.5rem;
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+}
+
+.section-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.section-description {
+    color: #718096;
+    margin-bottom: 0;
+}
+
+.form-row-custom {
+    margin-bottom: 2rem;
+}
+
+.form-group-modern {
+    margin-bottom: 2rem;
+}
+
+.form-label-modern {
+    display: block;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.form-label-modern.required::after {
+    content: ' *';
+    color: #e53e3e;
+}
+
+.input-wrapper-modern {
+    position: relative;
+}
+
+.input-icon-wrapper {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    z-index: 2;
+}
+
+.form-control-modern {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #2d3748;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.form-control-modern:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-control-modern.is-valid {
+    border-color: #48bb78;
+    box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
+}
+
+.form-control-modern.is-invalid {
+    border-color: #f56565;
+    box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+}
+
+.input-feedback {
+    margin-top: 0.5rem;
+}
+
+.valid-feedback, .invalid-feedback {
+    display: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.form-control-modern.is-valid ~ .input-feedback .valid-feedback {
+    display: block;
+    color: #48bb78;
+}
+
+.form-control-modern.is-invalid ~ .input-feedback .invalid-feedback {
+    display: block;
+    color: #f56565;
+}
+
+.form-help-text {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.form-preview-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(102, 126, 234, 0.02));
+    border-radius: 12px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.preview-header {
+    margin-bottom: 1rem;
+}
+
+.preview-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0;
+}
+
+.preview-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.preview-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.preview-avatar.primary { background: linear-gradient(135deg, #667eea, #764ba2); }
+.preview-avatar.success { background: linear-gradient(135deg, #48bb78, #38a169); }
+.preview-avatar.info { background: linear-gradient(135deg, #4299e1, #3182ce); }
+.preview-avatar.warning { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+.preview-avatar.danger { background: linear-gradient(135deg, #f56565, #e53e3e); }
+
+.preview-details {
+    flex: 1;
+}
+
+.preview-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.preview-badge {
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.form-actions-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.form-actions-content {
+    display: flex;
+    justify-content: center;
+}
+
+.action-buttons-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.help-card {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.help-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.help-icon {
+    font-size: 1.5rem;
+    color: #667eea;
+}
+
+.help-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0;
+}
+
+.help-content {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.help-item h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.75rem;
+}
+
+.help-examples, .help-tips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.help-examples li, .help-tips li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #718096;
+}
+
+.help-examples li:last-child, .help-tips li:last-child {
+    border-bottom: none;
+}
+
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 500px;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    animation: slideInRight 0.3s ease-out;
+}
+
+.toast-notification.success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+}
+
+.toast-notification.danger {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+    color: white;
+}
+
+.toast-notification.info {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    color: white;
+}
+
+.toast-notification.warning {
+    background: linear-gradient(135deg, #ed8936, #dd6b20);
+    color: white;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+}
+
+.notification-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.7;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: opacity 0.2s ease;
+}
+
+.notification-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0 1rem;
+    }
+
+    .page-header {
+        padding: 2rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+    }
+
+    .form-card-header {
+        padding: 1.5rem;
+    }
+
+    .form-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .form-progress {
+        position: static;
+        display: flex;
+        justify-content: center;
+    }
+
+    .form-card-body {
+        padding: 2rem 1.5rem;
+    }
+
+    .action-buttons-group {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        width: 100%;
+    }
+
+    .help-card {
+        padding: 1.5rem;
+    }
+
+    .preview-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>

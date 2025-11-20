@@ -55,6 +55,7 @@ const startApp = async () => {
     const reportRoutes = require("./routes/report.routes");
     const authRoutes = require("./routes/auth.routes");
     const usersRoutes = require("./routes/users.routes");
+    const paymentRoutes = require("./routes/payment.routes");
  
 
     // Utilisation des routes
@@ -70,6 +71,7 @@ const startApp = async () => {
     app.use("/reports", reportRoutes);
     app.use("/", authRoutes);
     app.use("/users", usersRoutes);
+    app.use("/payments", paymentRoutes);
     // Gestion d'erreurs
 
     // app.use((req, res) => {

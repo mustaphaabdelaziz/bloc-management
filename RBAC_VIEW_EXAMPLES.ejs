@@ -1,0 +1,335 @@
+<!-- RBAC View Examples - How to Use Permission Flags in EJS Templates -->
+
+<!-- ========================================
+     EXAMPLE 1: Conditional Button Display
+     ======================================== -->
+
+<!-- Show "Create New" button only for admin/direction -->
+<% if (permissions.canManageData) { %>
+  <a href="/patients/new" class="btn btn-primary">
+    <i class="bi bi-plus-circle"></i> Nouveau Patient
+  </a>
+<% } %>
+
+<!-- ========================================
+     EXAMPLE 2: Conditional Table Columns
+     ======================================== -->
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Désignation</th>
+      <th>Durée</th>
+      <!-- Only show pricing columns for admin/direction -->
+      <% if (permissions.canViewPricing) { %>
+        <th>Prix HT</th>
+        <th>TVA</th>
+        <th>Prix TTC</th>
+      <% } %>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% prestations.forEach(prestation => { %>
+      <tr>
+        <td><%= prestation.designation %></td>
+        <td><%= prestation.duration %> min</td>
+        <!-- Pricing columns (only visible to admin/direction) -->
+        <% if (permissions.canViewPricing) { %>
+          <td><%= prestation.priceHT ? prestation.priceHT.toFixed(2) : '-' %> DA</td>
+          <td><%= prestation.tva ? (prestation.tva * 100).toFixed(0) : '-' %>%</td>
+          <td><%= prestation.priceHT ? (prestation.priceHT * (1 + prestation.tva)).toFixed(2) : '-' %> DA</td>
+        <% } %>
+        <td>
+          <a href="/prestations/<%= prestation._id %>" class="btn btn-sm btn-info">Voir</a>
+          <!-- Edit button only for admin/direction -->
+          <% if (permissions.canManageData) { %>
+            <a href="/prestations/<%= prestation._id %>/edit" class="btn btn-sm btn-warning">Modifier</a>
+          <% } %>
+        </td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<!-- ========================================
+     EXAMPLE 3: Conditional Form Fields
+     ======================================== -->
+
+<!-- Show contract fields only for admin/direction -->
+<% if (permissions.canSeeContractInfo) { %>
+  <div class="mb-3">
+    <label for="contractType" class="form-label">Type de Contrat</label>
+    <select class="form-select" id="contractType" name="contractType" required>
+      <option value="">-- Sélectionner --</option>
+      <option value="allocation" <%= surgeon.contractType === 'allocation' ? 'selected' : '' %>>Allocation</option>
+      <option value="percentage" <%= surgeon.contractType === 'percentage' ? 'selected' : '' %>>Pourcentage</option>
+    </select>
+  </div>
+
+  <div class="mb-3" id="allocationRateDiv" style="display: none;">
+    <label for="allocationRate" class="form-label">Taux Allocation (DA/heure)</label>
+    <input type="number" class="form-control" id="allocationRate" name="allocationRate" 
+           value="<%= surgeon.allocationRate || '' %>" step="0.01">
+  </div>
+
+  <div class="mb-3" id="percentageRateDiv" style="display: none;">
+    <label for="percentageRate" class="form-label">Taux Pourcentage (%)</label>
+    <input type="number" class="form-control" id="percentageRate" name="percentageRate" 
+           value="<%= surgeon.percentageRate || '' %>" min="0" max="100">
+  </div>
+<% } %>
+
+<!-- ========================================
+     EXAMPLE 4: Conditional Navigation Menu
+     ======================================== -->
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <ul class="navbar-nav">
+      <!-- Dashboard - all logged users -->
+      <% if (permissions.isLoggedIn) { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">Tableau de Bord</a>
+        </li>
+      <% } %>
+
+      <!-- Patients - admin/direction/chefBloc/assistante -->
+      <% if (permissions.canViewPatients) { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/patients">Patients</a>
+        </li>
+      <% } %>
+
+      <!-- Surgeries - admin/direction/chefBloc/assistante/medecin -->
+      <% if (permissions.canViewSurgeries) { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/surgeries">Interventions</a>
+        </li>
+      <% } %>
+
+      <!-- Materials - admin/buyer (management) -->
+      <% if (permissions.canManageMaterials) { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/materials">Matériaux</a>
+        </li>
+      <% } %>
+
+      <!-- Reports - admin/direction only -->
+      <% if (permissions.canViewReports) { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/reports">Rapports</a>
+        </li>
+      <% } %>
+
+      <!-- User Management - admin only -->
+      <% if (permissions.canManageUsers) { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/users">Utilisateurs</a>
+        </li>
+      <% } %>
+    </ul>
+  </div>
+</nav>
+
+<!-- ========================================
+     EXAMPLE 5: Conditional Detail Display
+     ======================================== -->
+
+<div class="card">
+  <div class="card-header">
+    <h5>Informations du Chirurgien</h5>
+  </div>
+  <div class="card-body">
+    <p><strong>Nom:</strong> <%= surgeon.firstName %> <%= surgeon.lastName %></p>
+    <p><strong>Code:</strong> <%= surgeon.code %></p>
+    <p><strong>Spécialité:</strong> <%= surgeon.specialty ? surgeon.specialty.name : '-' %></p>
+    <p><strong>Email:</strong> <%= surgeon.email || '-' %></p>
+    <p><strong>Téléphone:</strong> <%= surgeon.phone || '-' %></p>
+
+    <!-- Contract information - only for admin/direction -->
+    <% if (canSeeContractInfo) { %>
+      <hr>
+      <h6>Informations Contractuelles</h6>
+      <p><strong>Type de Contrat:</strong> 
+        <span class="badge bg-<%= surgeon.contractType === 'allocation' ? 'primary' : 'success' %>">
+          <%= surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
+        </span>
+      </p>
+      <% if (surgeon.contractType === 'allocation') { %>
+        <p><strong>Taux Allocation:</strong> <%= surgeon.allocationRate %> DA/heure</p>
+      <% } else if (surgeon.contractType === 'percentage') { %>
+        <p><strong>Taux Chirurgien:</strong> <%= surgeon.percentageRate %>%</p>
+      <% } %>
+    <% } %>
+  </div>
+  <div class="card-footer">
+    <!-- Edit button only for admin/direction -->
+    <% if (permissions.canManageData) { %>
+      <a href="/surgeons/<%= surgeon._id %>/edit" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Modifier
+      </a>
+    <% } %>
+    <!-- Delete button only for admin/direction -->
+    <% if (permissions.canManageData) { %>
+      <form action="/surgeons/<%= surgeon._id %>?_method=DELETE" method="POST" class="d-inline" 
+            onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce chirurgien ?');">
+        <button type="submit" class="btn btn-danger">
+          <i class="bi bi-trash"></i> Supprimer
+        </button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<!-- ========================================
+     EXAMPLE 6: Role-Specific Messages
+     ======================================== -->
+
+<!-- Welcome message based on role -->
+<div class="alert alert-info">
+  <% if (permissions.isAdmin) { %>
+    <strong>Bienvenue, Administrateur!</strong> Vous avez accès complet au système.
+  <% } else if (permissions.isDirection) { %>
+    <strong>Bienvenue, Direction!</strong> Vous pouvez gérer tous les aspects opérationnels.
+  <% } else if (permissions.isAssistante) { %>
+    <strong>Bienvenue, Assistante!</strong> Vous pouvez gérer les patients et visualiser les interventions.
+  <% } else if (permissions.isBuyer) { %>
+    <strong>Bienvenue, Acheteur!</strong> Vous pouvez gérer l'inventaire des matériaux.
+  <% } else { %>
+    <strong>Bienvenue!</strong> Accédez aux fonctionnalités disponibles ci-dessous.
+  <% } %>
+</div>
+
+<!-- ========================================
+     EXAMPLE 7: Conditional Action Buttons
+     ======================================== -->
+
+<div class="d-flex gap-2">
+  <!-- View button - all can view -->
+  <a href="/materials/<%= material._id %>" class="btn btn-sm btn-info">
+    <i class="bi bi-eye"></i> Voir
+  </a>
+
+  <!-- Edit button - only admin/buyer -->
+  <% if (permissions.canManageMaterials) { %>
+    <a href="/materials/<%= material._id %>/edit" class="btn btn-sm btn-warning">
+      <i class="bi bi-pencil"></i> Modifier
+    </a>
+  <% } %>
+
+  <!-- Add arrival button - only admin/buyer -->
+  <% if (permissions.canManageMaterials) { %>
+    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" 
+            data-bs-target="#arrivalModal<%= material._id %>">
+      <i class="bi bi-plus-circle"></i> Arrivage
+    </button>
+  <% } %>
+
+  <!-- Delete button - only admin/buyer -->
+  <% if (permissions.canManageMaterials) { %>
+    <form action="/materials/<%= material._id %>?_method=DELETE" method="POST" class="d-inline">
+      <button type="submit" class="btn btn-sm btn-danger" 
+              onclick="return confirm('Supprimer ce matériau ?');">
+        <i class="bi bi-trash"></i> Supprimer
+      </button>
+    </form>
+  <% } %>
+</div>
+
+<!-- ========================================
+     EXAMPLE 8: Using Controller-Level Flags
+     ======================================== -->
+
+<!-- When controller passes canViewPricing flag -->
+<% if (typeof canViewPricing !== 'undefined' && canViewPricing) { %>
+  <div class="card mt-3">
+    <div class="card-header">
+      <h6>Informations Financières</h6>
+    </div>
+    <div class="card-body">
+      <table class="table table-sm">
+        <tr>
+          <th>Prix HT:</th>
+          <td><%= prestation.priceHT.toFixed(2) %> DA</td>
+        </tr>
+        <tr>
+          <th>TVA:</th>
+          <td><%= (prestation.tva * 100).toFixed(0) %>%</td>
+        </tr>
+        <tr>
+          <th>Prix TTC:</th>
+          <td><%= (prestation.priceHT * (1 + prestation.tva)).toFixed(2) %> DA</td>
+        </tr>
+        <% if (prestation.exceededDurationFee) { %>
+          <tr>
+            <th>Frais Dépassement:</th>
+            <td><%= prestation.exceededDurationFee.toFixed(2) %> DA / <%= prestation.exceededDurationUnit %> min</td>
+          </tr>
+        <% } %>
+        <% if (prestation.urgentFeePercentage) { %>
+          <tr>
+            <th>Majoration Urgence:</th>
+            <td><%= (prestation.urgentFeePercentage * 100).toFixed(0) %>%</td>
+          </tr>
+        <% } %>
+      </table>
+    </div>
+  </div>
+<% } else { %>
+  <!-- Placeholder when pricing is hidden -->
+  <div class="alert alert-secondary mt-3">
+    <i class="bi bi-lock"></i> Les informations tarifaires sont réservées à la direction.
+  </div>
+<% } %>
+
+<!-- ========================================
+     EXAMPLE 9: Combining Multiple Conditions
+     ======================================== -->
+
+<!-- Show advanced options only for admin or (direction AND pricing access) -->
+<% if (permissions.isAdmin || (permissions.isDirection && permissions.canViewPricing)) { %>
+  <div class="card mt-3">
+    <div class="card-header">
+      <h6>Options Avancées</h6>
+    </div>
+    <div class="card-body">
+      <form action="/surgeries/<%= surgery._id %>/calculate-fees" method="POST">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-calculator"></i> Recalculer les Honoraires
+        </button>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<!-- ========================================
+     EXAMPLE 10: Fallback Content
+     ======================================== -->
+
+<!-- Show different content based on permissions -->
+<div class="material-price">
+  <% if (permissions.canViewPricing && material.priceHT) { %>
+    <!-- Full pricing for admin/direction/buyer -->
+    <strong>Prix:</strong> <%= material.priceHT.toFixed(2) %> DA
+    <% if (material.weightedPrice && material.weightedPrice !== material.priceHT) { %>
+      <br><small class="text-muted">Prix pondéré: <%= material.weightedPrice.toFixed(2) %> DA</small>
+    <% } %>
+  <% } else { %>
+    <!-- Placeholder for assistante and others -->
+    <span class="badge bg-secondary">Prix confidentiel</span>
+  <% } %>
+</div>
+
+<!-- ========================================
+     DEBUG: Show All Available Permissions
+     (Remove in production)
+     ======================================== -->
+
+<!-- Uncomment to debug permissions in development -->
+<!-- 
+<details class="mt-4">
+  <summary>Debug: Available Permissions</summary>
+  <pre class="bg-light p-3"><%= JSON.stringify(permissions, null, 2) %></pre>
+</details>
+-->

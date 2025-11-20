@@ -1,7 +1,8 @@
 <% layout('layouts/boilerplate')%>
+<div class="dashboard-container">
 <div class="row mb-4">
   <div class="col-xl-3 col-md-6">
-    <div class="stats-card">
+    <div class="stats-card stats-patients">
       <div class="d-flex align-items-center">
         <div class="flex-shrink-0">
           <i class="bi bi-people fa-2x"></i>
@@ -15,10 +16,7 @@
   </div>
 
   <div class="col-xl-3 col-md-6">
-    <div
-      class="stats-card"
-      style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-    >
+    <div class="stats-card stats-surgeons">
       <div class="d-flex align-items-center">
         <div class="flex-shrink-0">
           <i class="bi bi-person-badge fa-2x"></i>
@@ -32,10 +30,7 @@
   </div>
 
   <div class="col-xl-3 col-md-6">
-    <div
-      class="stats-card"
-      style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
-    >
+    <div class="stats-card stats-surgeries">
       <div class="d-flex align-items-center">
         <div class="flex-shrink-0">
           <i class="bi bi-scissors fa-2x"></i>
@@ -49,10 +44,7 @@
   </div>
 
   <div class="col-xl-3 col-md-6">
-    <div
-      class="stats-card"
-      style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
-    >
+    <div class="stats-card stats-staff">
       <div class="d-flex align-items-center">
         <div class="flex-shrink-0">
           <i class="bi bi-hospital fa-2x"></i>
@@ -66,17 +58,20 @@
   </div>
 </div>
 
-<% if (typeof permissions !== 'undefined' && permissions.isAdmin) { %>
-<!-- Admin Actions Section -->
+<% if (typeof permissions !== 'undefined' && (permissions.isAdmin || permissions.isDirection)) { %>
+<!-- Admin/Direction Actions Section -->
+<div class="dashboard-section">
 <div class="row mb-4">
   <div class="col-12">
-    <div class="card border-warning">
+    <div class="card border-warning admin-actions">
       <div class="card-header bg-warning text-dark d-flex align-items-center">
         <i class="bi bi-shield-check me-2"></i>
-        <h5 class="mb-0">Actions Administrateur</h5>
+        <h5 class="mb-0"><%= permissions.isAdmin ? 'Actions Administrateur' : 'Actions de Direction' %></h5>
       </div>
       <div class="card-body">
         <div class="row g-3">
+          <!-- Créer Utilisateur - Admin only -->
+          <% if (permissions.isAdmin) { %>
           <div class="col-md-3">
             <a href="/register" class="btn btn-success btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
               <i class="bi bi-person-plus fa-2x mb-2"></i>
@@ -84,6 +79,9 @@
               <small class="text-muted">Ajouter un nouveau compte</small>
             </a>
           </div>
+          <% } %>
+          <!-- Gérer Utilisateurs - Admin only -->
+          <% if (permissions.isAdmin) { %>
           <div class="col-md-3">
             <a href="/users" class="btn btn-primary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
               <i class="bi bi-people-fill fa-2x mb-2"></i>
@@ -91,6 +89,9 @@
               <small class="text-muted">Modifier et supprimer</small>
             </a>
           </div>
+          <% } %>
+          <!-- Paramètres Système - Admin only -->
+          <% if (permissions.isAdmin) { %>
           <div class="col-md-3">
             <a href="/admin/settings" class="btn btn-info btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
               <i class="bi bi-gear fa-2x mb-2"></i>
@@ -98,6 +99,8 @@
               <small class="text-muted">Configuration système</small>
             </a>
           </div>
+          <% } %>
+          <!-- Rapports - Admin and Direction -->
           <div class="col-md-3">
             <a href="/reports" class="btn btn-secondary btn-lg w-100 h-100 d-flex flex-column align-items-center justify-content-center">
               <i class="bi bi-graph-up fa-2x mb-2"></i>
@@ -110,11 +113,13 @@
     </div>
   </div>
 </div>
+</div>
 <% } %>
 
 <div class="row">
   <!-- Chirurgies du jour -->
   <div class="col-lg-8">
+    <div class="dashboard-section">
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <i class="bi bi-calendar-day me-2"></i>
@@ -193,7 +198,7 @@
           </table>
         </div>
         <% } else { %>
-        <div class="text-center py-4">
+        <div class="empty-state">
           <i class="bi bi-calendar-x fa-3x text-muted mb-3"></i>
           <p class="text-muted">Aucune chirurgie prévue aujourd'hui</p>
           <a href="/surgeries/new" class="btn btn-primary">
@@ -203,10 +208,12 @@
         <% } %>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- Statistiques et alertes -->
   <div class="col-lg-4">
+    <div class="dashboard-section">
     <!-- Répartition des chirurgies par statut -->
     <div class="card mb-4">
       <div class="card-header bg-info text-white">
@@ -214,7 +221,9 @@
         <h6 class="mb-0">Chirurgies par statut</h6>
       </div>
       <div class="card-body">
-        <canvas id="statusChart" width="400" height="300"></canvas>
+        <div class="chart-container">
+          <canvas id="statusChart"></canvas>
+        </div>
       </div>
     </div>
 
@@ -242,17 +251,19 @@
           Gérer les stocks
         </a>
         <% } else { %>
-        <div class="text-center">
+        <div class="empty-state">
           <i class="bi bi-check-circle text-success fa-2x mb-2"></i>
           <p class="text-muted mb-0">Tous les stocks sont OK</p>
         </div>
         <% } %>
       </div>
     </div>
+    </div>
   </div>
 </div>
 
 <!-- Chirurgies récentes -->
+<div class="dashboard-section">
 <div class="row">
   <div class="col-12">
     <div class="card">
@@ -312,7 +323,7 @@
           </a>
         </div>
         <% } else { %>
-        <div class="text-center py-4">
+        <div class="empty-state">
           <i class="bi bi-inbox fa-3x text-muted mb-3"></i>
           <p class="text-muted">Aucune activité récente</p>
         </div>
@@ -320,6 +331,7 @@
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <script>
@@ -378,3 +390,4 @@
   // Admin privilege flag available on server side as `permissions.isAdmin`
   console.log('===================');
 </script>
+</div>

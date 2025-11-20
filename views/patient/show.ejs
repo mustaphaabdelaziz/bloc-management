@@ -2,32 +2,34 @@
  <% layout('layouts/boilerplate')%>
 <div class="row">
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
+        <div class="card patient-card">
+            <div class="card-header bg-primary text-white patient-header">
                 <h5 class="mb-0">
                     <i class="bi bi-person-circle me-2"></i>Informations Patient
                 </h5>
             </div>
             <div class="card-body">
                 <div class="text-center mb-4">
-                    <i class="bi bi-person-circle fa-4x text-primary mb-3"></i>
+                    <div class="patient-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
                     <h4><%= patient.firstName %> <%= patient.lastName %></h4>
                     <p class="text-muted">Code: <strong><%= patient.code %></strong></p>
                 </div>
                 
-                <table class="table table-borderless">
+                <table class="table table-borderless patient-info-table">
                     <tr>
-                        <td><strong>NIN:</strong></td>
+                        <td><i class="bi bi-card-text me-2 text-primary"></i><strong>NIN:</strong></td>
                         <td><%= patient.nin %></td>
                     </tr>
                     <% if (patient.fatherName) { %>
                     <tr>
-                        <td><strong>Père:</strong></td>
+                        <td><i class="bi bi-person me-2 text-primary"></i><strong>Père:</strong></td>
                         <td><%= patient.fatherName %></td>
                     </tr>
                     <% } %>
                     <tr>
-                        <td><strong>Âge:</strong></td>
+                        <td><i class="bi bi-calendar me-2 text-primary"></i><strong>Âge:</strong></td>
                         <td>
                             <% if (patient.dateOfBirth) { %>
                                 <%= moment().diff(patient.dateOfBirth, 'years') %> ans
@@ -41,12 +43,12 @@
                     </tr>
                     <% if (patient.phone) { %>
                     <tr>
-                        <td><strong>Téléphone:</strong></td>
-                        <td><i class="bi bi-telephone me-2"></i><%= patient.phone %></td>
+                        <td><i class="bi bi-telephone me-2 text-primary"></i><strong>Téléphone:</strong></td>
+                        <td><%= patient.phone %></td>
                     </tr>
                     <% } %>
                     <tr>
-                        <td><strong>Créé le:</strong></td>
+                        <td><i class="bi bi-clock me-2 text-primary"></i><strong>Créé le:</strong></td>
                         <td><%= moment(patient.createdAt).format('DD/MM/YYYY HH:mm') %></td>
                     </tr>
                 </table>
@@ -64,8 +66,8 @@
     </div>
     
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-info text-white">
+        <div class="card patient-card">
+            <div class="card-header bg-info text-white patient-header">
                 <h5 class="mb-0">
                     <i class="bi bi-scissors me-2"></i>Historique des Chirurgies
                     <span class="badge bg-light text-info ms-2"><%= surgeries.length %></span>
@@ -74,7 +76,7 @@
             <div class="card-body">
                 <% if (surgeries.length > 0) { %>
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover patient-table">
                             <thead class="table-light">
                                 <tr>
                                     <th>Date</th>
@@ -121,7 +123,7 @@
                         </table>
                     </div>
                 <% } else { %>
-                    <div class="text-center py-4">
+                    <div class="text-center py-4 patient-empty">
                         <i class="bi bi-scissors fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Aucune chirurgie enregistrée</h5>
                         <p class="text-muted">Ce patient n'a pas encore eu de chirurgie</p>

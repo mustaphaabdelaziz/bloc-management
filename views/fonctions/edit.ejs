@@ -1,35 +1,611 @@
 <% layout('layouts/boilerplate') %>
-<!-- views/fonctions/edit.ejs -->
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-pencil me-2"></i>Modifier Fonction
-                </h5>
+
+<!-- Fonctions Edit Page Styles -->
+<link rel="stylesheet" href="/css/fonctions.css">
+
+<div class="container-fluid">
+    <!-- Page Header Section -->
+    <div class="page-header edit-header">
+        <div class="page-title">
+            <h1><i class="bi bi-pencil-square me-3"></i>Modifier la Fonction</h1>
+            <p>Modifiez les informations de la fonction sélectionnée</p>
+        </div>
+        <div class="page-actions">
+            <a href="/fonctions" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la Liste
+            </a>
+            <a href="/fonctions/<%= fonction._id %>" class="btn btn-outline-info">
+                <i class="bi bi-eye me-2"></i>Voir Détails
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+            <!-- Edit Form Card -->
+            <div class="edit-form-card">
+                <div class="form-card-header edit-mode">
+                    <div class="form-header-content">
+                        <div class="form-icon-wrapper">
+                            <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <div class="form-info">
+                            <h3 class="form-title">Modification de Fonction</h3>
+                            <p class="form-subtitle">Apportez les modifications nécessaires à la fonction</p>
+                        </div>
+                    </div>
+                    <div class="form-progress">
+                        <div class="progress-indicator">
+                            <span class="step active">1</span>
+                            <span class="step-label">Édition</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card-body">
+                    <form method="POST" action="/fonctions/<%= fonction._id %>?_method=PUT" id="fonctionEditForm" novalidate>
+                        <!-- Current Information Display -->
+                        <div class="current-info-section">
+                            <div class="info-header">
+                                <h4 class="info-title">
+                                    <i class="bi bi-info-circle me-2"></i>Informations Actuelles
+                                </h4>
+                            </div>
+                            <div class="current-info-card">
+                                <div class="current-avatar">
+                                    <i class="bi bi-person-workspace"></i>
+                                </div>
+                                <div class="current-details">
+                                    <div class="current-name"><%= fonction.name %></div>
+                                    <div class="current-meta">
+                                        <span class="current-badge">ID: <%= fonction._id.toString().slice(-6) %></span>
+                                        <span class="current-date">Modifié: <%= new Date(fonction.updatedAt || fonction.createdAt).toLocaleDateString('fr-FR') %></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="bi bi-pencil me-2"></i>Nouvelles Informations
+                                </h4>
+                                <p class="section-description">Modifiez les détails de la fonction ci-dessous</p>
+                            </div>
+
+                            <div class="form-row-custom">
+                                <div class="form-group-modern">
+                                    <label for="name" class="form-label-modern required">
+                                        <i class="bi bi-tag me-2"></i>Nom de la Fonction
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-person-workspace input-icon"></i>
+                                        </div>
+                                        <input type="text"
+                                               class="form-control-modern"
+                                               id="name"
+                                               name="name"
+                                               value="<%= fonction.name %>"
+                                               placeholder="Ex: Anesthésiste, Infirmier, Chirurgien..."
+                                               required
+                                               maxlength="100">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Nom valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Le nom de la fonction est requis (max 100 caractères)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Nom complet et descriptif de la fonction médicale
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Change Preview -->
+                            <div class="change-preview-section">
+                                <div class="preview-header">
+                                    <h5 class="preview-title">
+                                        <i class="bi bi-arrow-left-right me-2"></i>Aperçu des Modifications
+                                    </h5>
+                                </div>
+                                <div class="change-comparison">
+                                    <div class="original-preview">
+                                        <div class="preview-label">Actuel</div>
+                                        <div class="preview-card original">
+                                            <div class="preview-avatar">
+                                                <i class="bi bi-person-workspace"></i>
+                                            </div>
+                                            <div class="preview-details">
+                                                <div class="preview-name"><%= fonction.name %></div>
+                                                <div class="preview-meta">
+                                                    <span class="preview-badge original">Original</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="arrow-indicator">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </div>
+                                    <div class="modified-preview">
+                                        <div class="preview-label">Modifié</div>
+                                        <div class="preview-card modified">
+                                            <div class="preview-avatar">
+                                                <i class="bi bi-person-workspace"></i>
+                                            </div>
+                                            <div class="preview-details">
+                                                <div class="preview-name" id="previewModifiedName"><%= fonction.name %></div>
+                                                <div class="preview-meta">
+                                                    <span class="preview-badge modified">Modifié</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="change-indicator" id="changeIndicator" style="display: none;">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <span>Des modifications ont été détectées</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions-section">
+                            <div class="form-actions-content">
+                                <div class="action-buttons-group">
+                                    <a href="/fonctions" class="btn btn-outline-secondary action-btn">
+                                        <i class="bi bi-x-circle me-2"></i>Annuler
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning action-btn" id="resetBtn">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
+                                    </button>
+                                    <button type="submit" class="btn btn-warning action-btn" id="submitBtn">
+                                        <i class="bi bi-check-circle me-2"></i>Sauvegarder les Modifications
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" action="/fonctions/<%= fonction._id %>?_method=PUT">
-                    <div class="mb-3">
-                        <label for="code" class="form-label">Code *</label>
-                        <input type="text" class="form-control" id="code" name="code" value="<%= fonction.code %>" required>
+
+            <!-- Help Card -->
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="bi bi-lightbulb help-icon"></i>
+                    <h5 class="help-title">Conseils de Modification</h5>
+                </div>
+                <div class="help-content">
+                    <div class="help-item">
+                        <h6>Bonnes Pratiques :</h6>
+                        <ul class="help-tips">
+                            <li>Vérifiez l'orthographe et la cohérence du nom</li>
+                            <li>Assurez-vous que le nouveau nom n'existe pas déjà</li>
+                            <li>Considérez l'impact sur les rapports existants</li>
+                            <li>Préférez les termes professionnels standards</li>
+                        </ul>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Nom *</label>
-                        <input type="text" class="form-control" id="name" name="name" value="<%= fonction.name %>" required>
+                    <div class="help-item">
+                        <h6>Actions Disponibles :</h6>
+                        <ul class="help-actions">
+                            <li><strong>Annuler :</strong> Retour sans sauvegarder</li>
+                            <li><strong>Réinitialiser :</strong> Annuler les modifications non sauvegardées</li>
+                            <li><strong>Sauvegarder :</strong> Appliquer les changements</li>
+                        </ul>
                     </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/fonctions" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Annuler
-                        </a>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-save me-2"></i>Sauvegarder
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Fonctions Edit Page JavaScript -->
+<script>
+// Form validation and interactions for edit page
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('fonctionEditForm');
+    const nameInput = document.getElementById('name');
+    const previewModifiedName = document.getElementById('previewModifiedName');
+    const changeIndicator = document.getElementById('changeIndicator');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const originalName = '<%= fonction.name %>';
+
+    // Real-time preview update
+    function updatePreview() {
+        const currentName = nameInput.value.trim();
+        previewModifiedName.textContent = currentName || 'Nom de la fonction';
+
+        // Update preview avatar color based on name
+        const modifiedPreview = document.querySelector('.modified-preview .preview-avatar');
+        if (currentName) {
+            const colors = ['warning', 'danger', 'info', 'success', 'primary'];
+            const colorIndex = currentName.length % colors.length;
+            modifiedPreview.className = `preview-avatar ${colors[colorIndex]}`;
+        }
+
+        // Show change indicator
+        const hasChanges = currentName !== originalName;
+        changeIndicator.style.display = hasChanges ? 'block' : 'none';
+
+        // Update modified badge
+        const modifiedBadge = document.querySelector('.preview-badge.modified');
+        if (hasChanges) {
+            modifiedBadge.textContent = 'Modifié';
+            modifiedBadge.classList.add('changed');
+        } else {
+            modifiedBadge.textContent = 'Aucune modification';
+            modifiedBadge.classList.remove('changed');
+        }
+    }
+
+    // Input validation
+    function validateInput(input) {
+        const value = input.value.trim();
+        const isValid = value.length > 0 && value.length <= 100;
+
+        input.classList.toggle('is-valid', isValid);
+        input.classList.toggle('is-invalid', !isValid && input.value.length > 0);
+
+        return isValid;
+    }
+
+    // Check for duplicate names (basic client-side check)
+    function checkForDuplicates(name) {
+        // This would typically be done server-side, but we can provide client-side feedback
+        const existingFunctions = <%= JSON.stringify((typeof fonctions !== 'undefined' ? fonctions : []).map(f => f.name)) %>;
+        return existingFunctions.includes(name) && name !== originalName;
+    }
+
+    // Form submission handler
+    function handleSubmit(e) {
+        const isValid = validateInput(nameInput);
+        const currentName = nameInput.value.trim();
+
+        if (!isValid) {
+            e.preventDefault();
+            nameInput.focus();
+            showNotification('Veuillez corriger les erreurs avant de continuer.', 'danger');
+            return false;
+        }
+
+        if (checkForDuplicates(currentName)) {
+            e.preventDefault();
+            showNotification('Une fonction avec ce nom existe déjà.', 'warning');
+            nameInput.focus();
+            return false;
+        }
+
+        if (currentName === originalName) {
+            e.preventDefault();
+            showNotification('Aucune modification détectée.', 'info');
+            return false;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sauvegarde en cours...';
+
+        showNotification('Sauvegarde des modifications en cours...', 'info');
+    }
+
+    // Reset form handler
+    function handleReset() {
+        if (confirm('Êtes-vous sûr de vouloir annuler toutes les modifications ?')) {
+            nameInput.value = originalName;
+            nameInput.classList.remove('is-valid', 'is-invalid');
+            updatePreview();
+            nameInput.focus();
+            showNotification('Modifications annulées', 'info');
+        }
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.toast-notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        // Create new notification
+        const notification = document.createElement('div');
+        notification.className = `toast-notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="notification-close" onclick="this.parentElement.remove()">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Event listeners
+    nameInput.addEventListener('input', function() {
+        validateInput(this);
+        updatePreview();
+    });
+
+    nameInput.addEventListener('blur', function() {
+        validateInput(this);
+        const isDuplicate = checkForDuplicates(this.value.trim());
+        if (isDuplicate) {
+            this.classList.add('is-invalid');
+            this.nextElementSibling.querySelector('.invalid-feedback').textContent = 'Une fonction avec ce nom existe déjà';
+        }
+    });
+
+    form.addEventListener('submit', handleSubmit);
+    resetBtn.addEventListener('click', handleReset);
+
+    // Initialize preview
+    updatePreview();
+
+    // Focus on name input
+    nameInput.focus();
+});
+</script>
+
+<style>
+/* Edit-specific styles */
+.edit-header {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%) !important;
+}
+
+.edit-mode .form-card-header {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.edit-form-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.current-info-section {
+    margin-bottom: 2.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(246, 173, 85, 0.05), rgba(237, 137, 54, 0.02));
+    border-radius: 12px;
+    border: 1px solid rgba(246, 173, 85, 0.1);
+}
+
+.info-header {
+    margin-bottom: 1rem;
+}
+
+.info-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0;
+}
+
+.current-info-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.current-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f6ad55, #ed8936);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.current-details {
+    flex: 1;
+}
+
+.current-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.current-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.current-badge, .current-date {
+    font-size: 0.8rem;
+    color: #718096;
+}
+
+.change-preview-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(237, 137, 54, 0.05), rgba(246, 173, 85, 0.02));
+    border-radius: 12px;
+    border: 1px solid rgba(237, 137, 54, 0.1);
+}
+
+.change-comparison {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.original-preview, .modified-preview {
+    flex: 1;
+}
+
+.preview-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+.arrow-indicator {
+    color: #ed8936;
+    font-size: 1.5rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-5px); }
+    60% { transform: translateY(-3px); }
+}
+
+.preview-card.original {
+    border: 2px solid rgba(113, 128, 150, 0.2);
+}
+
+.preview-card.modified {
+    border: 2px solid rgba(237, 137, 54, 0.3);
+}
+
+.preview-badge.original {
+    background: linear-gradient(135deg, #a0aec0, #718096);
+}
+
+.preview-badge.modified {
+    background: linear-gradient(135deg, #f6ad55, #ed8936);
+}
+
+.preview-badge.changed {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.change-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #fef5e7, #fffaf0);
+    border-radius: 8px;
+    border: 1px solid rgba(237, 137, 54, 0.2);
+    color: #ed8936;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.help-actions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.help-actions li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #718096;
+}
+
+.help-actions li:last-child {
+    border-bottom: none;
+}
+
+.help-actions strong {
+    color: #2d3748;
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0 1rem;
+    }
+
+    .page-header {
+        padding: 2rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+    }
+
+    .form-card-header {
+        padding: 1.5rem;
+    }
+
+    .form-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .form-progress {
+        position: static;
+        display: flex;
+        justify-content: center;
+    }
+
+    .form-card-body {
+        padding: 2rem 1.5rem;
+    }
+
+    .current-info-card, .preview-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .change-comparison {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .arrow-indicator {
+        transform: rotate(90deg);
+    }
+
+    .action-buttons-group {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        width: 100%;
+    }
+
+    .help-card {
+        padding: 1.5rem;
+    }
+}
+</style>

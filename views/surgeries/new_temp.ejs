@@ -1,0 +1,478 @@
+<% layout('layouts/boilerplate') %>
+
+<!-- Modern Surgery Creation Page -->
+<div class="container-fluid fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <h1><i class="bi bi-plus-circle-fill me-3"></i>Nouvelle Chirurgie</h1>
+            <p>Programmer une nouvelle intervention chirurgicale</p>
+        </div>
+        <div class="page-actions">
+            <a href="/surgeries" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <div class="surgery-form-container">
+                <form method="POST" action="/surgeries" id="surgeryForm" class="surgery-form">
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-info-circle me-2"></i>Informations de Base</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Patient <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-person"></i>
+                                    <input type="text" class="form-control-modern" id="patient" name="patientName"
+                                           list="patientsList" placeholder="Rechercher un patient..." required autocomplete="off">
+                                    <input type="hidden" name="patient" id="patientId">
+                                    <div class="input-actions">
+                                        <a href="/patients/new" target="_blank" class="input-action-btn" title="Ajouter un patient">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <datalist id="patientsList">
+                                    <% patients.forEach(patient => { %>
+                                        <option value="<%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>"
+                                                data-id="<%= patient._id %>">
+                                    <% }); %>
+                                </datalist>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Chirurgien <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-person-badge"></i>
+                                    <input type="text" class="form-control-modern" id="surgeon" name="surgeonName"
+                                           list="surgeonsList" placeholder="Rechercher un chirurgien..." required autocomplete="off">
+                                    <input type="hidden" name="surgeon" id="surgeonId">
+                                </div>
+                                <datalist id="surgeonsList">
+                                    <% surgeons.forEach(surgeon => { %>
+                                        <option value="Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>"
+                                                data-id="<%= surgeon._id %>"
+                                                data-specialty="<%= surgeon.specialty._id %>"
+                                                data-contract="<%= surgeon.contractType %>">
+                                    <% }); %>
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Prestation <span class="text-danger">*</span></label>
+                                <select class="form-select-modern" id="prestation" name="prestation" required>
+                                    <option value="">Choisir une prestation...</option>
+                                    <% prestations.forEach(prestation => { %>
+                                        <option value="<%= prestation._id %>"
+                                                data-specialty="<%= prestation.specialty._id %>"
+                                                data-duration="<%= prestation.duration %>"
+                                                data-price="<%= prestation.priceHT %>">
+                                            <%= prestation.designation %> - <%= prestation.specialty.name %> (<%= prestation.duration %> min)
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+
+                            <% if (canEditSurgeryFinancials) { %>
+                            <div class="form-group">
+                                <label class="form-label">Prix ajusté (DA)</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-cash"></i>
+                                    <input type="number" class="form-control-modern" id="adjustedPrice" name="adjustedPrice"
+                                           min="0" step="0.01" placeholder="Prix spécifique (optionnel)">
+                                </div>
+                                <div class="form-help-text">
+                                    Prix de base: <span id="basePrice" class="fw-bold">Sélectionnez une prestation</span>
+                                </div>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Scheduling Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-calendar-event me-2"></i>Planification</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Statut <span class="text-danger">*</span></label>
+                                <select class="form-select-modern" name="status" id="status" required>
+                                    <option value="planned">Planifiée</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Date et heure de début <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-calendar-event"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="beginDateTime"
+                                           name="beginDateTime" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Date et heure de fin</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-calendar-check"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="endDateTime"
+                                           name="endDateTime">
+                                </div>
+                                <div class="form-help-text">
+                                    Optionnel - permet le calcul automatique de la durée
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Frais supplémentaires</label>
+                                <div class="form-check-modern">
+                                    <input class="form-check-input-modern" type="checkbox" id="applyExtraFees" name="applyExtraFees">
+                                    <label class="form-check-label-modern" for="applyExtraFees">
+                                        Appliquer des frais pour dépassement de durée
+                                    </label>
+                                </div>
+                                <div class="form-help-text text-warning">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Si activé, des frais additionnels seront appliqués en cas de dépassement
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Staff Section -->
+                    <div class="medical-staff-section">
+                        <div class="medical-staff-header">
+                            <h4><i class="bi bi-people-fill me-2"></i>Personnel Médical</h4>
+                            <button type="button" class="add-staff-btn" onclick="addStaffRow()">
+                                <i class="bi bi-plus-circle me-1"></i>Ajouter
+                            </button>
+                        </div>
+
+                        <div id="medicalStaffContainer">
+                            <div class="staff-row">
+                                <select name="medicalStaff" class="form-select-modern" onchange="updateRolesForStaff(this)">
+                                    <option value="">Sélectionner personnel</option>
+                                    <% medicalStaff.forEach(ms => { %>
+                                        <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+                                    <% }); %>
+                                </select>
+
+                                <select name="rolePlayedId" class="form-select-modern">
+                                    <option value="">Sélectionner rôle</option>
+                                    <% fonctions.forEach(fonction => { %>
+                                        <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                                    <% }); %>
+                                </select>
+
+                                <button type="button" class="btn-staff-action btn-delete" onclick="removeStaffRow(this)" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Materials Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-box-seam me-2"></i>Matériaux et Consommables</h3>
+
+                        <!-- Consumable Materials -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="bi bi-tools me-2"></i>Matériaux Consommables</h5>
+                            <div id="consumableMaterialsContainer">
+                                <div class="row mb-3 consumable-material-row">
+                                    <div class="col-md-6">
+                                        <select class="form-select-modern" name="consumableMaterialId">
+                                            <option value="">Choisir un matériau consommable...</option>
+                                            <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
+                                                <option value="<%= mat._id %>"
+                                                        data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                                                        data-category="<%= mat.category %>"
+                                                        data-price="<%= mat.priceHT %>"
+                                                        data-unit="<%= mat.unitOfMeasure %>">
+                                                    <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                </option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" name="consumableMaterialQuantity" class="form-control-modern"
+                                               min="1" step="0.01" placeholder="Quantité">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn-staff-action btn-delete"
+                                                onclick="removeConsumableMaterialRow(this)" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addConsumableMaterialRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau consommable
+                            </button>
+                        </div>
+
+                        <!-- Patient Materials -->
+                        <div>
+                            <h5 class="text-info mb-3"><i class="bi bi-person me-2"></i>Matériaux Patient</h5>
+                            <div id="patientMaterialsContainer">
+                                <div class="row mb-3 patient-material-row">
+                                    <div class="col-md-6">
+                                        <select class="form-select-modern" name="patientMaterialId">
+                                            <option value="">Choisir un matériau patient...</option>
+                                            <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+                                                <option value="<%= mat._id %>"
+                                                        data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                                                        data-category="<%= mat.category %>"
+                                                        data-price="<%= mat.priceHT %>"
+                                                        data-unit="<%= mat.unitOfMeasure %>">
+                                                    <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                </option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" name="patientMaterialQuantity" class="form-control-modern"
+                                               min="1" step="0.01" placeholder="Quantité">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn-staff-action btn-delete"
+                                                onclick="removePatientMaterialRow(this)" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="addPatientMaterialRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau patient
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-sticky me-2"></i>Notes et Observations</h3>
+                        <textarea class="form-control-modern" id="notes" name="notes" rows="4"
+                                  placeholder="Ajouter des notes spécifiques à cette chirurgie..."></textarea>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions-section">
+                        <div class="form-actions-content">
+                            <div class="action-buttons-group">
+                                <a href="/surgeries" class="action-btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Annuler
+                                </a>
+                                <button type="submit" class="action-btn btn-success">
+                                    <i class="bi bi-save me-1"></i>Enregistrer la Chirurgie
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Preview Sidebar -->
+        <div class="col-lg-4">
+            <div class="form-preview-section">
+                <div class="preview-header">
+                    <h4><i class="bi bi-eye me-2"></i>Aperçu</h4>
+                </div>
+
+                <div class="preview-card" id="surgeryPreview">
+                    <div class="preview-avatar">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <div class="preview-details">
+                        <div class="preview-name" id="previewCode">CH-XXXX</div>
+                        <div class="preview-meta">
+                            <span class="preview-badge" id="previewStatus">Planifiée</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-content">
+                    <div class="preview-grid">
+                        <div class="preview-item">
+                            <div class="preview-label">Patient</div>
+                            <div class="preview-value" id="previewPatient">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Chirurgien</div>
+                            <div class="preview-value" id="previewSurgeon">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Prestation</div>
+                            <div class="preview-value" id="previewPrestation">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Date/Heure</div>
+                            <div class="preview-value" id="previewDateTime">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Durée prévue</div>
+                            <div class="preview-value" id="previewDuration">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Prix estimé</div>
+                            <div class="preview-value" id="previewPrice">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="help-icon bi bi-info-circle-fill"></i>
+                    <h5 class="help-title">Conseils pour la création</h5>
+                </div>
+                <div class="help-content">
+                    <div class="help-surgery-info">
+                        <li>Sélectionnez d'abord le patient et le chirurgien</li>
+                        <li>Choisissez la prestation appropriée selon la spécialité</li>
+                        <li>Ajoutez le personnel médical nécessaire</li>
+                        <li>Vérifiez les stocks des matériaux avant validation</li>
+                        <li>Pour les urgences, le prix peut être majoré</li>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Surgery-specific JavaScript -->
+<script>
+// Initialize data for surgery form
+const staffData = <%- JSON.stringify(medicalStaff) %>;
+
+// Store staff options HTML for dynamic row addition
+window.staffOptions = `
+  <% medicalStaff.forEach(ms => { %>
+    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+  <% }); %>
+`;
+
+// Store consumable material options for dynamic row addition
+window.consumableMaterialOptions = `
+  <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
+    <option
+      value="<%= mat._id %>"
+      data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+      data-category="<%= mat.category %>"
+      data-price="<%= mat.priceHT %>"
+      data-unit="<%= mat.unitOfMeasure %>">
+      <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+    </option>
+  <% }) %>
+`;
+
+// Store patient material options for dynamic row addition
+window.patientMaterialOptions = `
+  <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+    <option
+      value="<%= mat._id %>"
+      data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+      data-category="<%= mat.category %>"
+      data-price="<%= mat.priceHT %>"
+      data-unit="<%= mat.unitOfMeasure %>">
+      <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+    </option>
+  <% }) %>
+`;
+
+// Store functions options for dynamic role selection
+window.fonctionsOptions = [
+  <% fonctions.forEach((fonction, idx) => { %>
+    { id: '<%= fonction._id %>', name: '<%= fonction.name %>' }<% if (idx < fonctions.length - 1) { %>,<% } %>
+  <% }); %>
+];
+</script>
+<script src="/js/surgeries-new.js"></script>
+
+<script>
+// Real-time preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    // Update preview when form changes
+    const form = document.getElementById('surgeryForm');
+    const inputs = form.querySelectorAll('input, select, textarea');
+
+    inputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
+
+    function updatePreview() {
+        // Update patient
+        const patientInput = document.getElementById('patient');
+        document.getElementById('previewPatient').textContent =
+            patientInput.value || '-';
+
+        // Update surgeon
+        const surgeonInput = document.getElementById('surgeon');
+        document.getElementById('previewSurgeon').textContent =
+            surgeonInput.value || '-';
+
+        // Update prestation
+        const prestationSelect = document.getElementById('prestation');
+        const selectedOption = prestationSelect.options[prestationSelect.selectedIndex];
+        document.getElementById('previewPrestation').textContent =
+            selectedOption ? selectedOption.text.split(' - ')[0] || '-' : '-';
+
+        // Update status
+        const statusSelect = document.getElementById('status');
+        const statusText = statusSelect.value === 'urgent' ? 'Urgente' : 'Planifiée';
+        document.getElementById('previewStatus').textContent = statusText;
+
+        // Update date/time
+        const dateTimeInput = document.getElementById('beginDateTime');
+        if (dateTimeInput.value) {
+            const date = new Date(dateTimeInput.value);
+            document.getElementById('previewDateTime').textContent =
+                date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+        } else {
+            document.getElementById('previewDateTime').textContent = '-';
+        }
+
+        // Update duration
+        if (selectedOption && selectedOption.getAttribute('data-duration')) {
+            document.getElementById('previewDuration').textContent =
+                selectedOption.getAttribute('data-duration') + ' min';
+        } else {
+            document.getElementById('previewDuration').textContent = '-';
+        }
+
+        // Update price
+        const adjustedPriceInput = document.getElementById('adjustedPrice');
+        const basePrice = selectedOption ? selectedOption.getAttribute('data-price') : null;
+        const displayPrice = adjustedPriceInput.value || basePrice;
+        if (displayPrice) {
+            document.getElementById('previewPrice').textContent =
+                new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(displayPrice);
+        } else {
+            document.getElementById('previewPrice').textContent = '-';
+        }
+    }
+
+    // Generate surgery code
+    function generateSurgeryCode() {
+        const now = new Date();
+        const year = now.getFullYear().toString().slice(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        document.getElementById('previewCode').textContent = `CH-${year}${month}-${random}`;
+    }
+
+    generateSurgeryCode();
+});
+</script>

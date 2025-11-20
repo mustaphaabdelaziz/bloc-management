@@ -1,0 +1,1245 @@
+// Payments Module Stylesheet - Enhanced UX/UI Design
+
+// Variables
+$primary-color: #0d6efd;
+$success-color: #198754;
+$danger-color: #dc3545;
+$warning-color: #ffc107;
+$info-color: #0dcaf0;
+$light-bg: #f8f9fa;
+$border-color: #dee2e6;
+$dark-color: #212529;
+$secondary-color: #6c757d;
+
+// Enhanced Color Palette
+$card-shadow: rgba(0, 0, 0, 0.08);
+$card-shadow-hover: rgba(0, 0, 0, 0.15);
+$border-radius: 12px;
+$border-radius-sm: 8px;
+$border-radius-lg: 16px;
+
+// Typography
+$font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Spacing
+$spacer-xs: 0.25rem;
+$spacer-sm: 0.5rem;
+$spacer-md: 1rem;
+$spacer-lg: 1.5rem;
+$spacer-xl: 2rem;
+$spacer-xxl: 3rem;
+
+// Enhanced Card Styling
+.payment-card {
+  background: #ffffff;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  box-shadow: 0 2px 8px $card-shadow;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 8px 25px $card-shadow-hover;
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid $border-color;
+    padding: $spacer-lg;
+    font-weight: $font-weight-semibold;
+
+    h5, h6 {
+      margin: 0;
+      font-weight: $font-weight-semibold;
+      color: $dark-color;
+    }
+  }
+
+  .card-body {
+    padding: $spacer-lg;
+  }
+}
+
+// Enhanced Summary Cards
+.payment-summary-card {
+  background: #ffffff;
+  border: 2px solid transparent;
+  border-radius: $border-radius-lg;
+  box-shadow: 0 4px 12px $card-shadow;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: $primary-color;
+    transition: width 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px $card-shadow-hover;
+
+    &::before {
+      width: 6px;
+    }
+  }
+
+  &.outgoing {
+    &::before {
+      background: $danger-color;
+    }
+
+    .summary-icon {
+      color: $danger-color;
+    }
+  }
+
+  &.incoming {
+    &::before {
+      background: $success-color;
+    }
+
+    .summary-icon {
+      color: $success-color;
+    }
+  }
+
+  &.net-balance {
+    &::before {
+      background: $info-color;
+    }
+
+    .summary-icon {
+      color: $info-color;
+    }
+  }
+
+  .card-body {
+    padding: $spacer-xl;
+    text-align: center;
+  }
+
+  .summary-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+    margin-bottom: $spacer-md;
+    display: block;
+  }
+
+  .summary-title {
+    font-size: 0.875rem;
+    font-weight: $font-weight-medium;
+    color: $secondary-color;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: $spacer-sm;
+  }
+
+  .summary-amount {
+    font-size: 2rem;
+    font-weight: $font-weight-bold;
+    margin: $spacer-md 0;
+    font-family: 'Courier New', monospace;
+    letter-spacing: -0.5px;
+  }
+
+  .summary-details {
+    font-size: 0.875rem;
+    color: $secondary-color;
+
+    .detail-item {
+      display: block;
+      margin-bottom: $spacer-xs;
+
+      &.positive {
+        color: $success-color;
+        font-weight: $font-weight-medium;
+      }
+
+      &.negative {
+        color: $danger-color;
+        font-weight: $font-weight-medium;
+      }
+
+      &.warning {
+        color: $warning-color;
+        font-weight: $font-weight-medium;
+      }
+    }
+  }
+}
+
+// Payment Status Badges - Enhanced Design
+.payment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacer-xs $spacer-sm;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  border-radius: $border-radius-sm;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+
+  i {
+    margin-right: $spacer-xs;
+    font-size: 0.875rem;
+  }
+
+  &.status-pending {
+    background-color: rgba($info-color, 0.1);
+    color: $info-color;
+    border-color: rgba($info-color, 0.2);
+
+    &:hover {
+      background-color: rgba($info-color, 0.15);
+    }
+  }
+
+  &.status-partial {
+    background-color: rgba($warning-color, 0.1);
+    color: #856404;
+    border-color: rgba($warning-color, 0.2);
+
+    &:hover {
+      background-color: rgba($warning-color, 0.15);
+    }
+  }
+
+  &.status-complete {
+    background-color: rgba($success-color, 0.1);
+    color: $success-color;
+    border-color: rgba($success-color, 0.2);
+
+    &:hover {
+      background-color: rgba($success-color, 0.15);
+    }
+  }
+
+  &.status-cancelled {
+    background-color: rgba($secondary-color, 0.1);
+    color: $secondary-color;
+    border-color: rgba($secondary-color, 0.2);
+
+    &:hover {
+      background-color: rgba($secondary-color, 0.15);
+    }
+  }
+}
+
+// Payment Type Badges - Enhanced
+.payment-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacer-xs $spacer-sm;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  border-radius: $border-radius-sm;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  i {
+    margin-right: $spacer-xs;
+    font-size: 0.875rem;
+  }
+
+  &.type-outgoing {
+    background-color: $danger-color;
+    color: #ffffff;
+
+    &:hover {
+      background-color: darken($danger-color, 10%);
+    }
+  }
+
+  &.type-incoming {
+    background-color: $success-color;
+    color: #ffffff;
+
+    &:hover {
+      background-color: darken($success-color, 10%);
+    }
+  }
+}
+
+// Enhanced Progress Bar
+.payment-progress {
+  height: 32px;
+  background-color: rgba($secondary-color, 0.1);
+  border-radius: $border-radius;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  .progress-bar {
+    background: linear-gradient(90deg, $success-color 0%, lighten($success-color, 10%) 100%);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: $font-weight-bold;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+      animation: shimmer 2s infinite;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+// Enhanced Table Styling
+.payment-table {
+  background: #ffffff;
+  border-radius: $border-radius;
+  overflow: hidden;
+  box-shadow: 0 2px 8px $card-shadow;
+
+  th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    font-weight: $font-weight-semibold;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: $dark-color;
+    border: none;
+    padding: $spacer-md $spacer-lg;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  td {
+    vertical-align: middle;
+    padding: $spacer-md $spacer-lg;
+    border-bottom: 1px solid rgba($border-color, 0.5);
+    transition: background-color 0.2s ease;
+  }
+
+  tbody tr {
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba($primary-color, 0.02);
+      transform: scale(1.01);
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  .amount-cell {
+    font-family: 'Courier New', monospace;
+    font-weight: $font-weight-bold;
+    font-size: 0.875rem;
+    letter-spacing: -0.5px;
+  }
+
+  .amount-total {
+    color: $dark-color;
+  }
+
+  .amount-paid {
+    color: $success-color;
+  }
+
+  .amount-remaining {
+    color: $warning-color;
+  }
+
+  .surgery-code {
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: darken($primary-color, 15%);
+      text-decoration: underline;
+    }
+  }
+
+  .surgeon-name {
+    font-weight: $font-weight-medium;
+    color: $dark-color;
+  }
+
+  .patient-name {
+    color: $secondary-color;
+    font-size: 0.875rem;
+  }
+}
+
+// Enhanced Transaction History
+.transaction-history {
+  .transaction-item {
+    background: #ffffff;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    padding: $spacer-lg;
+    margin-bottom: $spacer-md;
+    transition: all 0.3s ease;
+    position: relative;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: $success-color;
+      border-radius: $border-radius 0 0 $border-radius;
+    }
+  }
+
+  .transaction-amount {
+    font-size: 1.25rem;
+    font-weight: $font-weight-bold;
+    color: $success-color;
+    font-family: 'Courier New', monospace;
+    margin-bottom: $spacer-sm;
+  }
+
+  .transaction-method {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacer-xs $spacer-sm;
+    background: rgba($info-color, 0.1);
+    color: $info-color;
+    border-radius: $border-radius-sm;
+    font-size: 0.75rem;
+    font-weight: $font-weight-medium;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    .transaction-method-icon {
+      margin-right: $spacer-xs;
+      font-size: 0.875rem;
+    }
+  }
+
+  .transaction-date {
+    color: $secondary-color;
+    font-size: 0.875rem;
+    margin-bottom: $spacer-xs;
+  }
+
+  .transaction-reference {
+    font-family: 'Courier New', monospace;
+    background: $light-bg;
+    padding: $spacer-xs $spacer-sm;
+    border-radius: $border-radius-sm;
+    font-size: 0.75rem;
+    color: $dark-color;
+  }
+}
+
+// Enhanced Filter Form
+.payment-filters {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  padding: $spacer-xl;
+  margin-bottom: $spacer-xl;
+  box-shadow: 0 2px 8px $card-shadow;
+
+  .filter-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: $spacer-lg;
+
+    i {
+      color: $primary-color;
+      margin-right: $spacer-sm;
+      font-size: 1.25rem;
+    }
+
+    h6 {
+      margin: 0;
+      font-weight: $font-weight-semibold;
+      color: $dark-color;
+    }
+  }
+
+  .form-label {
+    font-weight: $font-weight-semibold;
+    font-size: 0.75rem;
+    color: $dark-color;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: $spacer-sm;
+  }
+
+  .form-select,
+  .form-control {
+    border: 2px solid $border-color;
+    border-radius: $border-radius-sm;
+    padding: $spacer-sm $spacer-md;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background: #ffffff;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      outline: none;
+    }
+
+    &::placeholder {
+      color: $secondary-color;
+      opacity: 0.7;
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: $spacer-sm;
+    align-items: flex-end;
+
+    .btn {
+      padding: $spacer-sm $spacer-lg;
+      font-weight: $font-weight-medium;
+      border-radius: $border-radius-sm;
+      transition: all 0.2s ease;
+
+      &.btn-primary {
+        background: $primary-color;
+        border-color: $primary-color;
+
+        &:hover {
+          background: darken($primary-color, 10%);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba($primary-color, 0.3);
+        }
+      }
+
+      &.btn-secondary {
+        background: $secondary-color;
+        border-color: $secondary-color;
+
+        &:hover {
+          background: darken($secondary-color, 10%);
+          transform: translateY(-1px);
+        }
+      }
+
+      i {
+        margin-right: $spacer-xs;
+      }
+    }
+  }
+}
+
+// Enhanced Modal Styling
+.payment-modal {
+  .modal-dialog {
+    max-width: 600px;
+  }
+
+  .modal-content {
+    border: none;
+    border-radius: $border-radius-lg;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 10%) 100%);
+    color: #ffffff;
+    border: none;
+    padding: $spacer-xl;
+    position: relative;
+
+    .modal-title {
+      font-weight: $font-weight-bold;
+      font-size: 1.25rem;
+    }
+
+    .btn-close {
+      filter: invert(1);
+      opacity: 0.8;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: $spacer-xl;
+    background: #ffffff;
+  }
+
+  .payment-info-alert {
+    background: linear-gradient(135deg, rgba($info-color, 0.1) 0%, rgba($info-color, 0.05) 100%);
+    border: 2px solid rgba($info-color, 0.2);
+    border-radius: $border-radius;
+    padding: $spacer-lg;
+    margin-bottom: $spacer-lg;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: $info-color;
+      border-radius: $border-radius 0 0 $border-radius;
+    }
+
+    .alert-icon {
+      color: $info-color;
+      margin-right: $spacer-sm;
+      font-size: 1.25rem;
+    }
+
+    .alert-content {
+      font-size: 0.875rem;
+      color: $dark-color;
+      line-height: 1.5;
+    }
+  }
+
+  .form-group {
+    margin-bottom: $spacer-lg;
+
+    .form-label {
+      font-weight: $font-weight-semibold;
+      color: $dark-color;
+      margin-bottom: $spacer-sm;
+      display: flex;
+      align-items: center;
+
+      .required {
+        color: $danger-color;
+        margin-left: $spacer-xs;
+      }
+    }
+
+    .form-control,
+    .form-select {
+      border: 2px solid $border-color;
+      border-radius: $border-radius-sm;
+      padding: $spacer-md;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+        outline: none;
+      }
+    }
+
+    .input-group {
+      .input-group-text {
+        background: $light-bg;
+        border: 2px solid $border-color;
+        color: $secondary-color;
+        font-weight: $font-weight-medium;
+      }
+
+      .form-control {
+        border-left: none;
+
+        &:focus {
+          border-left: 2px solid $primary-color;
+        }
+      }
+    }
+
+    .form-text {
+      font-size: 0.75rem;
+      color: $secondary-color;
+      margin-top: $spacer-xs;
+    }
+  }
+
+  .modal-footer {
+    background: $light-bg;
+    border-top: 1px solid $border-color;
+    padding: $spacer-lg;
+    gap: $spacer-sm;
+
+    .btn {
+      padding: $spacer-sm $spacer-lg;
+      font-weight: $font-weight-medium;
+      border-radius: $border-radius-sm;
+      min-width: 100px;
+    }
+  }
+}
+
+// Enhanced Button Groups and Actions
+.payment-actions {
+  display: flex;
+  gap: $spacer-sm;
+  flex-wrap: wrap;
+
+  .btn {
+    padding: $spacer-sm $spacer-md;
+    font-size: 0.875rem;
+    font-weight: $font-weight-medium;
+    border-radius: $border-radius-sm;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacer-xs;
+
+    &.btn-sm {
+      padding: $spacer-xs $spacer-sm;
+      font-size: 0.75rem;
+    }
+
+    &.btn-primary {
+      background: $primary-color;
+      border-color: $primary-color;
+
+      &:hover {
+        background: darken($primary-color, 10%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba($primary-color, 0.3);
+      }
+    }
+
+    &.btn-success {
+      background: $success-color;
+      border-color: $success-color;
+
+      &:hover {
+        background: darken($success-color, 10%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba($success-color, 0.3);
+      }
+    }
+
+    &.btn-danger {
+      background: $danger-color;
+      border-color: $danger-color;
+
+      &:hover {
+        background: darken($danger-color, 10%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba($danger-color, 0.3);
+      }
+    }
+
+    &.btn-outline-secondary {
+      color: $secondary-color;
+      border-color: $secondary-color;
+
+      &:hover {
+        background: $secondary-color;
+        color: #ffffff;
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
+// Enhanced Page Header
+.payment-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: $border-radius-lg;
+  padding: $spacer-xl;
+  margin-bottom: $spacer-xl;
+  box-shadow: 0 2px 8px $card-shadow;
+  border: 1px solid $border-color;
+
+  .header-title {
+    font-size: 1.75rem;
+    font-weight: $font-weight-bold;
+    color: $dark-color;
+    margin-bottom: $spacer-sm;
+    display: flex;
+    align-items: center;
+
+    i {
+      color: $primary-color;
+      margin-right: $spacer-md;
+      font-size: 2rem;
+    }
+  }
+
+  .header-subtitle {
+    font-size: 1rem;
+    color: $secondary-color;
+    margin-bottom: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: $spacer-md;
+    align-items: center;
+  }
+}
+
+// Enhanced Status Cards
+.status-card {
+  background: #ffffff;
+  border-radius: $border-radius;
+  padding: $spacer-lg;
+  box-shadow: 0 2px 8px $card-shadow;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+
+  &.status-complete {
+    border-color: rgba($success-color, 0.2);
+    background: linear-gradient(135deg, rgba($success-color, 0.02) 0%, rgba($success-color, 0.01) 100%);
+  }
+
+  &.status-partial {
+    border-color: rgba($warning-color, 0.2);
+    background: linear-gradient(135deg, rgba($warning-color, 0.02) 0%, rgba($warning-color, 0.01) 100%);
+  }
+
+  &.status-pending {
+    border-color: rgba($info-color, 0.2);
+    background: linear-gradient(135deg, rgba($info-color, 0.02) 0%, rgba($info-color, 0.01) 100%);
+  }
+
+  &.status-cancelled {
+    border-color: rgba($secondary-color, 0.2);
+    background: linear-gradient(135deg, rgba($secondary-color, 0.02) 0%, rgba($secondary-color, 0.01) 100%);
+  }
+
+  .status-icon {
+    font-size: 3rem;
+    margin-bottom: $spacer-md;
+  }
+
+  .status-title {
+    font-size: 1.25rem;
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacer-sm;
+  }
+
+  .status-description {
+    color: $secondary-color;
+    line-height: 1.5;
+  }
+}
+
+// Enhanced Amount Display
+.amount-display {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: $border-radius;
+  padding: $spacer-lg;
+  text-align: center;
+  border: 2px solid $border-color;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .amount-label {
+    font-size: 0.875rem;
+    font-weight: $font-weight-medium;
+    color: $secondary-color;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: $spacer-sm;
+  }
+
+  .amount-value {
+    font-size: 1.75rem;
+    font-weight: $font-weight-bold;
+    font-family: 'Courier New', monospace;
+    letter-spacing: -0.5px;
+    margin-bottom: $spacer-sm;
+  }
+
+  .amount-subtitle {
+    font-size: 0.75rem;
+    color: $secondary-color;
+  }
+
+  &.amount-total {
+    border-color: $dark-color;
+
+    .amount-value {
+      color: $dark-color;
+    }
+  }
+
+  &.amount-paid {
+    border-color: $success-color;
+    background: linear-gradient(135deg, rgba($success-color, 0.05) 0%, rgba($success-color, 0.02) 100%);
+
+    .amount-value {
+      color: $success-color;
+    }
+  }
+
+  &.amount-remaining {
+    border-color: $warning-color;
+    background: linear-gradient(135deg, rgba($warning-color, 0.05) 0%, rgba($warning-color, 0.02) 100%);
+
+    .amount-value {
+      color: $warning-color;
+    }
+  }
+}
+
+// Enhanced Responsive Design
+@media (max-width: 1200px) {
+  .payment-summary-card {
+    .card-body {
+      padding: $spacer-lg;
+    }
+
+    .summary-amount {
+      font-size: 1.75rem;
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .payment-header {
+    .header-title {
+      font-size: 1.5rem;
+    }
+
+    .header-actions {
+      flex-direction: column;
+      align-items: stretch;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+
+  .payment-summary-card {
+    margin-bottom: $spacer-lg;
+
+    .card-body {
+      padding: $spacer-md;
+    }
+
+    .summary-icon {
+      font-size: 2rem;
+    }
+
+    .summary-amount {
+      font-size: 1.5rem;
+    }
+  }
+
+  .payment-table {
+    th, td {
+      padding: $spacer-sm;
+    }
+
+    .amount-cell {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-card {
+    .card-header,
+    .card-body {
+      padding: $spacer-md;
+    }
+  }
+
+  .payment-filters {
+    padding: $spacer-lg;
+
+    .filter-actions {
+      flex-direction: column;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+
+  .payment-modal {
+    .modal-dialog {
+      margin: $spacer-sm;
+      max-width: none;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: $spacer-lg;
+    }
+  }
+
+  .amount-display {
+    padding: $spacer-md;
+
+    .amount-value {
+      font-size: 1.5rem;
+    }
+  }
+
+  .status-card {
+    padding: $spacer-md;
+
+    .status-icon {
+      font-size: 2.5rem;
+    }
+
+    .status-title {
+      font-size: 1.125rem;
+    }
+  }
+
+  .transaction-history {
+    .transaction-item {
+      padding: $spacer-md;
+    }
+
+    .transaction-amount {
+      font-size: 1.125rem;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .payment-header {
+    padding: $spacer-lg;
+
+    .header-title {
+      font-size: 1.25rem;
+      flex-direction: column;
+      align-items: flex-start;
+
+      i {
+        margin-bottom: $spacer-sm;
+        margin-right: 0;
+      }
+    }
+  }
+
+  .payment-table {
+    font-size: 0.75rem;
+
+    th, td {
+      padding: $spacer-xs;
+    }
+  }
+
+  .payment-actions {
+    .btn {
+      padding: $spacer-xs $spacer-sm;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+// Enhanced Print Styles
+@media print {
+  .payment-card,
+  .payment-summary-card,
+  .payment-table,
+  .payment-filters {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .payment-actions,
+  .payment-filters,
+  .btn,
+  .modal {
+    display: none !important;
+  }
+
+  .payment-header {
+    background: #fff;
+    border: 2px solid #000;
+  }
+
+  .amount-display {
+    background: #fff;
+    border: 2px solid #000;
+  }
+}
+
+// Enhanced Animations and Interactions
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.payment-card,
+.payment-summary-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.transaction-item {
+  animation: slideInRight 0.4s ease-out;
+}
+
+// Enhanced Utility Classes
+.text-amount {
+  font-family: 'Courier New', monospace;
+  font-weight: $font-weight-bold;
+  letter-spacing: -0.5px;
+}
+
+.highlight-positive {
+  color: $success-color;
+  font-weight: $font-weight-semibold;
+}
+
+.highlight-negative {
+  color: $danger-color;
+  font-weight: $font-weight-semibold;
+}
+
+.highlight-warning {
+  color: $warning-color;
+  font-weight: $font-weight-semibold;
+}
+
+.highlight-neutral {
+  color: $secondary-color;
+  font-weight: $font-weight-semibold;
+}
+
+// Loading States
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// Focus and Accessibility Enhancements
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .payment-card,
+  .payment-summary-card {
+    border: 2px solid #000;
+  }
+
+  .amount-display {
+    border: 3px solid #000;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .payment-card,
+  .payment-summary-card,
+  .transaction-item,
+  .btn,
+  .form-control {
+    animation: none;
+    transition: none;
+  }
+
+  .payment-progress .progress-bar {
+    transition: none;
+  }
+}
+
+// Basic overrides from inline styles
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+  border-radius: 0.5rem;
+}
+
+.progress {
+  background-color: #e9ecef;
+  border-radius: 0.5rem;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge {
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+}
+
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+}

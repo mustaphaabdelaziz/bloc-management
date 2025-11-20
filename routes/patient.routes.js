@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const catchAsync = require("../utils/catchAsync");
 const { isLoggedIn } = require("../middleware/auth");
-const { ensureHeadChief } = require('../middleware/rbac');
+const { ensureManagementAccess, ensureViewPatients } = require('../middleware/rbac');
 const {
   patientList,
   renderCreatePatientForm,
@@ -13,28 +13,25 @@ const {
   deletePatient,
 } = require("../controller/patient.controller");
 
-// Liste des patients
-router.get("/", isLoggedIn, catchAsync(patientList)); // All can view patients
+// Liste des patients - admin, direction, chefBloc, assistante can view
+router.get("/", isLoggedIn, ensureViewPatients, catchAsync(patientList));
 
-// Formulaire nouveau patient
+// Formulaire nouveau patient - admin, direction, chefBloc, assistante can create
+router.get("/new", isLoggedIn, ensureViewPatients, renderCreatePatientForm);
+
 // Créer patient
-router.get("/new", isLoggedIn, ensureHeadChief, renderCreatePatientForm); // Only admin/chefBloc can create
+router.post("/", isLoggedIn, ensureViewPatients, catchAsync(createPatient));
 
-// Créer patient
-router.post("/", isLoggedIn, ensureHeadChief, catchAsync(createPatient));
+// Voir patient - admin, direction, chefBloc, assistante can view
+router.get("/:id", isLoggedIn, ensureViewPatients, catchAsync(showPatient));
 
-// Voir patient
-router.get("/:id", isLoggedIn, catchAsync(showPatient)); // All can view individual patients
-
-// Formulaire édition patient
-// Mettre à jour patient
-// Supprimer patient
-router.get("/:id/edit", isLoggedIn, ensureHeadChief, catchAsync(renderEditPatientForm));
+// Formulaire édition patient - admin, direction, chefBloc, assistante can edit
+router.get("/:id/edit", isLoggedIn, ensureViewPatients, catchAsync(renderEditPatientForm));
 
 // Mettre à jour patient
-router.put("/:id", isLoggedIn, ensureHeadChief, catchAsync(updatePatient));
+router.put("/:id", isLoggedIn, ensureViewPatients, catchAsync(updatePatient));
 
-// Supprimer patient
-router.delete("/:id", isLoggedIn, ensureHeadChief, catchAsync(deletePatient));
+// Supprimer patient - only admin, direction, chefBloc can delete
+router.delete("/:id", isLoggedIn, ensureManagementAccess, catchAsync(deletePatient));
 
 module.exports = router;

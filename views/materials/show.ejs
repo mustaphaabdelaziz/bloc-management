@@ -1,135 +1,208 @@
 <% layout('layouts/boilerplate') %>
-<div class="row">
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-box me-2"></i>Informations Matériau
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    <i class="bi bi-box fa-4x text-warning mb-3"></i>
-                    <h4><%= material.designation %></h4>
-                    <p class="text-muted">Code: <strong><%= material.code %></strong></p>
-                    <% if (material.category === 'consumable') { %>
-                        <span class="badge bg-secondary fs-6">Consommable</span>
-                    <% } else { %>
-                        <span class="badge bg-primary fs-6">Matériel Patient</span>
-                    <% } %>
+
+<!-- Stock Alert Banner -->
+<% if (material.stock <= material.alertLevel) { %>
+<div class="material-alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
+    <strong>Alerte Critique!</strong> Le stock de <strong><%= material.designation %></strong> est critique (<%= material.stock %> <%= material.unitOfMeasure %>). Seuil d'alerte: <%= material.alertLevel %> <%= material.unitOfMeasure %>.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } else if (material.stock <= material.stockMinimum) { %>
+<div class="material-alert alert-warning">
+    <i class="bi bi-exclamation-circle-fill alert-icon"></i>
+    <strong>Stock Bas!</strong> Le stock de <strong><%= material.designation %></strong> est en dessous du minimum (<%= material.stock %> <%= material.unitOfMeasure %>). Stock minimum: <%= material.stockMinimum %> <%= material.unitOfMeasure %>.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="material-card material-info-card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="bi bi-box"></i>Informations Matériau
+                    </h5>
                 </div>
-                
-                <table class="table table-borderless">
-                    <tr>
-                        <td><strong>Prix HT:</strong></td>
-                        <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.priceHT) %></td>
-                    </tr>
-                    <tr>
-                        <td><strong>TVA:</strong></td>
-                        <td><%= (material.tva * 100) %>%</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Prix TTC:</strong></td>
-                        <td>
-                            <strong class="text-success">
-                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.priceHT * (1 + material.tva)) %>
-                            </strong>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><strong>Unité:</strong></td>
-                        <td><%= material.unitOfMeasure %></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Stock actuel:</strong></td>
-                        <td>
-                            <% if (material.stock <= 10) { %>
-                                <span class="badge bg-danger fs-6">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
-                                    <%= material.stock %> <%= material.unitOfMeasure %>
-                                </span>
-                            <% } else if (material.stock <= 50) { %>
-                                <span class="badge bg-warning fs-6">
-                                    <%= material.stock %> <%= material.unitOfMeasure %>
-                                </span>
-                            <% } else { %>
-                                <span class="badge bg-success fs-6">
-                                    <%= material.stock %> <%= material.unitOfMeasure %>
-                                </span>
-                            <% } %>
-                        </td>
-                    </tr>
-                    <% if (material.specialty && ((Array.isArray(material.specialty) && material.specialty.length > 0) || (!Array.isArray(material.specialty)))) { %>
-                    <tr>
-                        <td><strong>Spécialité<%= Array.isArray(material.specialty) && material.specialty.length > 1 ? 's' : '' %>:</strong></td>
-                        <td>
-                            <% if (Array.isArray(material.specialty)) { %>
-                                <% material.specialty.forEach(spec => { %>
-                                    <span class="badge bg-info me-1"><%= spec.name %></span>
-                                <% }); %>
-                            <% } else { %>
-                                <span class="badge bg-info"><%= material.specialty.name %></span>
-                            <% } %>
-                        </td>
-                    </tr>
-                    <% } %>
-                    <tr>
-                        <td><strong>Créé le:</strong></td>
-                        <td><%= moment(material.createdAt).format('DD/MM/YYYY HH:mm') %></td>
-                    </tr>
-                </table>
-                
-                <div class="d-grid gap-2">
-                    <a href="/materials/<%= material._id %>/edit" class="btn btn-warning">
-                        <i class="bi bi-pencil me-2"></i>Modifier
-                    </a>
-                    <button type="button" class="btn btn-success" onclick="showArrivalModal('<%= material._id %>')">
-                        <i class="bi bi-plus-square me-2"></i>Ajouter Stock
-                    </button>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="material-icon">
+                            <i class="bi bi-box"></i>
+                        </div>
+                        <h4 class="material-title"><%= material.designation %></h4>
+                        <p class="material-code">Code: <strong><%= material.code %></strong></p>
+                        <% if (material.category === 'consumable') { %>
+                            <span class="badge bg-secondary category-badge">Consommable</span>
+                        <% } else { %>
+                            <span class="badge bg-primary category-badge">Matériel Patient</span>
+                        <% } %>
+                    </div>
+
+                    <table class="table table-borderless">
+                        <% if (material.brand) { %>
+                        <tr>
+                            <td><strong>Marque:</strong></td>
+                            <td><span class="badge bg-secondary"><%= material.brand %></span></td>
+                        </tr>
+                        <% } %>
+                        <tr>
+                            <td><strong>Prix Moyen Pondéré:</strong></td>
+                            <td class="fw-bold text-info"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.weightedPrice) %></td>
+                        </tr>
+                        <tr>
+                            <td><strong>TVA:</strong></td>
+                            <td><%= (material.tva * 100) %>%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prix TTC:</strong></td>
+                            <td>
+                                <strong class="text-success">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.weightedPrice * (1 + material.tva)) %>
+                                </strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Unité:</strong></td>
+                            <td><%= material.unitOfMeasure %></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Stock actuel:</strong></td>
+                            <td>
+                                <% if (material.stock <= material.alertLevel) { %>
+                                    <span class="stock-badge stock-critical">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <%= material.stock %> <%= material.unitOfMeasure %>
+                                    </span>
+                                <% } else if (material.stock <= material.stockMinimum) { %>
+                                    <span class="stock-badge stock-low">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        <%= material.stock %> <%= material.unitOfMeasure %>
+                                    </span>
+                                <% } else { %>
+                                    <span class="stock-badge stock-good">
+                                        <%= material.stock %> <%= material.unitOfMeasure %>
+                                    </span>
+                                <% } %>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Stock Minimum:</strong></td>
+                            <td><%= material.stockMinimum %> <%= material.unitOfMeasure %></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Alerte Critique:</strong></td>
+                            <td><span class="text-danger"><%= material.alertLevel %> <%= material.unitOfMeasure %></span></td>
+                        </tr>
+                        <% if (material.specialty && ((Array.isArray(material.specialty) && material.specialty.length > 0) || (!Array.isArray(material.specialty)))) { %>
+                        <tr>
+                            <td><strong>Spécialité<%= Array.isArray(material.specialty) && material.specialty.length > 1 ? 's' : '' %>:</strong></td>
+                            <td>
+                                <% if (Array.isArray(material.specialty)) { %>
+                                    <div class="specialty-badges">
+                                        <% material.specialty.forEach(spec => { %>
+                                            <span class="badge bg-info"><%= spec.name %></span>
+                                        <% }); %>
+                                    </div>
+                                <% } else { %>
+                                    <span class="badge bg-info"><%= material.specialty.name %></span>
+                                <% } %>
+                            </td>
+                        </tr>
+                        <% } %>
+                        <tr>
+                            <td><strong>Créé le:</strong></td>
+                            <td><%= moment(material.createdAt).format('DD/MM/YYYY HH:mm') %></td>
+                        </tr>
+                    </table>
+
+                    <div class="d-grid gap-2">
+                        <a href="/materials/<%= material._id %>/edit" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i>Modifier
+                        </a>
+                        <button type="button" class="btn btn-success" onclick="showArrivalModal('<%= material._id %>')">
+                            <i class="bi bi-plus-square"></i>Ajouter Stock
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-truck me-2"></i>Historique des Arrivages
+        <div class="material-card">
+            <div class="card-header bg-info">
+                <h5 class="card-title">
+                    <i class="bi bi-truck"></i>Historique des Arrivages
                     <span class="badge bg-light text-info ms-2"><%= material.arrivals ? material.arrivals.length : 0 %></span>
                 </h5>
             </div>
             <div class="card-body">
                 <% if (material.arrivals && material.arrivals.length > 0) { %>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
+                    <div class="arrival-history">
+                        <table class="table">
+                            <thead>
                                 <tr>
-                                    <th>Date</th>
+                                    <th>Date Arrivage</th>
                                     <th>Quantité</th>
                                     <th>Prix Unitaire</th>
                                     <th>Valeur Totale</th>
+                                    <th>Date Achat</th>
+                                    <% if (permissions.canManageMaterials) { %>
+                                    <th class="text-center">Actions</th>
+                                    <% } %>
                                 </tr>
                             </thead>
                             <tbody>
                                 <% let totalValue = 0; %>
-                                <% material.arrivals.forEach(arrival => { %>
+                                <% material.arrivals.forEach((arrival, index) => { %>
                                     <% const arrivalValue = arrival.quantity * arrival.unitPrice; %>
                                     <% totalValue += arrivalValue; %>
-                                    <tr>
+                                    <% 
+                                    const purchaseDateStr = arrival.purchaseDate ? moment(arrival.purchaseDate).format('YYYY-MM-DD') : '';
+                                    const arrivalDateStr = moment(arrival.date).format('YYYY-MM-DD');
+                                    const arrivalDateDisplay = moment(arrival.date).format('DD/MM/YYYY');
+                                    %>
+                                    <tr class="arrival-row"
+                                        data-delete-call="confirmDeleteArrival('<%= material._id %>', <%= index %>, '<%= arrivalDateDisplay %>')">>
                                         <td><%= moment(arrival.date).format('DD/MM/YYYY') %></td>
                                         <td><strong><%= arrival.quantity %></strong> <%= material.unitOfMeasure %></td>
                                         <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(arrival.unitPrice) %></td>
                                         <td><strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(arrivalValue) %></strong></td>
+                                        <td>
+                                            <% if (arrival.purchaseDate) { %>
+                                                <small><%= moment(arrival.purchaseDate).format('DD/MM/YYYY') %></small>
+                                            <% } else { %>
+                                                <small class="text-muted">-</small>
+                                            <% } %>
+                                        </td>
+                                        <% if (permissions.canManageMaterials) { %>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-warning me-1 edit-arrival-btn" data-edit-info="<%= JSON.stringify({materialId: material._id, index: index, date: arrivalDateStr, quantity: arrival.quantity, unitPrice: arrival.unitPrice, purchaseDate: purchaseDateStr, dateDisplay: arrivalDateDisplay}) %>" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <% if (material.category === 'patient') { %>
+                                            <button class="btn btn-sm btn-info me-1 manage-arrival-units-btn" data-material-id="<%= material._id %>" data-arrival-id="<%= arrival._id %>" data-arrival-date="<%= arrivalDateDisplay %>" data-arrival-quantity="<%= arrival.quantity %>" title="Gérer Unités">
+                                                <i class="bi bi-boxes"></i>
+                                            </button>
+                                            <% } %>
+                                            <button class="btn btn-sm btn-danger delete-arrival-btn" data-material-id="<%= material._id %>" data-index="<%= index %>" data-date="<%= arrivalDateDisplay %>" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                        <% } %>
                                     </tr>
                                 <% }); %>
                             </tbody>
-                            <tfoot class="table-dark">
+                            <tfoot class="total-row">
                                 <tr>
                                     <th>Total</th>
                                     <th><%= material.arrivals.reduce((sum, a) => sum + a.quantity, 0) %> <%= material.unitOfMeasure %></th>
                                     <th>-</th>
                                     <th><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalValue) %></th>
+                                    <th></th>
+                                    <th></th>
+                                    <% if (permissions.canManageMaterials) { %>
+                                    <th></th>
+                                    <% } %>
                                 </tr>
                             </tfoot>
                         </table>
@@ -137,19 +210,20 @@
                     
                     <!-- Prix pondéré -->
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>Prix pondéré moyen :</strong>
-                        <% const totalQuantity = material.arrivals.reduce((sum, a) => sum + a.quantity, 0); %>
-                        <%= totalQuantity > 0 ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalValue / totalQuantity) : 'N/A' %>
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Prix moyen pondéré (stock actuel) :</strong>
+                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.weightedPrice) %>
                         par <%= material.unitOfMeasure %>
                     </div>
                 <% } else { %>
-                    <div class="text-center py-4">
-                        <i class="bi bi-truck fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Aucun arrivage enregistré</h5>
-                        <p class="text-muted">Ajoutez du stock pour commencer le suivi</p>
+                    <div class="material-empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-truck"></i>
+                        </div>
+                        <h5 class="empty-title">Aucun arrivage enregistré</h5>
+                        <p class="empty-description">Ajoutez du stock pour commencer le suivi des arrivages</p>
                         <button type="button" class="btn btn-primary" onclick="showArrivalModal('<%= material._id %>')">
-                            <i class="bi bi-plus-square me-2"></i>Premier Arrivage
+                            <i class="bi bi-plus-square"></i>Premier Arrivage
                         </button>
                     </div>
                 <% } %>
@@ -158,35 +232,281 @@
     </div>
 </div>
 
+<!-- Material Consumption Statistics -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="material-card">
+            <div class="card-header bg-success">
+                <h5 class="card-title">
+                    <i class="bi bi-graph-up"></i>Statistiques de Consommation
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="material-stats">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon icon-info">
+                                    <i class="bi bi-scissors"></i>
+                                </div>
+                                <h6 class="stat-title">Utilisé en Chirurgies</h6>
+                                <h4 class="stat-value"><%= totalConsumed || 0 %></h4>
+                                <small class="stat-subtitle"><%= material.unitOfMeasure %></small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon icon-warning">
+                                    <i class="bi bi-cash-coin"></i>
+                                </div>
+                                <h6 class="stat-title">Valeur Consommée</h6>
+                                <h4 class="stat-value"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalUsageValue || 0) %></h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon icon-danger">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                </div>
+                                <h6 class="stat-title">Chirurgies</h6>
+                                <h4 class="stat-value"><%= surgeryCount || 0 %></h4>
+                                <small class="stat-subtitle">où utilisé</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="stat-icon icon-secondary">
+                                    <i class="bi bi-clock-history"></i>
+                                </div>
+                                <h6 class="stat-title">Stock Actuel</h6>
+                                <h4 class="stat-value"><%= material.stock %></h4>
+                                <small class="stat-subtitle"><%= material.unitOfMeasure %></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Consumption Details -->
+                <div class="mt-4">
+                    <h6 class="mb-3">
+                        <i class="bi bi-list-check"></i>Dernières Utilisations
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Chirurgie</th>
+                                    <th>Patient</th>
+                                    <th>Chirurgien</th>
+                                    <th>Quantité Utilisée</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (surgeries && surgeries.length > 0) { %>
+                                    <% surgeries.slice(0, 10).forEach(surgery => { %>
+                                        <% const consumed = surgery.consumedMaterials.find(cm => cm.material && cm.material._id.toString() === material._id.toString()); %>
+                                        <% if (consumed) { %>
+                                        <tr>
+                                            <td>
+                                                <a href="/surgeries/<%= surgery._id %>" class="text-decoration-none">
+                                                    <strong><%= surgery.code %></strong>
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <% if (surgery.patient) { %>
+                                                    <small><%= surgery.patient.firstName %> <%= surgery.patient.lastName %></small>
+                                                <% } else { %>
+                                                    <small class="text-muted">-</small>
+                                                <% } %>
+                                            </td>
+                                            <td>
+                                                <% if (surgery.surgeon) { %>
+                                                    <small><%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %></small>
+                                                <% } else { %>
+                                                    <small class="text-muted">-</small>
+                                                <% } %>
+                                            </td>
+                                            <td>
+                                                <strong><%= consumed.quantity %></strong> <%= material.unitOfMeasure %>
+                                            </td>
+                                            <td>
+                                                <small><%= moment(surgery.beginDateTime).format('DD/MM/YYYY HH:mm') %></small>
+                                            </td>
+                                        </tr>
+                                        <% } %>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            <small>Aucune utilisation enregistrée</small>
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="mt-3">
     <a href="/materials" class="btn btn-secondary">
-        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+        <i class="bi bi-arrow-left"></i>Retour à la liste
     </a>
 </div>
 
-<!-- Modal pour ajouter du stock (même modal que dans index.ejs) -->
-<div class="modal fade" id="arrivalModal" tabindex="-1">
+<!-- Modal pour ajouter une unité (patient materials only) -->
+<div class="modal fade material-modal" id="addUnitModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">
+                    <i class="bi bi-qr-code"></i>Ajouter Unité
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUnitForm" onsubmit="submitAddUnit(event)">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Chaque unité est suivie individuellement avec un numéro de série et un code-barres unique.
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="serialNumber" class="form-label required-field">Numéro de Série</label>
+                                <input type="text" class="form-control" id="serialNumber" name="serialNumber" required>
+                                <div class="form-text">Identifiant unique de l'unité</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="barcode" class="form-label">Code-barres</label>
+                                <input type="text" class="form-control" id="barcode" name="barcode">
+                                <div class="form-text">Généré automatiquement si vide</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="unitPurchaseDate" class="form-label required-field">Date d'achat</label>
+                                <input type="date" class="form-control" id="unitPurchaseDate" name="purchaseDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="unitExpirationDate" class="form-label">Date d'expiration</label>
+                                <input type="date" class="form-control" id="unitExpirationDate" name="expirationDate">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="unitPrice" class="form-label required-field">Prix Unitaire (DA)</label>
+                                <input type="number" class="form-control" id="unitPrice" name="unitPrice" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="unitBatch" class="form-label">Lot/Batch</label>
+                                <input type="text" class="form-control" id="unitBatch" name="batch">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="unitNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="unitNotes" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-info">Ajouter Unité</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour voir la liste des unités -->
+<div class="modal fade material-modal" id="unitsListModal" tabindex="-1" style="max-width: 90%;">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">
+                    <i class="bi bi-list"></i>Unités
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>N° Série</th>
+                                <th>Code-barres</th>
+                                <th>Date d'achat</th>
+                                <th>Expiration</th>
+                                <th>Statut</th>
+                                <th>Lot</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unitsTableBody">
+                            <tr><td colspan="7" class="text-center text-muted">Chargement...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal pour ajouter du stock -->
+<div class="modal fade material-modal" id="arrivalModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
+            <div class="modal-header bg-success">
                 <h5 class="modal-title">
-                    <i class="bi bi-plus-square me-2"></i>Ajouter Stock
+                    <i class="bi bi-plus-square"></i>Ajouter Stock
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="/materials/<%= material._id %>/arrival">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="arrivalDate" class="form-label">Date d'arrivage</label>
+                        <label for="arrivalDate" class="form-label required-field">Date d'arrivage</label>
                         <input type="date" class="form-control" id="arrivalDate" name="date" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="arrivalQuantity" class="form-label">Quantité</label>
-                        <input type="number" class="form-control" id="arrivalQuantity" name="quantity" min="1" step="0.01" required>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="arrivalQuantity" class="form-label required-field">Quantité</label>
+                                <input type="number" class="form-control" id="arrivalQuantity" name="quantity" min="1" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="arrivalPrice" class="form-label required-field">Prix unitaire (DA)</label>
+                                <input type="number" class="form-control" id="arrivalPrice" name="unitPrice" min="0" step="0.01" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="arrivalPrice" class="form-label">Prix unitaire (DA)</label>
-                        <input type="number" class="form-control" id="arrivalPrice" name="unitPrice" min="0" step="0.01" required>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="purchaseDate" class="form-label">Date d'achat</label>
+                                <input type="date" class="form-control" id="purchaseDate" name="purchaseDate">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -194,6 +514,186 @@
                     <button type="submit" class="btn btn-success">Ajouter Stock</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour modifier un arrivage -->
+<div class="modal fade material-modal" id="editArrivalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i>Modifier Arrivage
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editArrivalForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> La modification recalculera automatiquement le prix moyen pondéré et la valeur du stock.
+                    </div>
+                    <div class="mb-3">
+                        <label for="editArrivalDate" class="form-label required-field">Date d'arrivage</label>
+                        <input type="date" class="form-control" id="editArrivalDate" name="date" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editArrivalQuantity" class="form-label required-field">Quantité</label>
+                                <input type="number" class="form-control" id="editArrivalQuantity" name="quantity" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editArrivalPrice" class="form-label required-field">Prix unitaire (DA)</label>
+                                <input type="number" class="form-control" id="editArrivalPrice" name="unitPrice" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="editPurchaseDate" class="form-label">Date d'achat</label>
+                                <input type="date" class="form-control" id="editPurchaseDate" name="purchaseDate">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour confirmer la suppression d'un arrivage -->
+<div class="modal fade material-modal" id="deleteArrivalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i>Confirmer Suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="deleteArrivalForm">
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Attention:</strong> Cette action recalculera le stock et le prix moyen pondéré.
+                    </div>
+                    <p>Voulez-vous vraiment supprimer l'arrivage du <strong id="deleteArrivalDate"></strong> ?</p>
+                    <p class="text-muted small">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Arrival Units Management Modal -->
+<div class="modal fade material-modal" id="arrivalUnitsModal" tabindex="-1" style="max-width: 95%;">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-boxes"></i>
+                    Unités de l'arrivage du <span id="arrivalUnitModalDate"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Quantité totale de l'arrivage: <strong><span id="arrivalUnitTotalQty"></span></strong> unités
+                    | Unités enregistrées: <strong><span id="arrivalUnitRegisteredQty">0</span></strong>
+                </div>
+
+                <!-- Auto-created Units Info -->
+                <div class="alert alert-info mb-3">
+                    <i class="bi bi-info-circle"></i> <strong>Unités créées automatiquement</strong><br>
+                    Les unités sont générées automatiquement lors de l'ajout d'un arrivage. 
+                    Cliquez sur <i class="bi bi-pencil"></i> pour compléter les numéros de série, codes-barres et dates d'expiration.
+                </div>
+
+                <!-- Units Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>N° Série</th>
+                                <th>Code-barres</th>
+                                <th>Date Achat</th>
+                                <th>Expiration</th>
+                                <th>Prix</th>
+                                <th>Statut</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="arrivalUnitsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="bi bi-hourglass-split"></i> Chargement...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Arrival Unit Modal -->
+<div class="modal fade" id="editArrivalUnitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Modifier Unité
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editArrivalUnitForm">
+                    <input type="hidden" id="editArrivalUnitId">
+                    <div class="mb-3">
+                        <label for="editArrivalUnitSerialNumber" class="form-label">Numéro de Série</label>
+                        <input type="text" class="form-control" id="editArrivalUnitSerialNumber">
+                        <div class="form-text">Laissez vide pour les unités temporaires</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editArrivalUnitBarcode" class="form-label">Code-barres</label>
+                        <input type="text" class="form-control" id="editArrivalUnitBarcode">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editArrivalUnitPurchaseDate" class="form-label">Date Achat *</label>
+                        <input type="date" class="form-control" id="editArrivalUnitPurchaseDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editArrivalUnitExpirationDate" class="form-label">Date Expiration</label>
+                        <input type="date" class="form-control" id="editArrivalUnitExpirationDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editArrivalUnitPrice" class="form-label">Prix Unitaire *</label>
+                        <input type="number" step="0.01" class="form-control" id="editArrivalUnitPrice" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveArrivalUnitEdit()">Enregistrer</button>
+            </div>
         </div>
     </div>
 </div>
@@ -206,4 +706,385 @@ function showArrivalModal(materialId) {
     const modal = new bootstrap.Modal(document.getElementById('arrivalModal'));
     modal.show();
 }
+
+function editArrival(materialId, arrivalIndex, date, quantity, unitPrice, purchaseDate) {
+    // Remplir le formulaire avec les données existantes
+    document.getElementById('editArrivalDate').value = date;
+    document.getElementById('editArrivalQuantity').value = quantity;
+    document.getElementById('editArrivalPrice').value = unitPrice;
+    
+    // Set purchase date if available
+    document.getElementById('editPurchaseDate').value = purchaseDate || '';
+    
+    // Définir l'action du formulaire
+    document.getElementById('editArrivalForm').action = `/materials/${materialId}/arrival/${arrivalIndex}`;
+    
+    // Afficher le modal
+    const modal = new bootstrap.Modal(document.getElementById('editArrivalModal'));
+    modal.show();
+}
+
+function confirmDeleteArrival(materialId, arrivalIndex, arrivalDate) {
+    // Afficher la date dans le message de confirmation
+    document.getElementById('deleteArrivalDate').textContent = arrivalDate;
+    
+    // Définir l'action du formulaire
+    document.getElementById('deleteArrivalForm').action = `/materials/${materialId}/arrival/${arrivalIndex}/delete`;
+    
+    // Afficher le modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteArrivalModal'));
+    modal.show();
+}
+
+// Unit Management Functions (for patient-type materials)
+function showUnitModal(materialId) {
+    const form = document.getElementById('addUnitForm');
+    if (form) {
+        form.action = `/materials/${materialId}/units`;
+        // Set default dates
+        document.getElementById('unitPurchaseDate').value = new Date().toISOString().split('T')[0];
+        const modal = new bootstrap.Modal(document.getElementById('addUnitModal'));
+        modal.show();
+    }
+}
+
+function showUnitsListModal(materialId) {
+    const modal = new bootstrap.Modal(document.getElementById('unitsListModal'));
+    modal.show();
+    loadUnits(materialId);
+}
+
+async function loadUnits(materialId) {
+    try {
+        const response = await fetch(`/materials/${materialId}/units`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayUnits(data.units, materialId);
+        } else {
+            alert('Error loading units: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error loading units:', error);
+        alert('Error loading units');
+    }
+}
+
+function displayUnits(units, materialId) {
+    const tbody = document.getElementById('unitsTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (!units || units.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No units found</td></tr>';
+        return;
+    }
+
+    units.forEach((unit, index) => {
+        const isExpired = unit.expirationDate && new Date() > new Date(unit.expirationDate);
+        const isExpiringSoon = unit.expirationDate && 
+            !isExpired && 
+            new Date(unit.expirationDate) < new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        const row = document.createElement('tr');
+        row.className = isExpired ? 'table-danger' : (isExpiringSoon ? 'table-warning' : '');
+        
+        row.innerHTML = `
+            <td><strong>${unit.serialNumber}</strong></td>
+            <td>${unit.barcode || '-'}</td>
+            <td>${moment(unit.purchaseDate).format('DD/MM/YYYY')}</td>
+            <td>
+                ${unit.expirationDate ? `
+                    ${isExpired ? '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> ' : ''}
+                    ${isExpiringSoon ? '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> ' : ''}
+                    ${!isExpired && !isExpiringSoon ? '' : ''}
+                    ${moment(unit.expirationDate).format('DD/MM/YYYY')}
+                    ${isExpired || isExpiringSoon ? '</span>' : ''}
+                ` : '-'}
+            </td>
+            <td>
+                <span class="badge ${
+                    unit.status === 'in_stock' ? 'bg-success' :
+                    unit.status === 'used' ? 'bg-info' :
+                    unit.status === 'expired' ? 'bg-danger' :
+                    unit.status === 'damaged' ? 'bg-warning' : 'bg-secondary'
+                }">
+                    ${unit.status}
+                </span>
+            </td>
+            <td>${unit.batch || '-'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-warning" onclick="editUnit('${materialId}', '${unit._id}')">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteUnit('${materialId}', '${unit._id}', '${unit.serialNumber}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+async function submitAddUnit(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const materialId = form.action.split('/')[2];
+    
+    const formData = {
+        serialNumber: document.getElementById('serialNumber').value,
+        barcode: document.getElementById('barcode').value,
+        purchaseDate: document.getElementById('unitPurchaseDate').value,
+        expirationDate: document.getElementById('unitExpirationDate').value,
+        unitPrice: document.getElementById('unitPrice').value,
+        batch: document.getElementById('unitBatch').value,
+        notes: document.getElementById('unitNotes').value
+    };
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Unit added successfully');
+            form.reset();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addUnitModal'));
+            modal.hide();
+            loadUnits(materialId);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error adding unit:', error);
+        alert('Error adding unit');
+    }
+}
+
+async function deleteUnit(materialId, unitId, serialNumber) {
+    if (!confirm(`Delete unit ${serialNumber}?`)) return;
+
+    try {
+        const response = await fetch(`/materials/${materialId}/units/${unitId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Unit deleted successfully');
+            loadUnits(materialId);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting unit:', error);
+        alert('Error deleting unit');
+    }
+}
+
+// Arrival Units Management Functions
+let currentArrivalData = { materialId: null, arrivalId: null };
+
+function showArrivalUnitsModal(materialId, arrivalId, arrivalDate, arrivalQuantity) {
+    currentArrivalData = { materialId, arrivalId };
+    
+    document.getElementById('arrivalUnitModalDate').textContent = arrivalDate;
+    document.getElementById('arrivalUnitTotalQty').textContent = arrivalQuantity;
+    
+    const modal = new bootstrap.Modal(document.getElementById('arrivalUnitsModal'));
+    modal.show();
+    
+    loadArrivalUnits(materialId, arrivalId);
+}
+
+async function loadArrivalUnits(materialId, arrivalId) {
+    try {
+        const response = await fetch(`/materials/${materialId}/arrivals/${arrivalId}/units`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayArrivalUnits(data.units, materialId, arrivalId);
+            document.getElementById('arrivalUnitRegisteredQty').textContent = data.units.length;
+        } else {
+            alert('Error loading units: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error loading arrival units:', error);
+        alert('Error loading units');
+    }
+}
+
+function displayArrivalUnits(units, materialId, arrivalId) {
+    const tbody = document.getElementById('arrivalUnitsTableBody');
+    
+    if (!units || units.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted"><i class="bi bi-inbox"></i> Aucune unité enregistrée pour cet arrivage</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    units.forEach(unit => {
+        const isExpired = unit.expirationDate && new Date() > new Date(unit.expirationDate);
+        const isExpiringSoon = unit.expirationDate && 
+            !isExpired && 
+            new Date(unit.expirationDate) < new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        const row = document.createElement('tr');
+        row.className = isExpired ? 'table-danger' : (isExpiringSoon ? 'table-warning' : '');
+        
+        row.innerHTML = `
+            <td><strong>${unit.serialNumber}</strong></td>
+            <td>${unit.barcode || '-'}</td>
+            <td>${moment(unit.purchaseDate).format('DD/MM/YYYY')}</td>
+            <td>
+                ${unit.expirationDate ? 
+                    (isExpired ? '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> ' : 
+                    isExpiringSoon ? '<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> ' : '') +
+                    moment(unit.expirationDate).format('DD/MM/YYYY') + 
+                    (isExpired || isExpiringSoon ? '</span>' : '')
+                    : '-'}
+            </td>
+            <td>${new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(unit.unitPrice)}</td>
+            <td>
+                <span class="badge ${
+                    unit.status === 'in_stock' ? 'bg-success' :
+                    unit.status === 'used' ? 'bg-info' :
+                    unit.status === 'expired' ? 'bg-danger' :
+                    'bg-secondary'
+                }">
+                    ${unit.status === 'in_stock' ? 'En Stock' :
+                      unit.status === 'used' ? 'Utilisé' :
+                      unit.status === 'expired' ? 'Expiré' :
+                      unit.status === 'damaged' ? 'Endommagé' :
+                      unit.status === 'lost' ? 'Perdu' : unit.status}
+                </span>
+            </td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-warning me-1" onclick="editArrivalUnit('${unit._id}', '${unit.serialNumber}', '${unit.barcode || ''}', '${unit.purchaseDate}', '${unit.expirationDate || ''}', ${unit.unitPrice})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteArrivalUnit('${materialId}', '${unit._id}', '${unit.serialNumber}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function editArrivalUnit(unitId, serialNumber, barcode, purchaseDate, expirationDate, unitPrice) {
+    document.getElementById('editArrivalUnitId').value = unitId;
+    document.getElementById('editArrivalUnitSerialNumber').value = serialNumber;
+    document.getElementById('editArrivalUnitBarcode').value = barcode;
+    document.getElementById('editArrivalUnitPurchaseDate').value = moment(purchaseDate).format('YYYY-MM-DD');
+    document.getElementById('editArrivalUnitExpirationDate').value = expirationDate ? moment(expirationDate).format('YYYY-MM-DD') : '';
+    document.getElementById('editArrivalUnitPrice').value = unitPrice;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editArrivalUnitModal'));
+    modal.show();
+}
+
+async function saveArrivalUnitEdit() {
+    const { materialId, arrivalId } = currentArrivalData;
+    const unitId = document.getElementById('editArrivalUnitId').value;
+    
+    const formData = {
+        serialNumber: document.getElementById('editArrivalUnitSerialNumber').value,
+        barcode: document.getElementById('editArrivalUnitBarcode').value,
+        purchaseDate: document.getElementById('editArrivalUnitPurchaseDate').value,
+        expirationDate: document.getElementById('editArrivalUnitExpirationDate').value,
+        unitPrice: parseFloat(document.getElementById('editArrivalUnitPrice').value)
+    };
+
+    try {
+        const response = await fetch(`/materials/${materialId}/units/${unitId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Unité mise à jour avec succès');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editArrivalUnitModal'));
+            modal.hide();
+            
+            // Reload units
+            loadArrivalUnits(materialId, arrivalId);
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error updating unit:', error);
+        alert('Erreur lors de la mise à jour');
+    }
+}
+
+async function deleteArrivalUnit(materialId, unitId, serialNumber) {
+    if (!confirm(`Supprimer l'unité ${serialNumber} ?`)) return;
+
+    try {
+        const response = await fetch(`/materials/${materialId}/units/${unitId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Unité supprimée avec succès');
+            loadArrivalUnits(currentArrivalData.materialId, currentArrivalData.arrivalId);
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error deleting unit:', error);
+        alert('Erreur lors de la suppression');
+    }
+}
+
+// Event listeners for edit and delete arrival buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit arrival button listeners
+    document.querySelectorAll('.edit-arrival-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const info = JSON.parse(this.getAttribute('data-edit-info'));
+            editArrival(info.materialId, info.index, info.date, info.quantity, info.unitPrice, info.purchaseDate);
+        });
+    });
+
+    // Delete arrival button listeners
+    document.querySelectorAll('.delete-arrival-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const materialId = this.getAttribute('data-material-id');
+            const index = this.getAttribute('data-index');
+            const date = this.getAttribute('data-date');
+            confirmDeleteArrival(materialId, index, date);
+        });
+    });
+
+    // Manage arrival units button listeners
+    document.querySelectorAll('.manage-arrival-units-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const materialId = this.getAttribute('data-material-id');
+            const arrivalId = this.getAttribute('data-arrival-id');
+            const arrivalDate = this.getAttribute('data-arrival-date');
+            const arrivalQuantity = this.getAttribute('data-arrival-quantity');
+            showArrivalUnitsModal(materialId, arrivalId, arrivalDate, arrivalQuantity);
+        });
+    });
+});
 </script>

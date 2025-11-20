@@ -1,0 +1,178 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/prestations/import-results.ejs -->
+
+<div class="prestation-card mb-4">
+  <div class="prestation-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="prestation-title">
+          <i class="bi bi-file-earmark-spreadsheet me-2"></i>Résultats de l'Import
+        </h3>
+        <p class="prestation-subtitle">Résumé de l'importation des prestations</p>
+      </div>
+      <a href="/prestations" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-2"></i>Retour aux Prestations
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="prestation-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Total des lignes</h5>
+            <h2 class="text-primary mb-0"><%= totalRows %></h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="prestation-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Importées avec succès</h5>
+            <h2 class="text-success mb-0">
+              <i class="bi bi-check-circle me-1"></i><%= results.imported %>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="prestation-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Erreurs</h5>
+            <h2 class="text-danger mb-0">
+              <i class="bi bi-exclamation-circle me-1"></i><%= results.failed %>
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Success Alert -->
+  <% if (results.imported > 0) { %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">
+      <i class="bi bi-check-circle me-2"></i>Importation réussie
+    </h4>
+    <p class="mb-0">
+      <strong><%= results.imported %> prestation<%= results.imported > 1 ? 's' : '' %></strong> 
+      <%= results.imported > 1 ? 'ont été importées' : 'a été importée' %> avec succès.
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+  </div>
+  <% } %>
+
+  <!-- Error Details Section -->
+  <% if (results.errors && results.errors.length > 0) { %>
+  <div class="prestation-card mt-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-exclamation-triangle me-2"></i>Erreurs d'Importation
+        <span class="badge bg-light text-danger float-end"><%= results.failed %></span>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="prestation-table table">
+          <thead>
+            <tr>
+              <th>Ligne</th>
+              <th>Désignation</th>
+              <th>Messages d'Erreur</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.errors.forEach((error, index) => { %>
+            <tr class="align-middle">
+              <td>
+                <strong><%= error.row %></strong>
+              </td>
+              <td>
+                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<%= error.designation %>">
+                  <%= error.designation %>
+                </span>
+              </td>
+              <td>
+                <div class="error-messages">
+                  <% error.messages.forEach((msg, idx) => { %>
+                  <div class="error-item mb-2">
+                    <span class="badge bg-danger">
+                      <i class="bi bi-x-circle me-1"></i><%= msg %>
+                    </span>
+                  </div>
+                  <% }); %>
+                </div>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Information Section -->
+  <div class="prestation-card mt-4 bg-light">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-info-circle me-2"></i>Conseils pour corriger les erreurs
+      </h5>
+    </div>
+    <div class="card-body">
+      <ul class="mb-0">
+        <li><strong>Colonnes manquantes:</strong> Assurez-vous que le fichier Excel contient toutes les colonnes requises</li>
+        <li><strong>Spécialité non trouvée:</strong> Vérifiez que le nom de la spécialité existe dans le système</li>
+        <li><strong>Valeurs invalides:</strong> Vérifiez que les valeurs numériques sont correctement formatées</li>
+        <li><strong>Code en doublon:</strong> Si vous avez spécifié un code, assurez-vous qu'il n'existe pas déjà</li>
+        <li>
+          <strong>Télécharger le modèle:</strong>
+          <a href="/prestations" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-download me-1"></i>Retour pour télécharger le modèle
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="prestation-actions mt-4">
+    <a href="/prestations" class="btn btn-primary">
+      <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+    </a>
+    <% if (results.failed > 0) { %>
+    <a href="/prestations/new" class="btn btn-secondary">
+      <i class="bi bi-plus-circle me-2"></i>Ajouter manuellement
+    </a>
+    <% } %>
+  </div>
+</div>
+
+<style>
+  .error-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .error-item .badge {
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .card-danger {
+    border-top: 3px solid #dc3545;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: rgba(220, 53, 69, 0.05);
+  }
+
+  .text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>

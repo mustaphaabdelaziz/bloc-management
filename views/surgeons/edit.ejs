@@ -1,134 +1,959 @@
 <% layout('layouts/boilerplate') %>
-<!-- views/surgeons/edit.ejs -->
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-pencil me-2"></i>Modifier Chirurgien
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/surgeons/<%= surgeon._id %>?_method=PUT">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="code" class="form-label">Code *</label>
-                                <input type="text" class="form-control" id="code" name="code" value="<%= surgeon.code %>" readonly required>
-                                <div class="form-text">
-                                    <i class="bi bi-lock me-1"></i>
-                                    Le code ne peut pas être modifié une fois généré
-                                </div>
-                            </div>
-                        </div>
-                       <div class="col-md-6">
-    <div class="mb-3">
-        <label for="specialty" class="form-label">Spécialité *</label>
-        <select name="specialty" id="specialty" class="form-select" required>
-            <% specialties.forEach(specialty => { %>
-                <option value="<%= specialty._id %>"<%= surgeon.specialty._id.toString() === specialty._id.toString() ? ' selected' : '' %>>
-                    <%= specialty.name %>
-                </option>
-            <% }) %>
-        </select>
+
+<!-- Surgeons Edit Page Styles -->
+<link rel="stylesheet" href="/css/surgeons.css">
+
+<div class="container-fluid">
+    <!-- Page Header Section -->
+    <div class="page-header">
+        <div class="page-title">
+            <h1><i class="bi bi-person-gear-fill me-3"></i>Modifier le Chirurgien</h1>
+            <p>Modifier les informations et la configuration du contrat du chirurgien</p>
+        </div>
+        <div class="page-actions">
+            <a href="/surgeons" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la Liste
+            </a>
+            <a href="/surgeons/<%= surgeon._id %>" class="btn btn-outline-info">
+                <i class="bi bi-eye me-2"></i>Voir le Profil
+            </a>
+        </div>
     </div>
-</div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="firstName" class="form-label">Prénom *</label>
-                                <input type="text" class="form-control" id="firstName" name="firstName" value="<%= surgeon.firstName %>" required>
-                            </div>
+
+    <!-- Main Content -->
+    <div class="row justify-content-center">
+        <div class="col-xl-10 col-lg-12">
+            <!-- Edit Form Card -->
+            <div class="edit-form-card">
+                <div class="form-card-header">
+                    <div class="form-header-content">
+                        <div class="form-icon-wrapper">
+                            <i class="bi bi-person-gear-fill"></i>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="lastName" class="form-label">Nom *</label>
-                                <input type="text" class="form-control" id="lastName" name="lastName" value="<%= surgeon.lastName %>" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="dateOfBirth" class="form-label">Date de naissance *</label>
-                                <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
-                                       value="<%= moment(surgeon.dateOfBirth).format('YYYY-MM-DD') %>" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">Téléphone</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" value="<%= surgeon.phone || '' %>">
-                            </div>
+                        <div class="form-info">
+                            <h3 class="form-title">Modification du Profil</h3>
+                            <p class="form-subtitle">Mettez à jour les informations du chirurgien</p>
                         </div>
                     </div>
-                    
-                    <div class="card mb-4">
-                        <div class="card-header bg-warning text-dark">
-                            <h6 class="mb-0">Configuration du Contrat</h6>
+                    <div class="form-progress">
+                        <div class="progress-indicator">
+                            <span class="step active">1</span>
+                            <span class="step-label">Modification</span>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="contractType" class="form-label">Type de contrat *</label>
-                                <select name="contractType" id="contractType" class="form-select" required onchange="toggleContractFields()">
-                                    <option value="allocation" <%= surgeon.contractType === 'allocation' ? 'selected' : '' %>>
-                                        Allocation de salle d'opération
-                                    </option>
-                                    <option value="percentage" <%= surgeon.contractType === 'percentage' ? 'selected' : '' %>>
-                                        Pourcentage
-                                    </option>
-                                </select>
+                    </div>
+                </div>
+
+                <div class="form-card-body">
+                    <form method="POST" action="/surgeons/<%= surgeon._id %>?_method=PUT" id="surgeonForm" novalidate>
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="bi bi-person-fill me-2"></i>Informations Personnelles
+                                </h4>
+                                <p class="section-description">Détails de base du chirurgien</p>
                             </div>
-                            
-                            <div id="allocationFields">
-                                <div class="mb-3">
-                                    <label for="allocationRate" class="form-label">Taux horaire (DA/heure)</label>
-                                    <input type="number" class="form-control" id="allocationRate" name="allocationRate" 
-                                           value="<%= surgeon.allocationRate || '' %>" min="0" step="100">
+
+                            <div class="form-row-custom">
+                                <div class="form-group-modern">
+                                    <label for="code" class="form-label-modern required">
+                                        <i class="bi bi-hash me-2"></i>Code Chirurgien
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-upc-scan input-icon"></i>
+                                        </div>
+                                        <input type="text"
+                                               class="form-control-modern"
+                                               id="code"
+                                               name="code"
+                                               value="<%= surgeon.code %>"
+                                               readonly
+                                               placeholder="SR-00001">
+                                        <div class="input-actions">
+                                            <button type="button" class="input-action-btn" id="regenerateBtn" onclick="regenerateCode()" title="Régénérer le code" disabled>
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                        </div>
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Code valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Code requis
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Code unique identifiant le chirurgien (lecture seule)
+                                    </div>
+                                    <div class="form-check-modern">
+                                        <input class="form-check-input-modern" type="checkbox" id="allowRegenerate" name="allowRegenerate" onchange="toggleRegenerate()">
+                                        <label class="form-check-label-modern" for="allowRegenerate">
+                                            Autoriser la régénération du code
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group-modern">
+                                    <label for="specialty" class="form-label-modern required">
+                                        <i class="bi bi-heart-pulse me-2"></i>Spécialité Médicale
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-heart-pulse input-icon"></i>
+                                        </div>
+                                        <select name="specialty"
+                                                id="specialty"
+                                                class="form-control-modern form-select-modern"
+                                                required>
+                                            <option value="">Sélectionner une spécialité</option>
+                                            <% specialties.forEach(specialty => { %>
+                                                <option value="<%= specialty._id %>" <%= surgeon.specialty && surgeon.specialty.toString() === specialty._id.toString() ? 'selected' : '' %>>
+                                                    <%= specialty.name %>
+                                                </option>
+                                            <% }); %>
+                                        </select>
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Spécialité sélectionnée
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Veuillez sélectionner une spécialité
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Domaine de spécialisation chirurgicale
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div id="percentageFields">
-                                <div class="mb-3">
-                                    <label for="percentageRate" class="form-label">Pourcentage (%)</label>
-                                    <input type="number" class="form-control" id="percentageRate" name="percentageRate" 
-                                           value="<%= surgeon.percentageRate || '' %>" min="0" max="100" step="0.1">
+
+                            <div class="form-row-custom">
+                                <div class="form-group-modern">
+                                    <label for="firstName" class="form-label-modern required">
+                                        <i class="bi bi-person me-2"></i>Prénom
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-person input-icon"></i>
+                                        </div>
+                                        <input type="text"
+                                               class="form-control-modern"
+                                               id="firstName"
+                                               name="firstName"
+                                               value="<%= surgeon.firstName %>"
+                                               placeholder="Prénom du chirurgien"
+                                               required
+                                               maxlength="50">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Prénom valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Le prénom est requis
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group-modern">
+                                    <label for="lastName" class="form-label-modern required">
+                                        <i class="bi bi-person me-2"></i>Nom
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-person input-icon"></i>
+                                        </div>
+                                        <input type="text"
+                                               class="form-control-modern"
+                                               id="lastName"
+                                               name="lastName"
+                                               value="<%= surgeon.lastName %>"
+                                               placeholder="Nom de famille"
+                                               required
+                                               maxlength="50">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Nom valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Le nom est requis
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row-custom">
+                                <div class="form-group-modern">
+                                    <label for="dateOfBirth" class="form-label-modern required">
+                                        <i class="bi bi-calendar me-2"></i>Date de Naissance
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-calendar input-icon"></i>
+                                        </div>
+                                        <input type="date"
+                                               class="form-control-modern"
+                                               id="dateOfBirth"
+                                               name="dateOfBirth"
+                                               value="<%= moment(surgeon.dateOfBirth).format('YYYY-MM-DD') %>"
+                                               required
+                                               max="<%= moment().subtract(18, 'years').format('YYYY-MM-DD') %>">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Date valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Date de naissance requise (minimum 18 ans)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Le chirurgien doit avoir au moins 18 ans
+                                    </div>
+                                </div>
+
+                                <div class="form-group-modern">
+                                    <label for="phone" class="form-label-modern">
+                                        <i class="bi bi-telephone me-2"></i>Téléphone
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-telephone input-icon"></i>
+                                        </div>
+                                        <input type="tel"
+                                               class="form-control-modern"
+                                               id="phone"
+                                               name="phone"
+                                               value="<%= surgeon.phone || '' %>"
+                                               placeholder="Ex: 0550123456"
+                                               pattern="[0-9]{10}">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Numéro valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Format invalide (10 chiffres)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Numéro à 10 chiffres (optionnel)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Preview -->
+                            <div class="form-preview-section">
+                                <div class="preview-header">
+                                    <h5 class="preview-title">
+                                        <i class="bi bi-eye me-2"></i>Aperçu du Profil
+                                    </h5>
+                                </div>
+                                <div class="preview-card">
+                                    <div class="preview-avatar">
+                                        <i class="bi bi-person-badge"></i>
+                                    </div>
+                                    <div class="preview-details">
+                                        <div class="preview-name" id="previewName">
+                                            Dr. <%= surgeon.firstName %> <%= surgeon.lastName %>
+                                        </div>
+                                        <div class="preview-meta">
+                                            <span class="preview-badge" id="previewSpecialty">
+                                                <%= surgeon.specialty ? specialties.find(s => s._id.toString() === surgeon.specialty.toString())?.name : 'Spécialité' %>
+                                            </span>
+                                            <span class="preview-code" id="previewCode">
+                                                <%= surgeon.code %>
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Contract Configuration Section -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h4 class="section-title">
+                                    <i class="bi bi-file-text me-2"></i>Configuration du Contrat
+                                </h4>
+                                <p class="section-description">Définir les modalités de rémunération</p>
+                            </div>
+
+                            <div class="contract-type-selector">
+                                <div class="form-group-modern">
+                                    <label for="contractType" class="form-label-modern required">
+                                        <i class="bi bi-cash-stack me-2"></i>Type de Contrat
+                                    </label>
+                                    <div class="contract-options">
+                                        <div class="contract-option" data-contract="allocation">
+                                            <input type="radio" id="allocation" name="contractType" value="allocation"
+                                                   <%= surgeon.contractType === 'allocation' ? 'checked' : '' %> required>
+                                            <label for="allocation" class="contract-option-label">
+                                                <div class="contract-icon">
+                                                    <i class="bi bi-cash-stack"></i>
+                                                </div>
+                                                <div class="contract-info">
+                                                    <h6>Allocation de Salle</h6>
+                                                    <p>Taux horaire fixe pour l'utilisation de la salle d'opération</p>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="contract-option" data-contract="percentage">
+                                            <input type="radio" id="percentage" name="contractType" value="percentage"
+                                                   <%= surgeon.contractType === 'percentage' ? 'checked' : '' %>>
+                                            <label for="percentage" class="contract-option-label">
+                                                <div class="contract-icon">
+                                                    <i class="bi bi-percent"></i>
+                                                </div>
+                                                <div class="contract-info">
+                                                    <h6>Pourcentage</h6>
+                                                    <p>Part variable basée sur le montant de la prestation</p>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="input-feedback">
+                                        <div class="valid-feedback">
+                                            <i class="bi bi-check-circle me-1"></i>Type de contrat sélectionné
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Veuillez sélectionner un type de contrat
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="allocationFields" class="contract-fields" style="display: none;">
+                                <div class="form-group-modern">
+                                    <label for="allocationRate" class="form-label-modern required">
+                                        <i class="bi bi-cash me-2"></i>Taux Horaire (DA/heure)
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-cash input-icon"></i>
+                                        </div>
+                                        <input type="number"
+                                               class="form-control-modern"
+                                               id="allocationRate"
+                                               name="allocationRate"
+                                               value="<%= surgeon.allocationRate || '' %>"
+                                               min="0"
+                                               step="100"
+                                               placeholder="Ex: 50000">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Taux valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Taux horaire requis (minimum 0)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Montant facturé par heure d'utilisation de la salle
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="percentageFields" class="contract-fields" style="display: none;">
+                                <div class="form-group-modern">
+                                    <label for="percentageRate" class="form-label-modern required">
+                                        <i class="bi bi-percent me-2"></i>Pourcentage (%)
+                                    </label>
+                                    <div class="input-wrapper-modern">
+                                        <div class="input-icon-wrapper">
+                                            <i class="bi bi-percent input-icon"></i>
+                                        </div>
+                                        <input type="number"
+                                               class="form-control-modern"
+                                               id="percentageRate"
+                                               name="percentageRate"
+                                               value="<%= surgeon.percentageRate || '' %>"
+                                               min="0"
+                                               max="100"
+                                               step="0.1"
+                                               placeholder="Ex: 45.5">
+                                        <div class="input-feedback">
+                                            <div class="valid-feedback">
+                                                <i class="bi bi-check-circle me-1"></i>Pourcentage valide
+                                            </div>
+                                            <div class="invalid-feedback">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Pourcentage requis (0-100%)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-help-text">
+                                        <i class="bi bi-info-circle me-1"></i>Pourcentage du montant de la prestation revenant au chirurgien
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions-section">
+                            <div class="form-actions-content">
+                                <div class="action-buttons-group">
+                                    <a href="/surgeons/<%= surgeon._id %>" class="btn btn-outline-secondary action-btn">
+                                        <i class="bi bi-x-circle me-2"></i>Annuler
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning action-btn" id="resetBtn">
+                                        <i class="bi bi-arrow-counterclockwise me-2"></i>Réinitialiser
+                                    </button>
+                                    <button type="submit" class="btn btn-info action-btn" id="submitBtn">
+                                        <i class="bi bi-check-circle me-2"></i>Mettre à Jour
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="bi bi-question-circle help-icon"></i>
+                    <h5 class="help-title">Guide de Modification</h5>
+                </div>
+                <div class="help-content">
+                    <div class="help-item">
+                        <h6>Informations Modifiables :</h6>
+                        <ul class="help-tips">
+                            <li>Spécialité médicale</li>
+                            <li>Informations personnelles (nom, prénom, téléphone)</li>
+                            <li>Type de contrat et taux associés</li>
+                            <li>Code chirurgien (avec autorisation spéciale)</li>
+                        </ul>
                     </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/surgeons/<%= surgeon._id %>" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Annuler
-                        </a>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-save me-2"></i>Sauvegarder
-                        </button>
+                    <div class="help-item">
+                        <h6>Précautions :</h6>
+                        <ul class="help-tips">
+                            <li>La modification du contrat peut affecter les calculs de rémunération</li>
+                            <li>Vérifiez l'impact sur les chirurgies existantes</li>
+                            <li>Le code chirurgien est généralement immuable</li>
+                            <li>Conservez une trace des modifications importantes</li>
+                        </ul>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Surgeons Edit Page JavaScript -->
 <script>
-function toggleContractFields() {
-    const contractType = document.getElementById('contractType').value;
-    const allocationFields = document.getElementById('allocationFields');
-    const percentageFields = document.getElementById('percentageFields');
-    
-    if (contractType === 'allocation') {
-        allocationFields.style.display = 'block';
-        percentageFields.style.display = 'none';
-    } else {
-        allocationFields.style.display = 'none';
-        percentageFields.style.display = 'block';
-    }
-}
+// Form validation and interactions for edit surgeon
 document.addEventListener('DOMContentLoaded', function() {
-    toggleContractFields();
+    const form = document.getElementById('surgeonForm');
+    const codeInput = document.getElementById('code');
+    const specialtySelect = document.getElementById('specialty');
+    const firstNameInput = document.getElementById('firstName');
+    const lastNameInput = document.getElementById('lastName');
+    const dateOfBirthInput = document.getElementById('dateOfBirth');
+    const phoneInput = document.getElementById('phone');
+    const contractTypeRadios = document.querySelectorAll('input[name="contractType"]');
+    const allocationRateInput = document.getElementById('allocationRate');
+    const percentageRateInput = document.getElementById('percentageRate');
+    const previewName = document.getElementById('previewName');
+    const previewSpecialty = document.getElementById('previewSpecialty');
+    const previewCode = document.getElementById('previewCode');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const allowRegenerateCheckbox = document.getElementById('allowRegenerate');
+    const regenerateBtn = document.getElementById('regenerateBtn');
+
+    // Store original values for reset functionality
+    const originalValues = {
+        firstName: firstNameInput.value,
+        lastName: lastNameInput.value,
+        specialty: specialtySelect.value,
+        dateOfBirth: dateOfBirthInput.value,
+        phone: phoneInput.value,
+        contractType: document.querySelector('input[name="contractType"]:checked')?.value,
+        allocationRate: allocationRateInput.value,
+        percentageRate: percentageRateInput.value
+    };
+
+    // Real-time preview update
+    function updatePreview() {
+        const firstName = firstNameInput.value.trim();
+        const lastName = lastNameInput.value.trim();
+        const code = codeInput.value.trim();
+        const specialtyOption = specialtySelect.options[specialtySelect.selectedIndex];
+        const specialtyName = specialtyOption ? specialtyOption.text : 'Spécialité';
+
+        previewName.textContent = `Dr. ${firstName || 'Prénom'} ${lastName || 'Nom'}`;
+        previewCode.textContent = code || 'SR-XXXXX';
+        previewSpecialty.textContent = specialtyName;
+    }
+
+    // Input validation
+    function validateInput(input) {
+        const value = input.value.trim();
+        let isValid = false;
+
+        switch (input.id) {
+            case 'code':
+                isValid = value.length > 0 && /^SR-\d{5}$/.test(value);
+                break;
+            case 'specialty':
+                isValid = value.length > 0;
+                break;
+            case 'firstName':
+            case 'lastName':
+                isValid = value.length > 0 && value.length <= 50;
+                break;
+            case 'dateOfBirth':
+                const birthDate = new Date(value);
+                const today = new Date();
+                const age = today.getFullYear() - birthDate.getFullYear();
+                isValid = value && age >= 18;
+                break;
+            case 'phone':
+                isValid = !value || /^\d{10}$/.test(value);
+                break;
+            case 'allocationRate':
+                isValid = !input.hasAttribute('required') || (value && parseFloat(value) >= 0);
+                break;
+            case 'percentageRate':
+                isValid = !input.hasAttribute('required') || (value && parseFloat(value) >= 0 && parseFloat(value) <= 100);
+                break;
+        }
+
+        input.classList.toggle('is-valid', isValid);
+        input.classList.toggle('is-invalid', !isValid && input.value.length > 0);
+
+        return isValid;
+    }
+
+    // Contract type change handler
+    function handleContractTypeChange() {
+        const selectedContract = document.querySelector('input[name="contractType"]:checked');
+        const allocationFields = document.getElementById('allocationFields');
+        const percentageFields = document.getElementById('percentageFields');
+
+        if (selectedContract) {
+            if (selectedContract.value === 'allocation') {
+                allocationFields.style.display = 'block';
+                percentageFields.style.display = 'none';
+                allocationRateInput.setAttribute('required', 'required');
+                percentageRateInput.removeAttribute('required');
+                percentageRateInput.value = '';
+            } else {
+                allocationFields.style.display = 'none';
+                percentageFields.style.display = 'block';
+                percentageRateInput.setAttribute('required', 'required');
+                allocationRateInput.removeAttribute('required');
+                allocationRateInput.value = '';
+            }
+        } else {
+            allocationFields.style.display = 'none';
+            percentageFields.style.display = 'none';
+            allocationRateInput.removeAttribute('required');
+            percentageRateInput.removeAttribute('required');
+        }
+    }
+
+    // Toggle regenerate code functionality
+    window.toggleRegenerate = function() {
+        const allowRegenerate = allowRegenerateCheckbox.checked;
+        regenerateBtn.disabled = !allowRegenerate;
+
+        if (!allowRegenerate) {
+            codeInput.readOnly = true;
+            codeInput.value = originalValues.code || codeInput.value;
+        } else {
+            codeInput.readOnly = false;
+        }
+    };
+
+    // Regenerate code function
+    window.regenerateCode = function() {
+        if (!allowRegenerateCheckbox.checked) {
+            showNotification('Veuillez cocher "Autoriser la régénération du code" d\'abord.', 'warning');
+            return;
+        }
+
+        if (confirm('Êtes-vous sûr de vouloir régénérer le code ? Cette action peut affecter les références existantes.')) {
+            fetch('/surgeons/next-code')
+                .then(response => response.json())
+                .then(data => {
+                    codeInput.value = data.code;
+                    validateInput(codeInput);
+                    updatePreview();
+                    showNotification('Code régénéré avec succès.', 'success');
+                })
+                .catch(error => {
+                    console.error('Error regenerating code:', error);
+                    showNotification('Erreur lors de la régénération du code.', 'danger');
+                });
+        }
+    };
+
+    // Form submission handler
+    function handleSubmit(e) {
+        const requiredInputs = [codeInput, specialtySelect, firstNameInput, lastNameInput, dateOfBirthInput];
+        let isFormValid = true;
+
+        requiredInputs.forEach(input => {
+            if (!validateInput(input)) {
+                isFormValid = false;
+            }
+        });
+
+        // Check contract-specific fields
+        const selectedContract = document.querySelector('input[name="contractType"]:checked');
+        if (selectedContract) {
+            if (selectedContract.value === 'allocation' && !validateInput(allocationRateInput)) {
+                isFormValid = false;
+            } else if (selectedContract.value === 'percentage' && !validateInput(percentageRateInput)) {
+                isFormValid = false;
+            }
+        } else {
+            isFormValid = false;
+        }
+
+        if (!isFormValid) {
+            e.preventDefault();
+            showNotification('Veuillez corriger les erreurs avant de continuer.', 'danger');
+            return false;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Mise à jour en cours...';
+
+        showNotification('Mise à jour du chirurgien en cours...', 'info');
+    }
+
+    // Reset form handler
+    function handleReset() {
+        if (confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire aux valeurs originales ?')) {
+            firstNameInput.value = originalValues.firstName;
+            lastNameInput.value = originalValues.lastName;
+            specialtySelect.value = originalValues.specialty;
+            dateOfBirthInput.value = originalValues.dateOfBirth;
+            phoneInput.value = originalValues.phone;
+
+            // Reset contract type
+            const contractRadio = document.querySelector(`input[name="contractType"][value="${originalValues.contractType}"]`);
+            if (contractRadio) {
+                contractRadio.checked = true;
+            }
+
+            allocationRateInput.value = originalValues.allocationRate;
+            percentageRateInput.value = originalValues.percentageRate;
+
+            // Reset validations
+            document.querySelectorAll('.form-control-modern').forEach(input => {
+                input.classList.remove('is-valid', 'is-invalid');
+            });
+
+            handleContractTypeChange();
+            updatePreview();
+            showNotification('Formulaire réinitialisé aux valeurs originales.', 'info');
+        }
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.toast-notification');
+        existingNotifications.forEach(notification => notification.remove());
+
+        // Create new notification
+        const notification = document.createElement('div');
+        notification.className = `toast-notification ${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="notification-close" onclick="this.parentElement.remove()">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    // Event listeners
+    [codeInput, specialtySelect, firstNameInput, lastNameInput, dateOfBirthInput, phoneInput, allocationRateInput, percentageRateInput].forEach(input => {
+        input.addEventListener('input', function() {
+            validateInput(this);
+            updatePreview();
+        });
+        input.addEventListener('blur', function() {
+            validateInput(this);
+        });
+    });
+
+    contractTypeRadios.forEach(radio => {
+        radio.addEventListener('change', handleContractTypeChange);
+    });
+
+    form.addEventListener('submit', handleSubmit);
+    resetBtn.addEventListener('click', handleReset);
+
+    // Initialize
+    handleContractTypeChange();
+    toggleRegenerate();
+    updatePreview();
+
+    // Focus on first name input
+    firstNameInput.focus();
 });
 </script>
+
+<style>
+/* Additional styles for the edit surgeon page */
+.edit-form-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border: none;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.form-card-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%);
+    color: white;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.form-card-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    50% { transform: translate(-50%, -50%) rotate(180deg); }
+}
+
+.form-header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.form-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-info h3 {
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.form-info p {
+    margin-bottom: 0;
+    opacity: 0.9;
+}
+
+.form-progress {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+}
+
+.progress-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.step.active {
+    background: white;
+    color: #17a2b8;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.form-card-body {
+    padding: 2.5rem;
+}
+
+.contract-type-selector {
+    margin-bottom: 2rem;
+}
+
+.contract-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.contract-option {
+    position: relative;
+}
+
+.contract-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.contract-option-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 2px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.contract-option input[type="radio"]:checked + .contract-option-label {
+    border-color: #17a2b8;
+    background: rgba(23, 162, 184, 0.05);
+    box-shadow: 0 0 0 4px rgba(23, 162, 184, 0.1);
+}
+
+.contract-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #17a2b8, #0dcaf0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.contract-info h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.contract-info p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.contract-fields {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(23, 162, 184, 0.05), rgba(23, 162, 184, 0.02));
+    border-radius: 12px;
+    border: 1px solid rgba(23, 162, 184, 0.1);
+}
+
+.help-tips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.help-tips li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #718096;
+}
+
+.help-tips li:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0 1rem;
+    }
+
+    .page-header {
+        padding: 2rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+    }
+
+    .form-card-header {
+        padding: 1.5rem;
+    }
+
+    .form-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .form-progress {
+        position: static;
+        display: flex;
+        justify-content: center;
+    }
+
+    .form-card-body {
+        padding: 2rem 1.5rem;
+    }
+
+    .contract-options {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons-group {
+        flex-direction: column;
+    }
+
+    .action-btn {
+        width: 100%;
+    }
+
+    .help-card {
+        padding: 1.5rem;
+    }
+}
+</style>

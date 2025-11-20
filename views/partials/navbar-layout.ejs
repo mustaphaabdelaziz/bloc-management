@@ -1,0 +1,220 @@
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark" role="navigation" aria-label="Main navigation">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand d-flex align-items-center" href="/" aria-label="Bloc Opératoire Management System">
+            <img src="/assets/logo.png" alt="Logo" class="navbar-logo me-2" style="height: 40px; width: auto;">
+            <span>Bloc Opératoire</span>
+        </a>
+
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle main navigation menu">
+            <span class="navbar-toggler-icon" aria-hidden="true"></span>
+        </button>
+
+        <!-- Navigation Links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto" role="menubar">
+                <!-- Dashboard - Available to all users -->
+                <li class="nav-item" role="none">
+                    <a class="nav-link <%= (typeof currentPage !== 'undefined' && currentPage === 'dashboard') ? 'active' : '' %>"
+                        href="/" role="menuitem"
+                        aria-current="<%= (typeof currentPage !== 'undefined' && currentPage === 'dashboard') ? 'page' : 'false' %>">
+                        <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                </li>
+
+                <% const onlyAcheteur=(typeof permissions !=='undefined' && permissions.isBuyerOnly) || false; %>
+
+                    <!-- Patients - All can view except buyer -->
+                    <% if (!onlyAcheteur) { %>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link <%= (typeof currentPage !== 'undefined' && currentPage === 'patients') ? 'active' : '' %>"
+                                href="/patients" role="menuitem"
+                                aria-current="<%= (typeof currentPage !== 'undefined' && currentPage === 'patients') ? 'page' : 'false' %>">
+                                <i class="bi bi-person" aria-hidden="true"></i>
+                                <span>Patients</span>
+                            </a>
+                        </li>
+                        <% } %>
+
+                            <!-- Surgeries - All can view except buyer (filtered by role in controller) -->
+                            <% if (!onlyAcheteur) { %>
+                                <li class="nav-item" role="none">
+                                    <a class="nav-link <%= (typeof currentPage !== 'undefined' && currentPage === 'surgeries') ? 'active' : '' %>"
+                                        href="/surgeries" role="menuitem"
+                                        aria-current="<%= (typeof currentPage !== 'undefined' && currentPage === 'surgeries') ? 'page' : 'false' %>">
+                                        <i class="bi bi-scissors" aria-hidden="true"></i>
+                                        <span>Chirurgies</span>
+                                    </a>
+                                </li>
+                                <% } %>
+
+                                    <!-- Payments - Admin and Direction only -->
+                                    <% if (typeof permissions !=='undefined' && (permissions.isAdmin ||
+                                        permissions.isDirection)) { %>
+                                        <li class="nav-item" role="none">
+                                            <a class="nav-link <%= (typeof currentPage !== 'undefined' && currentPage === 'payments') ? 'active' : '' %>"
+                                                href="/payments" role="menuitem"
+                                                aria-current="<%= (typeof currentPage !== 'undefined' && currentPage === 'payments') ? 'page' : 'false' %>">
+                                                <i class="bi bi-credit-card" aria-hidden="true"></i>
+                                                <span>Paiements</span>
+                                            </a>
+                                        </li>
+                                        <% } %>
+
+                                            <!-- Materials - All can view, only admin/acheteur can modify -->
+                                    <li class="nav-item" role="none">
+                                        <a class="nav-link <%= (typeof currentPage !== 'undefined' && currentPage === 'materials') ? 'active' : '' %>"
+                                            href="/materials" role="menuitem"
+                                            aria-current="<%= (typeof currentPage !== 'undefined' && currentPage === 'materials') ? 'page' : 'false' %>">
+                                            <i class="bi bi-box" aria-hidden="true"></i>
+                                            <span>Matériaux</span>
+                                        </a>
+                                    </li>
+
+                                    <!-- Administrative sections - Admin and chefBloc and direction -->
+                                    <% if (typeof permissions !=='undefined' && (permissions.isAdmin ||
+                                        permissions.isChefBloc || permissions.isDirection) && !onlyAcheteur) { %>
+                                        <li class="nav-item dropdown" role="none">
+                                            <a class="nav-link dropdown-toggle <%= (typeof currentPage !== 'undefined' && ['administration', 'users', 'settings', 'specialties', 'fonctions', 'surgeons', 'prestations', 'medical-staff'].includes(currentPage)) ? 'active' : '' %>"
+                                                href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                                aria-haspopup="true" aria-label="Configuration menu">
+                                                <i class="bi bi-gear-fill" aria-hidden="true"></i>
+                                                <span>Configuration</span>
+                                            </a>
+                                            <ul class="dropdown-menu" role="menu">
+                                                <!-- Gérer Utilisateurs - Admin only -->
+                                                <% if (permissions.isAdmin) { %>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'users') ? 'active' : '' %>"
+                                                        href="/users" role="menuitem">
+                                                        <i class="bi bi-people-fill me-2" aria-hidden="true"></i>
+                                                        <span>Gérer Utilisateurs</span>
+                                                    </a>
+                                                </li>
+                                                <% } %>
+                                                <!-- Paramètres Système - Admin only -->
+                                                <% if (permissions.isAdmin) { %>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'settings') ? 'active' : '' %>"
+                                                        href="/admin/settings" role="menuitem">
+                                                        <i class="bi bi-gear me-2" aria-hidden="true"></i>
+                                                        <span>Paramètres Système</span>
+                                                    </a>
+                                                </li>
+                                                <% } %>
+                                                <!-- Divider separator - show only if admin -->
+                                                <% if (permissions.isAdmin) { %>
+                                                <li role="none">
+                                                    <hr class="dropdown-divider" role="separator">
+                                                </li>
+                                                <% } %>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'specialties') ? 'active' : '' %>"
+                                                        href="/specialties" role="menuitem">
+                                                        <i class="bi bi-award me-2" aria-hidden="true"></i>
+                                                        <span>Spécialités</span>
+                                                    </a>
+                                                </li>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'fonctions') ? 'active' : '' %>"
+                                                        href="/fonctions" role="menuitem">
+                                                        <i class="bi bi-person-workspace me-2" aria-hidden="true"></i>
+                                                        <span>Fonctions</span>
+                                                    </a>
+                                                </li>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'medical-staff') ? 'active' : '' %>"
+                                                        href="/medical-staff" role="menuitem">
+                                                        <i class="bi bi-people me-2" aria-hidden="true"></i>
+                                                        <span>Personnel Médical</span>
+                                                    </a>
+                                                </li>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'surgeons') ? 'active' : '' %>"
+                                                        href="/surgeons" role="menuitem">
+                                                        <i class="bi bi-person-badge me-2" aria-hidden="true"></i>
+                                                        <span>Chirurgiens</span>
+                                                    </a>
+                                                </li>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'prestations') ? 'active' : '' %>"
+                                                        href="/prestations" role="menuitem">
+                                                        <i class="bi bi-list-check me-2" aria-hidden="true"></i>
+                                                        <span>Prestations</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </li>
+                                        <% } %>
+            </ul>
+
+            <!-- User Info and Actions -->
+            <ul class="navbar-nav" role="menubar">
+                <!-- Current Time -->
+                <li class="nav-item" role="none">
+                    <span class="nav-link text-light" role="status" aria-label="Current date and time">
+                        <i class="bi bi-clock me-1" aria-hidden="true"></i>
+                        <time datetime="<%= moment().toISOString() %>">
+                            <%= moment().format('DD/MM/YYYY HH:mm') %>
+                        </time>
+                    </span>
+                </li>
+
+                <!-- User Dropdown -->
+                <% if (typeof currentUser !=='undefined' && currentUser) { %>
+                    <li class="nav-item dropdown" role="none">
+                        <a class="nav-link dropdown-toggle user-info" href="#" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false" aria-haspopup="true"
+                            aria-label="User menu for <%= currentUser.firstname %> <%= currentUser.lastname %>">
+                            <div class="user-avatar" aria-hidden="true">
+                                <%= (currentUser.firstname ? currentUser.firstname.charAt(0) : '' ) %>
+                                    <%= (currentUser.lastname ? currentUser.lastname.charAt(0) : '' ) %>
+                            </div>
+                            <div class="d-none d-lg-block">
+                                <small class="d-block text-white-50">Connecté en tant que</small>
+                                <div class="fw-bold">
+                                    <%= currentUser.firstname %>
+                                        <%= currentUser.lastname %>
+                                </div>
+                            </div>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" role="menu">
+                            <li role="none">
+                                <a class="dropdown-item" href="#" role="menuitem">
+                                    <i class="bi bi-person me-2" aria-hidden="true"></i>
+                                    <span>Mon Profil</span>
+                                </a>
+                            </li>
+                            <li role="none">
+                                <a class="dropdown-item" href="#" role="menuitem">
+                                    <i class="bi bi-gear me-2" aria-hidden="true"></i>
+                                    <span>Paramètres</span>
+                                </a>
+                            </li>
+                            <li role="none">
+                                <hr class="dropdown-divider" role="separator">
+                            </li>
+                            <li role="none">
+                                <a class="dropdown-item text-danger" href="/logout" role="menuitem">
+                                    <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>
+                                    <span>Déconnexion</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <% } else { %>
+                        <li class="nav-item" role="none">
+                            <a class="nav-link" href="/login" role="menuitem">
+                                <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
+                                <span>Connexion</span>
+                            </a>
+                        </li>
+                        <% } %>
+            </ul>
+        </div>
+    </div>
+</nav>

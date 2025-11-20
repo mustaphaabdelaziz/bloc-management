@@ -1,131 +1,218 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/prestations/index.ejs -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h3 class="mb-0">Gestion des Prestations</h3>
-    <p class="text-muted">Catalogue des interventions chirurgicales</p>
-  </div>
-  <a href="/prestations/new" class="btn btn-primary">
-    <i class="bi bi-plus-circle me-2"></i>Nouvelle Prestation
-  </a>
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Prestations</h1>
+                <p class="page-subtitle">Catalogue des interventions chirurgicales</p>
+            </div>
+            <% if (permissions.canManageData) { %>
+            <div class="d-flex gap-2">
+                <a href="/prestations/new" class="action-button">
+                    <i class="bi bi-plus-circle"></i>Nouvelle Prestation
+                </a>
+                <button type="button" class="action-button" onclick="showImportModal()">
+                    <i class="bi bi-upload"></i>Importer Excel
+                </button>
+            </div>
+            <% } %>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <% if (prestations.length > 0) { %>
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead class="table-light">
-          <tr>
-            <th>Code</th>
-            <th>Prestation</th>
-            <th>Spécialité</th>
-            <th>Durée</th>
-            <th>Prix HT</th>
-            <th>Prix TTC</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% prestations.forEach(prestation => { %>
-          <tr>
-            <td><strong><%= prestation.code %></strong></td>
-            <td>
-              <div class="d-flex align-items-center">
-                <i class="bi bi-clipboard-check fa-2x text-primary me-3"></i>
-                <div>
-                  <div class="fw-bold"><%= prestation.designation %></div>
-                  <% if (prestation.exceededDurationFee > 0) { %>
-                  <small class="text-warning">
-                    <i class="bi bi-clock-history me-1"></i>
-                    Frais dépassement: <%= new Intl.NumberFormat('fr-DZ', {
-                    style: 'currency', currency: 'DZD'
-                    }).format(prestation.exceededDurationFee) %> / <%=
-                    prestation.exceededDurationUnit %> min
-                  </small>
-                  <% } %>
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-10">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Désignation ou spécialité..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/prestations" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
                 </div>
-              </div>
-            </td>
-            <td>
-              <span class="badge bg-info"
-                ><%= prestation.specialty.name %></span
-              >
-            </td>
-            <td>
-              <strong class="text-primary"><%= prestation.duration %></strong>
-              min
-            </td>
-            <td>
-              <strong
-                ><%= new Intl.NumberFormat('fr-DZ', { style: 'currency',
-                currency: 'DZD' }).format(prestation.priceHT) %></strong
-              >
-            </td>
-            <td>
-              <strong class="text-success">
-                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency',
-                currency: 'DZD' }).format(prestation.priceHT * (1 +
-                prestation.tva)) %>
-              </strong>
-              <small class="text-muted d-block"
-                >TVA: <%= (prestation.tva * 100) %>%</small
-              >
-            </td>
-            <td>
-              <div class="btn-group" role="group">
-                <a
-                  href="/prestations/<%= prestation._id %>"
-                  class="btn btn-sm btn-outline-primary"
-                  title="Voir"
-                >
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a
-                  href="/prestations/<%= prestation._id %>/edit"
-                  class="btn btn-sm btn-outline-warning"
-                  title="Modifier"
-                >
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  onclick="deletePrestation('<%= prestation._id %>')"
-                  title="Supprimer"
-                >
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <% }); %>
-        </tbody>
-      </table>
+            </div>
+        </form>
     </div>
-    <% } else { %>
-    <div class="text-center py-5">
-      <i class="bi bi-clipboard-check fa-3x text-muted mb-3"></i>
-      <h5 class="text-muted">Aucune prestation trouvée</h5>
-      <p class="text-muted">Commencez par ajouter des prestations</p>
-      <a href="/prestations/new" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Ajouter la première prestation
-      </a>
+
+    <!-- Liste des prestations -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Prestations
+                <span class="badge bg-light text-primary ms-2"><%= prestations.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (prestations && prestations.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Désignation</th>
+                                <th>Spécialité</th>
+                                <% if (permissions.canViewPricing) { %>
+                                <th>Prix</th>
+                                <% } %>
+                                <th>Durée</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% prestations.forEach(prestation => { %>
+                                <tr>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-clipboard-check"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= prestation.designation %></h6>
+                                                <% if (prestation.code) { %>
+                                                    <small>Code: <%= prestation.code %></small>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info"><%= prestation.specialty.name %></span>
+                                    </td>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <td>
+                                        <div class="fw-bold text-info">
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(prestation.priceHT) %>
+                                        </div>
+                                    </td>
+                                    <% } %>
+                                    <td>
+                                        <%= prestation.duration %> min
+                                    </td>
+                                    <td>
+                                        <% if (permissions.canManageData) { %>
+                                        <div class="material-actions">
+                                            <a href="/prestations/<%= prestation._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="/prestations/<%= prestation._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deletePrestation('<%= prestation._id %>')" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <% } else { %>
+                                        <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune prestation trouvée</h5>
+                    <p class="empty-description">Commencez par ajouter des prestations pour définir les interventions chirurgicales disponibles</p>
+                    <% if (permissions.canManageData) { %>
+                    <a href="/prestations/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Ajouter la première prestation
+                    </a>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
     </div>
-    <% } %>
-  </div>
 </div>
 
 <script>
-  function deletePrestation(id) {
-    if (
-      confirmDelete("Êtes-vous sûr de vouloir supprimer cette prestation ?")
-    ) {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "/prestations/" + id + "?_method=DELETE";
-      document.body.appendChild(form);
-      form.submit();
+function deletePrestation(id) {
+    if (confirmDelete('Êtes-vous sûr de vouloir supprimer cette prestation ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/prestations/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
     }
-  }
+}
+
+function showImportModal() {
+    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
+}
 </script>
+
+<!-- Modal pour importer des prestations -->
+<div class="modal fade material-modal" id="importModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i>Importer Prestations depuis Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" method="POST" action="/prestations/import" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label required-field">Fichier Excel</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                            <span class="input-group-text">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                            </span>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">
+                            Formats acceptés: .xlsx, .xls | Taille maximale: 5 MB
+                        </small>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Colonnes requises:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Désignation</strong> - Nom de la prestation</li>
+                            <li><strong>Spécialité</strong> - Nom de la spécialité (doit exister)</li>
+                            <li><strong>Prix HT (DA)</strong> - Prix hors taxe</li>
+                            <li><strong>Durée (minutes)</strong> - Durée en minutes</li>
+                            <li><strong>TVA (%)</strong> - Taux TVA (ex: 9, 19)</li>
+                        </ul>
+                    </div>
+
+                    <div class="small text-muted">
+                        <strong>Colonnes optionnelles:</strong>
+                        <ul class="mb-0">
+                            <li>Code - Code unique (auto-généré si vide)</li>
+                            <li>Unité Dépassement (min) - Par défaut: 15</li>
+                            <li>Frais Dépassement (DA) - Par défaut: 0</li>
+                            <li>Frais Urgents (%) - Par défaut: 0</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-success" id="importBtn">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="/js/prestation.js"></script>

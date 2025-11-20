@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema({
     },
     privileges: [{
         type: String,
-        // Add additional roles that views and seeds use
-        enum: ['admin', 'medecin', 'acheteur', 'chefBloc', 'technicien', 'assistant']
+        // Roles: admin (full), direction (management), headDepart (dept head), assistante (operations), buyer (materials)
+        enum: ['admin', 'direction', 'headDepart', 'assistante', 'buyer']
     }],
     email: {
         type: String,

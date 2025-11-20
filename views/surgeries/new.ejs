@@ -1,583 +1,480 @@
 <% layout('layouts/boilerplate') %>
-<% var surgery = (typeof surgery !== 'undefined') ? surgery : {}; %>
-<div class="row justify-content-center">
-  <div class="col-lg-10">
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">
-          <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
-        </h5>
-      </div>
-      <div class="card-body">
-        <form method="POST" action="/surgeries" id="surgeryForm" onsubmit="return validateSurgeryForm()">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="patient" class="form-label">Patient *</label>
-                <input type="text" class="form-control" id="patient" name="patientName" list="patientsList" placeholder="Rechercher et sélectionner un patient..." required autocomplete="off">
-                <input type="hidden" name="patient" id="patientId">
-                <datalist id="patientsList">
-                  <% patients.forEach(patient => { %>
-                    <option value="<%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>" data-id="<%= patient._id %>">
-                  <% }); %>
-                </datalist>
-                <div class="form-text">
-                  <a href="/patients/new" target="_blank" class="text-primary">
-                    <i class="bi bi-plus-circle me-1"></i>Ajouter un nouveau patient
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="surgeon" class="form-label">Chirurgien *</label>
-                <input type="text" class="form-control" id="surgeon" name="surgeonName" list="surgeonsList" placeholder="Rechercher et sélectionner un chirurgien..." required autocomplete="off">
-                <input type="hidden" name="surgeon" id="surgeonId">
-                <datalist id="surgeonsList">
-                  <% surgeons.forEach(surgeon => { %>
-                    <option value="Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>"
-                            data-id="<%= surgeon._id %>"
-                            data-specialty="<%= surgeon.specialty._id %>"
-                            data-contract="<%= surgeon.contractType %>">
-                  <% }); %>
-                </datalist>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="prestation" class="form-label">Prestation *</label>
-                <select class="form-select" id="prestation" name="prestation" required>
-                  <option value="">Choisir une prestation...</option>
-                  <% prestations.forEach(prestation => { %>
-                    <option 
-                      value="<%= prestation._id %>" 
-                      data-specialty="<%= prestation.specialty._id %>" 
-                      data-duration="<%= prestation.duration %>" 
-                      data-price="<%= prestation.priceHT %>">
-                        <%= prestation.designation %> - <%= prestation.specialty.name %> (<%= prestation.duration %> min)
-                    </option>
-                  <% }); %>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="adjustedPrice" class="form-label">Prix ajusté (DA)</label>
-                <input type="number" class="form-control" id="adjustedPrice" name="adjustedPrice"
-                       value="<%= surgery.adjustedPrice || '' %>" min="0" step="0.01" placeholder="Laisser vide pour utiliser le prix de base">
-                <div class="form-text">
-                  <small class="text-muted">
-                    Prix spécifique pour cette chirurgie (si différent du prix de base de la prestation)
-                  </small>
-                </div>
-                <div class="form-text">
-                  <small class="text-info">
-                    Prix de base: <span id="basePrice">Sélectionnez une prestation</span>
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="status" class="form-label">Statut *</label>
-                <select name="status" id="status" class="form-select" required>
-                  <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
-                  <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
-                </select>
-              </div>
-            </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="beginDateTime" class="form-label">Date et heure de début *</label>
-                <input type="datetime-local" class="form-control" id="beginDateTime" name="beginDateTime"
-                  value="<%= surgery.beginDateTime ? moment(surgery.beginDateTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="endDateTime" class="form-label">Date et heure de fin</label>
-                <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime"
-                  value="<%= surgery.endDateTime ? moment(surgery.endDateTime).format('YYYY-MM-DDTHH:mm') : '' %>">
-                <div class="form-text">Si renseigné, permettra le calcul de la durée réelle</div>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-12">
-              <div class="mb-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
-                  <label class="form-check-label" for="applyExtraFees">
-                    <strong>Appliquer des frais supplémentaires pour dépassement de durée</strong>
-                  </label>
-                </div>
-                <div class="form-text text-warning">
-                  <i class="bi bi-info-circle me-1"></i>
-                  Si la durée dépasse celle prévue pour la prestation, des frais additionnels peuvent être appliqués.
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-              <h6 class="mb-0"><i class="bi bi-people me-2"></i>Personnel Médical Impliqué</h6>
-            </div>
-            <div class="card-body">
-              <div id="medicalStaffContainer">
-                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
-                  <% surgery.medicalStaff.forEach((staff, index) => { %>
-                    <div class="row mb-3 medical-staff-row">
-                      <div class="col-md-5">
-                        <select name="medicalStaff" class="form-select">
-                          <option value="">Sélectionner personnel</option>
-                          <% medicalStaff.forEach(ms => { %>
-                            <option value="<%= ms._id %>" <%= staff.staff.toString() === ms._id.toString() ? 'selected' : '' %>><%= ms.firstName %> <%= ms.lastName %></option>
-                          <% }); %>
-                        </select>
-                      </div>
-                      <div class="col-md-5">
-                        <select name="rolePlayedId" class="form-select">
-                          <option value="">Sélectionner rôle</option>
-                          <% fonctions.forEach(fonction => { %>
-                            <option value="<%= fonction._id %>" <%= staff.rolePlayedId.toString() === fonction._id.toString() ? 'selected' : '' %>><%= fonction.name %></option>
-                          <% }); %>
-                        </select>
-                      </div>
-                      <div class="col-md-2">
-                        <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                  <% }); %>
-                <% } else { %>
-                  <div class="row mb-3 medical-staff-row">
-                    <div class="col-md-5">
-                      <select name="medicalStaff" class="form-select">
-                        <option value="">Sélectionner personnel</option>
-                        <% medicalStaff.forEach(ms => { %>
-                          <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
-                        <% }); %>
-                      </select>
-                    </div>
-                    <div class="col-md-5">
-                      <select name="rolePlayedId" class="form-select">
-                        <option value="">Sélectionner rôle</option>
-                        <% fonctions.forEach(fonction => { %>
-                          <option value="<%= fonction._id %>"><%= fonction.name %></option>
-                        <% }); %>
-                      </select>
-                    </div>
-                    <div class="col-md-2">
-                      <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                <% } %>
-              </div>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStaffRow()">
-                <i class="bi bi-plus-circle me-2"></i>Ajouter personnel
-              </button>
-            </div>
-          </div>
-          <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-              <h6 class="mb-0"><i class="bi bi-box me-2"></i>Matériaux Consommables</h6>
-            </div>
-            <div class="card-body">
-              <div id="consumableMaterialsContainer">
-                <div class="row mb-3 consumable-material-row">
-                  <div class="col-md-6">
-                    <select class="form-select" name="consumableMaterialId">
-                      <option value="">Choisir un matériau consommable...</option>
-                      <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
-                        <option
-                          value="<%= mat._id %>"
-                          data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
-                          data-category="<%= mat.category %>"
-                          data-price="<%= mat.priceHT %>"
-                          data-unit="<%= mat.unitOfMeasure %>">
-                          <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                        </option>
-                      <% }) %>
-                    </select>
-                  </div>
-                  <div class="col-md-4">
-                    <input type="number" name="consumableMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
-                  </div>
-                  <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addConsumableMaterialRow()">
-                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau consommable
-              </button>
-            </div>
-          </div>
 
-          <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-              <h6 class="mb-0"><i class="bi bi-person me-2"></i>Matériaux Patient</h6>
-            </div>
-            <div class="card-body">
-              <div id="patientMaterialsContainer">
-                <div class="row mb-3 patient-material-row">
-                  <div class="col-md-6">
-                    <select class="form-select" name="patientMaterialId">
-                      <option value="">Choisir un matériau patient...</option>
-                      <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
-                        <option
-                          value="<%= mat._id %>"
-                          data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
-                          data-category="<%= mat.category %>"
-                          data-price="<%= mat.priceHT %>"
-                          data-unit="<%= mat.unitOfMeasure %>">
-                          <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                        </option>
-                      <% }) %>
-                    </select>
-                  </div>
-                  <div class="col-md-4">
-                    <input type="number" name="patientMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
-                  </div>
-                  <div class="col-md-2">
-                    <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addPatientMaterialRow()">
-                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau patient
-              </button>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label for="notes" class="form-label">Notes et observations</label>
-            <textarea class="form-control" id="notes" name="notes" rows="3"><%= surgery.notes || '' %></textarea>
-          </div>
-          <div class="d-flex justify-content-between">
-            <a href="/surgeries" class="btn btn-secondary">
-              <i class="bi bi-arrow-left me-2"></i>Retour
+<!-- Modern Surgery Creation Page -->
+<div class="container-fluid fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <h1><i class="bi bi-plus-circle-fill me-3"></i>Nouvelle Chirurgie</h1>
+            <p>Programmer une nouvelle intervention chirurgicale</p>
+        </div>
+        <div class="page-actions">
+            <a href="/surgeries" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la liste
             </a>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-save me-2"></i>Enregistrer Chirurgie
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
     </div>
-  </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <div class="surgery-form-container">
+                <form method="POST" action="/surgeries" id="surgeryForm" class="surgery-form">
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-info-circle me-2"></i>Informations de Base</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Patient <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-person"></i>
+                                    <input type="text" class="form-control-modern" id="patient" name="patientName"
+                                           list="patientsList" placeholder="Rechercher un patient..." required autocomplete="off">
+                                    <input type="hidden" name="patient" id="patientId">
+                                    <div class="input-actions">
+                                        <a href="/patients/new" target="_blank" class="input-action-btn" title="Ajouter un patient">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <datalist id="patientsList">
+                                    <% patients.forEach(patient => { %>
+                                        <option value="<%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>"
+                                                data-id="<%= patient._id %>">
+                                    <% }); %>
+                                </datalist>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Chirurgien <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-person-badge"></i>
+                                    <input type="text" class="form-control-modern" id="surgeon" name="surgeonName"
+                                           list="surgeonsList" placeholder="Rechercher un chirurgien..." required autocomplete="off">
+                                    <input type="hidden" name="surgeon" id="surgeonId">
+                                </div>
+                                <datalist id="surgeonsList">
+                                    <% surgeons.forEach(surgeon => { %>
+                                        <option value="Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>"
+                                                data-id="<%= surgeon._id %>"
+                                                data-specialty="<%= surgeon.specialty._id %>"
+                                                data-contract="<%= surgeon.contractType %>">
+                                    <% }); %>
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Prestation <span class="text-danger">*</span></label>
+                                <select class="form-select-modern" id="prestation" name="prestation" required>
+                                    <option value="">Choisir une prestation...</option>
+                                    <% prestations.forEach(prestation => { %>
+                                        <option value="<%= prestation._id %>"
+                                                data-specialty="<%= prestation.specialty._id %>"
+                                                data-duration="<%= prestation.duration %>"
+                                                data-price="<%= prestation.priceHT %>">
+                                            <%= prestation.designation %> - <%= prestation.specialty.name %> (<%= prestation.duration %> min)
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+
+                            <% if (canEditSurgeryFinancials) { %>
+                            <div class="form-group">
+                                <label class="form-label">Prix ajusté (DA)</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-cash"></i>
+                                    <input type="number" class="form-control-modern" id="adjustedPrice" name="adjustedPrice"
+                                           min="0" step="0.01" placeholder="Prix spécifique (optionnel)">
+                                </div>
+                                <div class="form-help-text">
+                                    Prix de base: <span id="basePrice" class="fw-bold">Sélectionnez une prestation</span>
+                                </div>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Scheduling Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-calendar-event me-2"></i>Planification</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Statut <span class="text-danger">*</span></label>
+                                <select class="form-select-modern" name="status" id="status" required>
+                                    <option value="planned">Planifiée</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Date et heure de début <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-calendar-event"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="beginDateTime"
+                                           name="beginDateTime" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Date et heure de fin</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-calendar-check"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="endDateTime"
+                                           name="endDateTime">
+                                </div>
+                                <div class="form-help-text">
+                                    Optionnel - permet le calcul automatique de la durée
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Frais supplémentaires</label>
+                                <div class="form-check-modern">
+                                    <input class="form-check-input-modern" type="checkbox" id="applyExtraFees" name="applyExtraFees">
+                                    <label class="form-check-label-modern" for="applyExtraFees">
+                                        Appliquer des frais pour dépassement de durée
+                                    </label>
+                                </div>
+                                <div class="form-help-text text-warning">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Si activé, des frais additionnels seront appliqués en cas de dépassement
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Staff Section -->
+                    <div class="medical-staff-section">
+                        <div class="medical-staff-header">
+                            <h4><i class="bi bi-people-fill me-2"></i>Personnel Médical</h4>
+                            <button type="button" class="add-staff-btn" onclick="addStaffRow()">
+                                <i class="bi bi-plus-circle me-1"></i>Ajouter
+                            </button>
+                        </div>
+
+                        <div id="medicalStaffContainer">
+                            <div class="staff-row">
+                                <select name="medicalStaff" class="form-select-modern" onchange="updateRolesForStaff(this)">
+                                    <option value="">Sélectionner personnel</option>
+                                    <% medicalStaff.forEach(ms => { %>
+                                        <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+                                    <% }); %>
+                                </select>
+
+                                <select name="rolePlayedId" class="form-select-modern">
+                                    <option value="">Sélectionner rôle</option>
+                                    <% fonctions.forEach(fonction => { %>
+                                        <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                                    <% }); %>
+                                </select>
+
+                                <button type="button" class="btn-staff-action btn-delete" onclick="removeStaffRow(this)" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Materials Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-box-seam me-2"></i>Matériaux et Consommables</h3>
+
+                        <!-- Consumable Materials -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3"><i class="bi bi-tools me-2"></i>Matériaux Consommables</h5>
+                            <div id="consumableMaterialsContainer">
+                                <div class="row mb-3 consumable-material-row">
+                                    <div class="col-md-6">
+                                        <select class="form-select-modern" name="consumableMaterialId">
+                                            <option value="">Choisir un matériau consommable...</option>
+                                            <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
+                                                <option
+                                                  value="<%= mat._id %>"
+                                                  data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                                                  data-category="<%= mat.category %>"
+                                                  data-price="<%= mat.priceHT %>"
+                                                  data-unit="<%= mat.unitOfMeasure %>">
+                                                  <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                </option>
+                                            <% }) %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" name="consumableMaterialQuantity" class="form-control-modern"
+                                               min="1" step="0.01" placeholder="Quantité">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn-staff-action btn-delete"
+                                                onclick="removeConsumableMaterialRow(this)" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addConsumableMaterialRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau consommable
+                            </button>
+                        </div>
+
+                        <!-- Patient Materials -->
+                        <div>
+                            <h5 class="text-info mb-3"><i class="bi bi-person me-2"></i>Matériaux Patient</h5>
+                            <div id="patientMaterialsContainer">
+                                <div class="row mb-3 patient-material-row">
+                                    <div class="col-md-6">
+                                        <select class="form-select-modern" name="patientMaterialId">
+                                            <option value="">Choisir un matériau patient...</option>
+                                            <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+                                                <option
+                                                  value="<%= mat._id %>"
+                                                  data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                                                  data-category="<%= mat.category %>"
+                                                  data-price="<%= mat.priceHT %>"
+                                                  data-unit="<%= mat.unitOfMeasure %>">
+                                                  <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+                                                </option>
+                                            <% }) %>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="number" name="patientMaterialQuantity" class="form-control-modern"
+                                               min="1" step="0.01" placeholder="Quantité">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn-staff-action btn-delete"
+                                                onclick="removePatientMaterialRow(this)" disabled>
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="addPatientMaterialRow()">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter matériau patient
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-sticky me-2"></i>Notes et Observations</h3>
+                        <textarea class="form-control-modern" id="notes" name="notes" rows="4"
+                                  placeholder="Ajouter des notes spécifiques à cette chirurgie..."></textarea>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions-section">
+                        <div class="form-actions-content">
+                            <div class="action-buttons-group">
+                                <a href="/surgeries" class="action-btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Annuler
+                                </a>
+                                <button type="submit" class="action-btn btn-success">
+                                    <i class="bi bi-save me-1"></i>Enregistrer la Chirurgie
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Preview Sidebar -->
+        <div class="col-lg-4">
+            <div class="form-preview-section">
+                <div class="preview-header">
+                    <h4><i class="bi bi-eye me-2"></i>Aperçu</h4>
+                </div>
+
+                <div class="preview-card" id="surgeryPreview">
+                    <div class="preview-avatar">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <div class="preview-details">
+                        <div class="preview-name" id="previewCode">CH-XXXX</div>
+                        <div class="preview-meta">
+                            <span class="preview-badge" id="previewStatus">Planifiée</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-content">
+                    <div class="preview-grid">
+                        <div class="preview-item">
+                            <div class="preview-label">Patient</div>
+                            <div class="preview-value" id="previewPatient">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Chirurgien</div>
+                            <div class="preview-value" id="previewSurgeon">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Prestation</div>
+                            <div class="preview-value" id="previewPrestation">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Date/Heure</div>
+                            <div class="preview-value" id="previewDateTime">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Durée prévue</div>
+                            <div class="preview-value" id="previewDuration">-</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Prix estimé</div>
+                            <div class="preview-value" id="previewPrice">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="help-icon bi bi-info-circle-fill"></i>
+                    <h5 class="help-title">Conseils pour la création</h5>
+                </div>
+                <div class="help-content">
+                    <div class="help-surgery-info">
+                        <li>Sélectionnez d'abord le patient et le chirurgien</li>
+                        <li>Choisissez la prestation appropriée selon la spécialité</li>
+                        <li>Ajoutez le personnel médical nécessaire</li>
+                        <li>Vérifiez les stocks des matériaux avant validation</li>
+                        <li>Pour les urgences, le prix peut être majoré</li>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Include Surgery-specific JavaScript -->
 <script>
-// Filter materials by specialty: consumables are always shown, patient materials filtered by specialty
-function filterMaterialsBySpecialty(specialtyId) {
-  // Filter consumable materials - ALWAYS SHOW ALL CONSUMABLES (no specialty filter)
-  document.querySelectorAll('#consumableMaterialsContainer select[name="consumableMaterialId"]').forEach(select => {
-    const options = select.querySelectorAll('option');
-    options.forEach((option, idx) => {
-      if (idx === 0) return option.hidden = false;  // always show placeholder
-      // Consumables are always visible regardless of specialty
-      option.hidden = false;
-    });
-  });
+// Initialize data for surgery form
+const staffData = <%- JSON.stringify(medicalStaff) %>;
 
-  // Filter patient materials by specialty
-  document.querySelectorAll('#patientMaterialsContainer select[name="patientMaterialId"]').forEach(select => {
-    const options = select.querySelectorAll('option');
-    options.forEach((option, idx) => {
-      if (idx === 0) return option.hidden = false;  // always show placeholder
-      const optionSpecialty = option.getAttribute('data-specialty');
-      // Check if specialtyId is in the comma-separated list or if optionSpecialty is empty (general materials)
-      const specialtyList = optionSpecialty ? optionSpecialty.split(',') : [];
-      option.hidden = optionSpecialty && !specialtyList.includes(specialtyId);
-    });
-    // Reset selection if selection is not visible
-    if (select.value) {
-      const selectedOpt = select.selectedOptions[0];
-      if (selectedOpt && selectedOpt.hidden) {
-        select.value = '';
-      }
-    }
-  });
-}
+// Store staff options HTML for dynamic row addition
+window.staffOptions = `
+  <% medicalStaff.forEach(ms => { %>
+    <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
+  <% }); %>
+`;
 
-function filterPrestationsBySpecialty(specialtyId) {
-  const prestationSelect = document.getElementById('prestation');
-  if (!prestationSelect) return;
-  const options = prestationSelect.querySelectorAll('option');
-  options.forEach((option, idx) => {
-    if (idx === 0) return option.hidden = false;
-    option.hidden = option.getAttribute('data-specialty') !== specialtyId;
-  });
-  if (prestationSelect.value) {
-    const selectedOption = prestationSelect.selectedOptions[0];
-    if (selectedOption && selectedOption.hidden) {
-      prestationSelect.value = '';
-    }
-  }
-}
+// Store consumable material options for dynamic row addition
+window.consumableMaterialOptions = `
+  <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
+    <option
+      value="<%= mat._id %>"
+      data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+      data-category="<%= mat.category %>"
+      data-price="<%= mat.priceHT %>"
+      data-unit="<%= mat.unitOfMeasure %>">
+      <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+    </option>
+  <% }) %>
+`;
 
+// Store patient material options for dynamic row addition
+window.patientMaterialOptions = `
+  <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+    <option
+      value="<%= mat._id %>"
+      data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+      data-category="<%= mat.category %>"
+      data-price="<%= mat.priceHT %>"
+      data-unit="<%= mat.unitOfMeasure %>">
+      <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+    </option>
+  <% }) %>
+`;
+
+// Store functions options for dynamic role selection
+window.fonctionsOptions = [
+  <% fonctions.forEach((fonction, idx) => { %>
+    { id: '<%= fonction._id %>', name: '<%= fonction.name %>' }<% if (idx < fonctions.length - 1) { %>,<% } %>
+  <% }); %>
+];
+</script>
+<script src="/js/surgeries-new.js"></script>
+
+<script>
+// Real-time preview updates
 document.addEventListener('DOMContentLoaded', function() {
-  const surgeonInput = document.getElementById('surgeon');
-  function getSelectedSpecialty() {
-    return surgeonInput.getAttribute('data-selected-specialty') || '';
-  }
-  function applySpecialtyFilter() {
-    const specialtyId = getSelectedSpecialty();
-    filterPrestationsBySpecialty(specialtyId);
-    filterMaterialsBySpecialty(specialtyId);
-  }
-  surgeonInput.addEventListener('input', applySpecialtyFilter);
-  surgeonInput.addEventListener('change', applySpecialtyFilter);
-  applySpecialtyFilter();
-});
+    // Update preview when form changes
+    const form = document.getElementById('surgeryForm');
+    const inputs = form.querySelectorAll('input, select, textarea');
 
-function addConsumableMaterialRow() {
-  const container = document.getElementById('consumableMaterialsContainer');
-  if (!container) return;
-  const newRow = document.createElement('div');
-  newRow.className = 'row mb-3 consumable-material-row';
-  newRow.innerHTML = `
-    <div class="col-md-6">
-      <select class="form-select" name="consumableMaterialId">
-        <option value="">Choisir un matériau consommable...</option>
-        <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
-          <option
-            value="<%= mat._id %>"
-            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
-            data-category="<%= mat.category %>"
-            data-price="<%= mat.priceHT %>"
-            data-unit="<%= mat.unitOfMeasure %>">
-            <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-          </option>
-        <% }) %>
-      </select>
-    </div>
-    <div class="col-md-4">
-      <input type="number" name="consumableMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
-    </div>
-    <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
-        <i class="bi bi-trash"></i>
-      </button>
-    </div>
-  `;
-  container.appendChild(newRow);
-  const surgeonInput = document.getElementById('surgeon');
-  let specialtyId = '';
-  if (surgeonInput) {
-    specialtyId = surgeonInput.getAttribute('data-selected-specialty') || '';
-  }
-  filterMaterialsBySpecialty(specialtyId);
-}
+    inputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
 
-function removeConsumableMaterialRow(button) {
-  const row = button.closest('.consumable-material-row');
-  if (row && document.querySelectorAll('.consumable-material-row').length > 1) {
-    row.remove();
-  }
-}
+    function updatePreview() {
+        // Update patient
+        const patientInput = document.getElementById('patient');
+        document.getElementById('previewPatient').textContent =
+            patientInput.value || '-';
 
-function addPatientMaterialRow() {
-  const container = document.getElementById('patientMaterialsContainer');
-  if (!container) return;
-  const newRow = document.createElement('div');
-  newRow.className = 'row mb-3 patient-material-row';
-  newRow.innerHTML = `
-    <div class="col-md-6">
-      <select class="form-select" name="patientMaterialId">
-        <option value="">Choisir un matériau patient...</option>
-        <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
-          <option
-            value="<%= mat._id %>"
-            data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
-            data-category="<%= mat.category %>"
-            data-price="<%= mat.priceHT %>"
-            data-unit="<%= mat.unitOfMeasure %>">
-            <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-          </option>
-        <% }) %>
-      </select>
-    </div>
-    <div class="col-md-4">
-      <input type="number" name="patientMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
-    </div>
-    <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
-        <i class="bi bi-trash"></i>
-      </button>
-    </div>
-  `;
-  container.appendChild(newRow);
-  const surgeonInput = document.getElementById('surgeon');
-  let specialtyId = '';
-  if (surgeonInput) {
-    specialtyId = surgeonInput.getAttribute('data-selected-specialty') || '';
-  }
-  filterMaterialsBySpecialty(specialtyId);
-}
+        // Update surgeon
+        const surgeonInput = document.getElementById('surgeon');
+        document.getElementById('previewSurgeon').textContent =
+            surgeonInput.value || '-';
 
-function removePatientMaterialRow(button) {
-  const row = button.closest('.patient-material-row');
-  if (row && document.querySelectorAll('.patient-material-row').length > 1) {
-    row.remove();
-  }
-}
+        // Update prestation
+        const prestationSelect = document.getElementById('prestation');
+        const selectedOption = prestationSelect.options[prestationSelect.selectedIndex];
+        document.getElementById('previewPrestation').textContent =
+            selectedOption ? selectedOption.text.split(' - ')[0] || '-' : '-';
 
-function addStaffRow() {
-  const container = document.getElementById('medicalStaffContainer');
-  if (!container) return;
-  const newRow = document.createElement('div');
-  newRow.className = 'row mb-3 medical-staff-row';
-  newRow.innerHTML = `
-    <div class="col-md-5">
-      <select name="medicalStaff" class="form-select">
-        <option value="">Sélectionner personnel</option>
-        <% medicalStaff.forEach(ms => { %>
-          <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
-        <% }); %>
-      </select>
-    </div>
-    <div class="col-md-5">
-      <select name="rolePlayedId" class="form-select">
-        <option value="">Sélectionner rôle</option>
-        <% fonctions.forEach(fonction => { %>
-          <option value="<%= fonction._id %>"><%= fonction.name %></option>
-        <% }); %>
-      </select>
-    </div>
-    <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-        <i class="bi bi-trash"></i>
-      </button>
-    </div>
-  `;
-  container.appendChild(newRow);
-}
-function removeStaffRow(button) {
-  const row = button.closest('.medical-staff-row');
-  if (row && document.querySelectorAll('.medical-staff-row').length > 1) {
-    row.remove();
-  }
-}
+        // Update status
+        const statusSelect = document.getElementById('status');
+        const statusText = statusSelect.value === 'urgent' ? 'Urgente' : 'Planifiée';
+        document.getElementById('previewStatus').textContent = statusText;
 
-function validateSurgeryForm() {
-  const patientInput = document.getElementById('patient');
-  const patientIdInput = document.getElementById('patientId');
-  const surgeonInput = document.getElementById('surgeon');
-  const surgeonIdInput = document.getElementById('surgeonId');
-  const prestationInput = document.getElementById('prestation');
-  const beginDateTime = document.getElementById('beginDateTime');
-  if (!patientInput.value || !patientIdInput.value) {
-    alert('Veuillez sélectionner un patient valide.');
-    patientInput.focus();
-    return false;
-  }
-  if (!surgeonInput.value || !surgeonIdInput.value) {
-    alert('Veuillez sélectionner un chirurgien valide.');
-    surgeonInput.focus();
-    return false;
-  }
-  if (!prestationInput.value) {
-    alert('Veuillez sélectionner une prestation valide.');
-    prestationInput.focus();
-    return false;
-  }
-  if (!beginDateTime.value) {
-    alert('Veuillez saisir la date et l\'heure de début.');
-    beginDateTime.focus();
-    return false;
-  }
-  const now = new Date();
-  const selectedDate = new Date(beginDateTime.value);
-  if (selectedDate <= now) {
-    alert('La date et l\'heure de début doivent être dans le futur.');
-    beginDateTime.focus();
-    return false;
-  }
-  const materialRows = document.querySelectorAll('.consumable-material-row, .patient-material-row');
-  for (let row of materialRows) {
-    const select = row.querySelector('select[name="consumableMaterialId"], select[name="patientMaterialId"]');
-    const quantityInput = row.querySelector('input[name="consumableMaterialQuantity"], input[name="patientMaterialQuantity"]');
-    if (select && select.value) {
-      if (!quantityInput.value || quantityInput.value <= 0) {
-        alert('Veuillez saisir une quantité valide pour le matériau.');
-        quantityInput.focus();
-        return false;
-      }
-    }
-  }
-  return true;
-}
-// Link datalist selection to hidden input (and get specialty for surgeon)
-document.addEventListener('DOMContentLoaded', function() {
-  function datalistToHidden(inputId, listId, hiddenInputId, attr = 'data-id') {
-    const input = document.getElementById(inputId);
-    const datalist = document.getElementById(listId);
-    const hiddenInput = document.getElementById(hiddenInputId);
-    input.addEventListener('input', function() {
-      let val = input.value;
-      let opts = datalist.options;
-      for (let i=0; i<opts.length; i++) {
-        if (opts[i].value === val) {
-          hiddenInput.value = opts[i].getAttribute(attr);
-          if (inputId === 'surgeon') {
-            input.setAttribute('data-selected-specialty', opts[i].getAttribute('data-specialty'));
-          }
-          return;
+        // Update date/time
+        const dateTimeInput = document.getElementById('beginDateTime');
+        if (dateTimeInput.value) {
+            const date = new Date(dateTimeInput.value);
+            document.getElementById('previewDateTime').textContent =
+                date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+        } else {
+            document.getElementById('previewDateTime').textContent = '-';
         }
-      }
-      hiddenInput.value = '';
-      if (inputId === 'surgeon') input.removeAttribute('data-selected-specialty');
-    });
-  }
-  datalistToHidden('patient','patientsList','patientId');
-  datalistToHidden('surgeon','surgeonsList','surgeonId');
 
-  // Update base price display
-  function updateBasePrice() {
-    const prestationSelect = document.getElementById('prestation');
-    const basePriceDisplay = document.getElementById('basePrice');
+        // Update duration
+        if (selectedOption && selectedOption.getAttribute('data-duration')) {
+            document.getElementById('previewDuration').textContent =
+                selectedOption.getAttribute('data-duration') + ' min';
+        } else {
+            document.getElementById('previewDuration').textContent = '-';
+        }
 
-    if (!basePriceDisplay || !prestationSelect) return;
-
-    const selectedOption = prestationSelect.selectedOptions[0];
-    if (selectedOption && selectedOption.value) {
-      // Get base price from selected prestation
-      const basePriceValue = selectedOption.getAttribute('data-price');
-      if (basePriceValue && !isNaN(parseFloat(basePriceValue))) {
-        const basePrice = parseFloat(basePriceValue);
-        basePriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', {
-          style: 'currency',
-          currency: 'DZD'
-        }).format(basePrice);
-      } else {
-        basePriceDisplay.textContent = 'Prix non disponible';
-      }
-    } else {
-      basePriceDisplay.textContent = 'Sélectionnez une prestation';
+        // Update price
+        const adjustedPriceInput = document.getElementById('adjustedPrice');
+        const basePrice = selectedOption ? selectedOption.getAttribute('data-price') : null;
+        const displayPrice = adjustedPriceInput.value || basePrice;
+        if (displayPrice) {
+            document.getElementById('previewPrice').textContent =
+                new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(displayPrice);
+        } else {
+            document.getElementById('previewPrice').textContent = '-';
+        }
     }
-  }
 
-  // Add event listeners
-  const prestationSelect = document.getElementById('prestation');
+    // Generate surgery code
+    function generateSurgeryCode() {
+        const now = new Date();
+        const year = now.getFullYear().toString().slice(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        document.getElementById('previewCode').textContent = `CH-${year}${month}-${random}`;
+    }
 
-  if (prestationSelect) {
-    prestationSelect.addEventListener('change', updateBasePrice);
-  }
-
-  // Initial update
-  updateBasePrice();
+    generateSurgeryCode();
 });
 </script>

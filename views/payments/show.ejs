@@ -1,0 +1,348 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="container-fluid mt-4">
+  <!-- Enhanced Back button and header -->
+  <div class="mb-4">
+    <a href="/payments" class="btn btn-outline-secondary btn-sm mb-3">
+      <i class="bi bi-arrow-left me-1"></i>Retour aux paiements
+    </a>
+
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h3 class="mb-1">
+          <i class="bi bi-receipt me-2"></i>Détails du Paiement
+        </h3>
+        <p class="text-muted">
+          Chirurgie: <a href="/surgeries/<%= payment.surgery._id %>"><%= payment.surgery.code %></a>
+        </p>
+      </div>
+      <div>
+        <% if(payment.paymentType === 'outgoing') { %>
+          <span class="payment-type-badge type-outgoing fs-6">
+            <i class="bi bi-arrow-up-right"></i> Sortie (Payer Chirurgien)
+          </span>
+        <% } else { %>
+          <span class="payment-type-badge type-incoming fs-6">
+            <i class="bi bi-arrow-down-left"></i> Entrée (Recevoir du Chirurgien)
+          </span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Enhanced Payment Summary Card -->
+    <div class="col-lg-8">
+      <div class="payment-card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-info-circle me-2"></i>Informations du Paiement
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <h6 class="text-muted">Chirurgien</h6>
+              <p class="mb-0">
+                <a href="/surgeons/<%= payment.surgeon._id %>">
+                  Dr. <%= payment.surgeon.lastName %> <%= payment.surgeon.firstName %>
+                </a>
+              </p>
+              <small class="text-muted">
+                Type contrat: <strong><%= payment.surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %></strong>
+              </small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <h6 class="text-muted">Patient</h6>
+              <p class="mb-0">
+                <a href="/patients/<%= payment.surgery.patient._id %>">
+                  <%= payment.surgery.patient.lastName %> <%= payment.surgery.patient.firstName %>
+                </a>
+              </p>
+            </div>
+            <div class="col-md-6 mb-3">
+              <h6 class="text-muted">Prestation</h6>
+              <p class="mb-0"><%= payment.surgery.prestation.label %></p>
+            </div>
+            <div class="col-md-6 mb-3">
+              <h6 class="text-muted">Date Chirurgie</h6>
+              <p class="mb-0"><%= moment(payment.surgery.beginDateTime).format('DD/MM/YYYY HH:mm') %></p>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Enhanced Payment amounts -->
+          <div class="row text-center mb-4">
+            <div class="col-md-4">
+              <div class="amount-display amount-total">
+                <div class="amount-label">Montant Total</div>
+                <div class="amount-value"><%= payment.totalAmount.toFixed(2) %> DA</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="amount-display amount-paid">
+                <div class="amount-label">Montant Payé</div>
+                <div class="amount-value"><%= payment.amountPaid.toFixed(2) %> DA</div>
+                <div class="amount-subtitle"><%= payment.completionPercentage %>% complet</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="amount-display amount-remaining">
+                <div class="amount-label">Montant Restant</div>
+                <div class="amount-value"><%= payment.amountRemaining.toFixed(2) %> DA</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enhanced Progress bar -->
+          <div class="mt-4">
+            <div class="progress payment-progress">
+              <div class="progress-bar bg-success"
+                   role="progressbar"
+                   style="width: <%= payment.completionPercentage %>%"
+                   aria-valuenow="<%= payment.completionPercentage %>"
+                   aria-valuemin="0"
+                   aria-valuemax="100">
+                <%= payment.completionPercentage %>%
+              </div>
+            </div>
+            <div class="text-center mt-2">
+              <small class="text-muted">Progression du paiement</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced Transaction History -->
+      <div class="payment-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="bi bi-clock-history me-2"></i>Historique des Transactions
+          </h5>
+          <% if(payment.status !== 'complete' && payment.status !== 'cancelled') { %>
+            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+              <i class="bi bi-plus-circle me-1"></i>Nouvelle Transaction
+            </button>
+          <% } %>
+        </div>
+        <div class="card-body">
+          <% if(payment.transactions.length === 0) { %>
+            <div class="text-center py-5">
+              <i class="bi bi-clock-history fs-1 text-muted mb-3"></i>
+              <p class="text-muted">Aucune transaction enregistrée</p>
+            </div>
+          <% } else { %>
+            <% for(let transaction of payment.transactions) { %>
+              <div class="transaction-item">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <div class="transaction-amount">
+                      <%= transaction.amount.toFixed(2) %> DA
+                    </div>
+                    <div class="transaction-date">
+                      <%= moment(transaction.date).format('DD/MM/YYYY HH:mm') %>
+                    </div>
+                    <div class="transaction-method">
+                      <% if(transaction.paymentMethod === 'cash') { %>
+                        <i class="bi bi-cash"></i> Espèces
+                      <% } else if(transaction.paymentMethod === 'check') { %>
+                        <i class="bi bi-credit-card"></i> Chèque
+                      <% } else if(transaction.paymentMethod === 'transfer') { %>
+                        <i class="bi bi-bank"></i> Virement
+                      <% } else { %>
+                        <i class="bi bi-question-circle"></i> Autre
+                      <% } %>
+                    </div>
+                    <% if(transaction.reference) { %>
+                      <div class="transaction-reference">
+                        Réf: <%= transaction.reference %>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div class="text-end">
+                    <% if(transaction.recordedBy) { %>
+                      <small class="text-muted">
+                        Par: <%= transaction.recordedBy.firstname %> <%= transaction.recordedBy.lastname %>
+                      </small>
+                    <% } %>
+                    <% if(transaction.notes) { %>
+                      <div class="mt-2">
+                        <small class="text-muted"><%= transaction.notes %></small>
+                      </div>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Enhanced Notes Section -->
+      <div class="payment-card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-journal-text me-2"></i>Notes
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/payments/<%= payment._id %>/notes?_method=PUT">
+            <div class="mb-3">
+              <textarea class="form-control" name="notes" rows="4" placeholder="Ajoutez des notes concernant ce paiement..."><%= payment.notes || '' %></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-save me-1"></i>Enregistrer les Notes
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhanced Status and Actions Sidebar -->
+    <div class="col-lg-4">
+      <!-- Enhanced Status Card -->
+      <div class="status-card mb-4 <%= payment.status === 'complete' ? 'status-complete' : payment.status === 'partial' ? 'status-partial' : payment.status === 'pending' ? 'status-pending' : 'status-cancelled' %>">
+        <% if(payment.status === 'complete') { %>
+          <div class="status-icon text-success">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <div class="status-title text-success">Paiement Complet</div>
+          <div class="status-description">Le paiement a été entièrement réglé</div>
+        <% } else if(payment.status === 'partial') { %>
+          <div class="status-icon text-warning">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+          <div class="status-title text-warning">Paiement Partiel</div>
+          <div class="status-description">Reste à payer: <strong><%= payment.amountRemaining.toFixed(2) %> DA</strong></div>
+        <% } else if(payment.status === 'cancelled') { %>
+          <div class="status-icon text-secondary">
+            <i class="bi bi-x-circle-fill"></i>
+          </div>
+          <div class="status-title text-secondary">Paiement Annulé</div>
+          <div class="status-description">Ce paiement a été annulé</div>
+        <% } else { %>
+          <div class="status-icon text-info">
+            <i class="bi bi-clock-fill"></i>
+          </div>
+          <div class="status-title text-info">En Attente</div>
+          <div class="status-description">Aucun paiement enregistré</div>
+        <% } %>
+      </div>
+
+      <!-- Enhanced Actions Card -->
+      <div class="payment-card">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="bi bi-gear me-2"></i>Actions
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <% if(payment.status !== 'complete' && payment.status !== 'cancelled') { %>
+              <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                <i class="bi bi-cash me-2"></i>Enregistrer Paiement
+              </button>
+            <% } %>
+            
+            <a href="/surgeries/<%= payment.surgery._id %>" class="btn btn-outline-primary">
+              <i class="bi bi-clipboard-pulse me-2"></i>Voir Chirurgie
+            </a>
+            
+            <a href="/payments/surgeon/<%= payment.surgeon._id %>" class="btn btn-outline-info">
+              <i class="bi bi-person me-2"></i>Autres Paiements Chirurgien
+            </a>
+            
+            <% if(payment.status !== 'cancelled' && permissions.isAdmin) { %>
+              <form method="POST" action="/payments/<%= payment._id %>/cancel" onsubmit="return confirm('Voulez-vous vraiment annuler ce paiement ?');">
+                <button type="submit" class="btn btn-outline-danger w-100">
+                  <i class="bi bi-x-circle me-2"></i>Annuler Paiement
+                </button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metadata Card -->
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">Informations Système</h6>
+        </div>
+        <div class="card-body">
+          <small class="text-muted d-block mb-2">
+            <strong>Créé le:</strong><br>
+            <%= moment(payment.createdAt).format('DD/MM/YYYY HH:mm:ss') %>
+          </small>
+          <small class="text-muted d-block">
+            <strong>Dernière mise à jour:</strong><br>
+            <%= moment(payment.updatedAt).format('DD/MM/YYYY HH:mm:ss') %>
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal fade" id="recordPaymentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/payments/<%= payment._id %>/record">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">
+            <i class="bi bi-cash me-2"></i>Enregistrer un Paiement
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <strong>Montant restant:</strong> <%= payment.amountRemaining.toFixed(2) %> DA
+          </div>
+
+          <div class="mb-3">
+            <label for="amount" class="form-label">Montant <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="number" 
+                     class="form-control" 
+                     id="amount" 
+                     name="amount" 
+                     step="0.01" 
+                     min="0.01"
+                     max="<%= payment.amountRemaining %>"
+                     value="<%= payment.amountRemaining.toFixed(2) %>"
+                     required>
+              <span class="input-group-text">DA</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="paymentMethod" class="form-label">Méthode de paiement</label>
+            <select name="paymentMethod" id="paymentMethod" class="form-select">
+              <option value="cash">Espèces</option>
+              <option value="check">Chèque</option>
+              <option value="transfer">Virement</option>
+              <option value="other">Autre</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="reference" class="form-label">Référence</label>
+            <input type="text" class="form-control" id="reference" name="reference">
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle me-1"></i>Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

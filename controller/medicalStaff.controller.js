@@ -101,9 +101,21 @@ module.exports.showMedicalStaff = async (req, res) => {
         .status(404)
         .render("error", { title: "Erreur", error: "Personnel non trouvé" });
     }
+    
+    // Fetch surgeries where this medical staff member is involved
+    const Surgery = require("../models/Surgery");
+    const surgeries = await Surgery.find({
+      "medicalStaff.staff": req.params.id
+    })
+      .populate("patient")
+      .populate("surgeon")
+      .populate("prestation")
+      .sort({ beginDateTime: -1 });
+    
     res.render("medicalStaff/show", {
       title: `Détails: ${staff.firstName} ${staff.lastName}`,
       staff,
+      surgeries,
     });
   } catch (error) {
     res.status(500).render("error", { title: "Erreur", error });

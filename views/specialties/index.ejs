@@ -1,101 +1,130 @@
 <% layout('layouts/boilerplate') %>
-<% if (success) { %>
-  <div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="bi bi-check-circle me-2"></i>
-    <%= success %>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-<% } %>
-<% if (error) { %>
-  <div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="bi bi-exclamation-triangle me-2"></i>
-    <%= error %>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-<% } %>
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h3 class="mb-0">Gestion des Spécialités</h3>
-    <p class="text-muted">Configuration des spécialités médicales</p>
-  </div>
-  <a href="/specialties/new" class="btn btn-primary">
-    <i class="bi bi-plus-circle me-2"></i>Nouvelle Spécialité
-  </a>
+<!-- views/specialties/index.ejs -->
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Spécialités</h1>
+                <p class="page-subtitle">Configuration et gestion des spécialités médicales</p>
+            </div>
+            <a href="/specialties/new" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouvelle Spécialité
+            </a>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <% if (specialties.length > 0) { %>
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead class="table-light">
-          <tr>
-            <th>Code</th>
-            <th>Nom</th>
-            <th>Date création</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% specialties.forEach(specialty => { %>
-          <tr>
-            <td><strong><%= specialty.code %></strong></td>
-            <td>
-              <div class="d-flex align-items-center">
-                <i class="bi bi-award fa-2x text-primary me-3"></i>
-                <div>
-                  <div class="fw-bold"><%= specialty.name %></div>
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Nom, code ou description de la spécialité..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/specialties" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
                 </div>
-              </div>
-            </td>
-            <td><%= moment(specialty.createdAt).format('DD/MM/YYYY') %></td>
-            <td>
-              <div class="btn-group" role="group">
-                <a
-                  href="/specialties/<%= specialty._id %>/edit"
-                  class="btn btn-sm btn-outline-warning"
-                  title="Modifier"
-                >
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  onclick="deleteSpecialty('<%= specialty._id %>')"
-                  title="Supprimer"
-                >
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-          <% }); %>
-        </tbody>
-      </table>
+            </div>
+        </form>
     </div>
-    <% } else { %>
-    <div class="text-center py-5">
-      <i class="bi bi-award fa-3x text-muted mb-3"></i>
-      <h5 class="text-muted">Aucune spécialité trouvée</h5>
-      <p class="text-muted">Commencez par ajouter une spécialité</p>
-      <a href="/specialties/new" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Ajouter la première spécialité
-      </a>
+
+    <!-- Liste des spécialités -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Spécialités
+                <span class="badge bg-light text-primary ms-2"><%= specialties.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (specialties.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Spécialité</th>
+                                <th>Description</th>
+                                <th>Créé le</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% specialties.forEach(specialty => { %>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark fw-bold"><%= specialty.code %></span>
+                                    </td>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-award"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= specialty.name %></h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <% if (specialty.description) { %>
+                                            <%= specialty.description.length > 50 ? specialty.description.substring(0, 50) + '...' : specialty.description %>
+                                        <% } else { %>
+                                            <span class="text-muted">Non spécifiée</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <%= typeof moment !== 'undefined' ? moment(specialty.createdAt).format('DD/MM/YYYY') : new Date(specialty.createdAt).toLocaleDateString('fr-FR') %>
+                                    </td>
+                                    <td>
+                                        <div class="material-actions">
+                                            <a href="/specialties/<%= specialty._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteSpecialty('<%= specialty._id %>')" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-award"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune spécialité trouvée</h5>
+                    <p class="empty-description">Commencez par ajouter des spécialités médicales</p>
+                    <a href="/specialties/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Ajouter la première spécialité
+                    </a>
+                </div>
+            <% } %>
+        </div>
     </div>
-    <% } %>
-  </div>
 </div>
 
 <script>
-  function deleteSpecialty(id) {
-    if (
-      confirmDelete("Êtes-vous sûr de vouloir supprimer cette spécialité ?")
-    ) {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "/specialties/" + id + "?_method=DELETE";
-      document.body.appendChild(form);
-      form.submit();
+function deleteSpecialty(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette spécialité ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/specialties/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
     }
-  }
+}
 </script>

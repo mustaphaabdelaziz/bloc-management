@@ -1,211 +1,130 @@
 <% layout('layouts/boilerplate') %>
-
 <!-- views/surgeries/index.ejs -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="mb-0">Gestion des Chirurgies</h3>
-        <p class="text-muted">Planification et suivi des interventions chirurgicales</p>
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Chirurgies</h1>
+                <p class="page-subtitle">Planification et suivi des interventions chirurgicales</p>
+            </div>
+            <a href="/surgeries/new" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouvelle Chirurgie
+            </a>
+        </div>
     </div>
-    <a href="/surgeries/new" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
-    </a>
 </div>
 
-<!-- Filtres -->
-<div class="card mb-4">
-    <div class="card-body">
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
         <form method="GET" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Statut</label>
-                <select name="status" class="form-select">
-                    <option value="">Tous les statuts</option>
-                    <option value="planned" <%= statusFilter === 'planned' ? 'selected' : '' %>>Planifiée</option>
-                    <option value="urgent" <%= statusFilter === 'urgent' ? 'selected' : '' %>>Urgente</option>
-                    <option value="cancelled" <%= statusFilter === 'cancelled' ? 'selected' : '' %>>Annulée</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Date</label>
-                <input type="date" class="form-control" name="date" value="<%= dateFilter %>">
+            <div class="col-md-8">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Code, patient, chirurgien..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
             </div>
             <div class="col-md-4">
                 <label class="form-label">&nbsp;</label>
-                <div class="d-flex">
-                    <button type="submit" class="btn btn-outline-primary me-2">
-                        <i class="bi bi-funnel me-1"></i>Filtrer
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
                     </button>
                     <a href="/surgeries" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                        <i class="bi bi-arrow-clockwise"></i>
                     </a>
                 </div>
             </div>
         </form>
     </div>
-</div>
 
-<!-- Liste des chirurgies -->
-<div class="card">
-    <div class="card-body">
-        <% if (surgeries.length > 0) { %>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Code</th>
-                            <th>Date/Heure</th>
-                            <th>Patient</th>
-                            <th>Chirurgien</th>
-                            <th>Prestation</th>
-                            <th>Durée</th>
-                            <th>Statut</th>
-                            <th>Honoraires</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% surgeries.forEach(surgery => { %>
+    <!-- Liste des chirurgies -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Chirurgies
+                <span class="badge bg-light text-primary ms-2"><%= surgeries.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (surgeries.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
                             <tr>
-                                <td><strong><%= surgery.code %></strong></td>
-                                <td>
-                                    <div>
-                                        <strong><%= moment(surgery.beginDateTime).format('DD/MM/YYYY') %></strong>
-                                    </div>
-                                    <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
-                                </td>
-                                <td>
-                                    <div>
-                                        <%= surgery.patient.firstName %> <%= surgery.patient.lastName %>
-                                    </div>
-                                    <small class="text-muted"><%= surgery.patient.code %></small>
-                                </td>
-                                <td>
-                                    Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info"><%= surgery.prestation.designation %></span>
-                                    <div class="small text-muted">
-                                        Prévue: <%= surgery.prestation.duration %> min
-                                    </div>
-                                </td>
-                                <td>
-                                    <% if (surgery.endDateTime) { %>
-                                        <% const actualDuration = Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000); %>
-                                        <span class="<%= actualDuration > surgery.prestation.duration ? 'text-warning' : 'text-success' %>">
-                                            <%= actualDuration %> min
-                                        </span>
-                                        <% if (actualDuration > surgery.prestation.duration) { %>
-                                            <small class="text-warning d-block">
-                                                <i class="bi bi-clock-history"></i> +<%= actualDuration - surgery.prestation.duration %> min
-                                            </small>
-                                        <% } %>
-                                    <% } else { %>
-                                        <span class="text-muted">-</span>
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <% if (surgery.status === 'planned') { %>
-                                        <span class="badge bg-info">Planifiée</span>
-                                    <% } else if (surgery.status === 'urgent') { %>
-                                        <span class="badge bg-danger">Urgente</span>
-                                    <% } else { %>
-                                        <span class="badge bg-secondary">Annulée</span>
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <% 
-                                    let surgeonFee = 0;
-                                    if (surgery.surgeon && surgery.prestation) {
-                                        if (surgery.surgeon.contractType === 'allocation') {
-                                            const allocationRate = surgery.surgeon.allocationRate || 0;
-                                            const durationH = (surgery.actualDuration || 0) / 60;
-                                            surgeonFee = allocationRate * durationH;
-                                        } else {
-                                            // Percentage contract
-                                            const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT;
-                                            const urgentRate = surgery.status === 'urgent' ? (surgery.prestation.urgentFeePercentage || 0) : 0;
-                                            const effectivePrice = basePrice * (1 + urgentRate);
-                                            const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                            }, 0) || 0;
-                                            const surgeonRate = (surgery.surgeon.percentageRate || 45) / 100;
-                                            const surgeonBase = (effectivePrice - patientMaterials) * surgeonRate;
-                                            // Deduct extra fees from surgeon share
-                                            let extraFeeDeduction = 0;
-                                            if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                const extraDuration = surgery.actualDuration - surgery.prestation.duration;
-                                                const durationUnit = surgery.prestation.exceededDurationUnit || 15;
-                                                const extraUnits = Math.ceil(extraDuration / durationUnit);
-                                                extraFeeDeduction = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
-                                            }
-                                            surgeonFee = surgeonBase - extraFeeDeduction;
-                                        }
-                                    }
-                                    %>
-                                    <% if (surgeonFee > 0) { %>
-                                        <strong class="text-success">
-                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgeonFee) %>
-                                        </strong>
-                                    <% } else { %>
-                                        <span class="text-muted">-</span>
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="/surgeries/<%= surgery._id %>" class="btn btn-sm btn-outline-primary" title="Voir">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-sm btn-outline-warning" title="Modifier">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form method="POST" action="/surgeries/<%= surgery._id %>/calculate-fees" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Calculer honoraires">
-                                                <i class="bi bi-calculator"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+                                <th>Code</th>
+                                <th>Patient</th>
+                                <th>Chirurgien</th>
+                                <th>Prestation</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
                             </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination -->
-            <% if (totalPages > 1) { %>
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <% if (hasPrevPage) { %>
-                            <li class="page-item">
-                                <a class="page-link" href="?page=<%= currentPage - 1 %>&status=<%= statusFilter %>&date=<%= dateFilter %>">Précédent</a>
-                            </li>
-                        <% } %>
-                        
-                        <% for (let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
-                                <a class="page-link" href="?page=<%= i %>&status=<%= statusFilter %>&date=<%= dateFilter %>"><%= i %></a>
-                            </li>
-                        <% } %>
-                        
-                        <% if (hasNextPage) { %>
-                            <li class="page-item">
-                                <a class="page-link" href="?page=<%= currentPage + 1 %>&status=<%= statusFilter %>&date=<%= dateFilter %>">Suivant</a>
-                            </li>
-                        <% } %>
-                    </ul>
-                </nav>
+                        </thead>
+                        <tbody>
+                            <% surgeries.forEach(surgery => { %>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark fw-bold"><%= surgery.code %></span>
+                                    </td>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= surgery.patient.firstName %> <%= surgery.patient.lastName %></h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                                    </td>
+                                    <td>
+                                        <%= surgery.prestation.designation %>
+                                    </td>
+                                    <td>
+                                        <%= typeof moment !== 'undefined' ? moment(surgery.beginDateTime).format('DD/MM/YYYY') : new Date(surgery.beginDateTime).toLocaleDateString('fr-FR') %>
+                                    </td>
+                                    <td>
+                                        <% if (surgery.status === 'planned') { %>
+                                            <span class="badge bg-secondary">Planifiée</span>
+                                        <% } else if (surgery.status === 'urgent') { %>
+                                            <span class="badge bg-danger">Urgente</span>
+                                        <% } else { %>
+                                            <span class="badge bg-dark">Annulée</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="material-actions">
+                                            <a href="/surgeries/<%= surgery._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune chirurgie trouvée</h5>
+                    <p class="empty-description">Commencez par programmer des interventions chirurgicales</p>
+                    <a href="/surgeries/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Créer une chirurgie
+                    </a>
+                </div>
             <% } %>
-        <% } else { %>
-            <div class="text-center py-5">
-                <i class="bi bi-scissors fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Aucune chirurgie trouvée</h5>
-                <p class="text-muted">Commencez par programmer une chirurgie</p>
-                <a href="/surgeries/new" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
-                </a>
-            </div>
-        <% } %>
+        </div>
     </div>
 </div>
-
 
 

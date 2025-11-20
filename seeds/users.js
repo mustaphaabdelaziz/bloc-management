@@ -4,8 +4,8 @@ require('dotenv').config();
 
 const seedUsers = async () => {
     try {
-        console.log('Connecting to:', process.env.MONGODB_URI);
-        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('Connecting to:', process.env.DB_URL);
+        await mongoose.connect(process.env.DB_URL);
         console.log('Connected to database');
 
         // Clear existing users
@@ -89,17 +89,13 @@ module.exports = seedUsers;
 
 // Run if called directly
 if (require.main === module) {
-    mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/operating-room-management')
-        .then(() => {
-            console.log('Connected to MongoDB');
-            return seedUsers();
-        })
+    seedUsers()
         .then(() => {
             console.log('Seeding completed');
             process.exit(0);
         })
-        .catch((error) => {
-            console.error('Seeding failed:', error);
+        .catch(err => {
+            console.error('Error:', err);
             process.exit(1);
         });
 }

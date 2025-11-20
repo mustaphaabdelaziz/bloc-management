@@ -19,7 +19,7 @@ module.exports.patientList = async (req, res) => {
       : {};
 
     const patients = await Patient.find(searchQuery)
-      .sort({ createdAt: -1 })
+      .sort({ lastName: 1 })
       .skip(skip)
       .limit(limit);
 

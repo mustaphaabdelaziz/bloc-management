@@ -11,10 +11,23 @@ module.exports.prestationList = async (req, res) => {
       .populate("specialty")
       .sort({ designation: 1 });
 
+    // Check if user is headDepart or assistante (without pricing permissions)
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canViewPricing = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+
+    // Filter out pricing data for headDepart and assistante users
+    const filteredPrestations = canViewPricing ? prestations : prestations.map(p => ({
+      ...p.toObject(),
+      priceHT: undefined,
+      tva: undefined,
+      exceededDurationFee: undefined,
+      urgentFeePercentage: undefined
+    }));
+
     res.render("prestations/index", {
       title: "Gestion des Prestations",
-      prestations,
-     
+      prestations: filteredPrestations,
+      canViewPricing,
     });
   } catch (error) {
     console.error("Error in prestationList:", error);
@@ -49,21 +62,14 @@ module.exports.renderPrestationForm = async (req, res) => {
 module.exports.createPrestation = async (req, res) => {
   try {
     // Validate required fields
-    const { code, designation, specialty, priceHT, duration } = req.body;
+    const { designation, specialty, priceHT, duration } = req.body;
 
-    if (!code || !designation || !specialty || !priceHT || !duration) {
+    if (!designation || !specialty || !priceHT || !duration) {
       throw new Error("Tous les champs obligatoires doivent être remplis");
     }
 
-    // Check if code already exists
-    const existingPrestation = await Prestation.findOne({ code });
-    if (existingPrestation) {
-      throw new Error("Ce code de prestation existe déjà");
-    }
-
-    // Create new prestation with proper data types
+    // Create new prestation with proper data types (code will be auto-generated)
     const prestationData = {
-      code: code.trim().toUpperCase(),
       designation: designation.trim(),
       specialty,
       priceHT: parseFloat(priceHT),
@@ -149,23 +155,8 @@ module.exports.updatePrestation = async (req, res) => {
       });
     }
 
-    // Check if new code conflicts with another prestation
-    if (req.body.code && req.body.code !== existingPrestation.code) {
-      const codeExists = await Prestation.findOne({
-        code: req.body.code.trim().toUpperCase(),
-        _id: { $ne: prestationId },
-      });
-
-      if (codeExists) {
-        throw new Error("Ce code de prestation est déjà utilisé");
-      }
-    }
-
-    // Prepare update data with proper data types
+    // Prepare update data with proper data types (exclude code as it's auto-generated)
     const updateData = {
-      code: req.body.code
-        ? req.body.code.trim().toUpperCase()
-        : existingPrestation.code,
       designation: req.body.designation
         ? req.body.designation.trim()
         : existingPrestation.designation,
@@ -275,6 +266,10 @@ module.exports.showPrestation = async (req, res) => {
       });
     }
 
+    // Check if user can view pricing
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canViewPricing = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+
     // Fetch related surgeries with populated references
     const surgeries = await Surgery.find({ prestation: prestationId })
       .populate("patient", "firstName lastName")
@@ -319,7 +314,7 @@ module.exports.showPrestation = async (req, res) => {
       surgeries,
       stats,
       moment,
-      
+      canViewPricing,
     });
   } catch (error) {
     console.error("Error in showPrestation:", error);
@@ -329,5 +324,153 @@ module.exports.showPrestation = async (req, res) => {
         error.message ||
         "Erreur lors du chargement des détails de la prestation",
     });
+  }
+};
+
+// Import prestations from Excel
+module.exports.importPrestations = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.redirect("/prestations?error=Aucun fichier uploadé");
+    }
+
+    const XLSX = require('xlsx');
+
+    // Parse Excel file
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+    if (!data || data.length === 0) {
+      return res.redirect("/prestations?error=Le fichier Excel est vide");
+    }
+
+    // Get all specialties for lookup
+    const specialties = await Specialty.find();
+    const specialtyMap = {};
+    specialties.forEach(s => {
+      specialtyMap[s.name.toLowerCase().trim()] = s._id;
+    });
+
+    const results = {
+      imported: 0,
+      failed: 0,
+      errors: []
+    };
+
+    // Process each row
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const rowNum = i + 2; // +2 because Excel is 1-indexed and first row is header
+
+      try {
+        // Normalize column names (case-insensitive)
+        const normalizedRow = {};
+        Object.keys(row).forEach(key => {
+          normalizedRow[key.toLowerCase().trim()] = row[key];
+        });
+
+        // Extract fields with flexible column names
+        const designation = normalizedRow['désignation'] || normalizedRow['designation'] || '';
+        const specialtyName = normalizedRow['spécialité'] || normalizedRow['specialite'] || '';
+        const priceHT = normalizedRow['prix ht (da)'] || normalizedRow['prix ht'] || normalizedRow['prixht'] || '';
+        const tvaInput = normalizedRow['tva (%)'] || normalizedRow['tva'] || '9';
+        const duration = normalizedRow['durée (minutes)'] || normalizedRow['duree'] || normalizedRow['durée'] || '';
+        const exceededDurationUnit = normalizedRow['unité dépassement (min)'] || normalizedRow['unite depassement'] || '15';
+        const exceededDurationFee = normalizedRow['frais dépassement (da)'] || normalizedRow['frais depassement'] || '0';
+        const urgentFeeInput = normalizedRow['frais urgents (%)'] || normalizedRow['frais urgents'] || '0';
+        const code = normalizedRow['code'] || '';
+
+        // Validation
+        const errors = [];
+
+        if (!designation || designation.trim() === '') {
+          errors.push('Désignation manquante');
+        }
+
+        if (!specialtyName || specialtyName.trim() === '') {
+          errors.push('Spécialité manquante');
+        } else if (!specialtyMap[specialtyName.toLowerCase().trim()]) {
+          errors.push(`Spécialité "${specialtyName}" non trouvée`);
+        }
+
+        if (!priceHT || isNaN(parseFloat(priceHT))) {
+          errors.push('Prix HT invalide ou manquant');
+        } else if (parseFloat(priceHT) < 0) {
+          errors.push('Prix HT doit être positif');
+        }
+
+        if (!duration || isNaN(parseInt(duration))) {
+          errors.push('Durée invalide ou manquante');
+        } else if (parseInt(duration) <= 0) {
+          errors.push('Durée doit être positive');
+        }
+
+        if (isNaN(parseFloat(tvaInput))) {
+          errors.push('TVA invalide');
+        }
+
+        if (errors.length > 0) {
+          results.failed++;
+          results.errors.push({
+            row: rowNum,
+            designation: designation || 'N/A',
+            messages: errors
+          });
+          continue;
+        }
+
+        // Check for duplicate code (if provided)
+        if (code && code.trim() !== '') {
+          const existingCode = await Prestation.findOne({ code: code.trim() });
+          if (existingCode) {
+            results.failed++;
+            results.errors.push({
+              row: rowNum,
+              designation: designation,
+              messages: [`Code "${code}" existe déjà`]
+            });
+            continue;
+          }
+        }
+
+        // Prepare prestation data
+        const prestationData = {
+          code: code && code.trim() !== '' ? code.trim() : undefined, // Let schema auto-generate if empty
+          designation: designation.trim(),
+          specialty: specialtyMap[specialtyName.toLowerCase().trim()],
+          priceHT: parseFloat(priceHT),
+          tva: parseFloat(tvaInput) / 100, // Convert percentage to decimal
+          duration: parseInt(duration),
+          exceededDurationUnit: parseInt(exceededDurationUnit) || 15,
+          exceededDurationFee: parseFloat(exceededDurationFee) || 0,
+          urgentFeePercentage: Math.min(1, Math.max(0, parseFloat(urgentFeeInput) / 100)) // Convert percentage to decimal, clamp 0-1
+        };
+
+        // Create and save prestation
+        const prestation = new Prestation(prestationData);
+        await prestation.save();
+        results.imported++;
+
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          row: rowNum,
+          designation: row.designation || row.désignation || 'N/A',
+          messages: [error.message]
+        });
+      }
+    }
+
+    // Render results view
+    res.render("prestations/import-results", {
+      title: "Résultats de l'Import",
+      results,
+      totalRows: data.length
+    });
+
+  } catch (error) {
+    console.error("Error in importPrestations:", error);
+    res.redirect(`/prestations?error=${encodeURIComponent('Erreur lors du traitement du fichier: ' + error.message)}`);
   }
 };

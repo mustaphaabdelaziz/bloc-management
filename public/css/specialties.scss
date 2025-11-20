@@ -1,0 +1,900 @@
+// Specialties Page Styles
+// Modern, responsive design for specialty management
+
+// Color Variables
+$primary-color: #0d6efd;
+$secondary-color: #6c757d;
+$success-color: #198754;
+$warning-color: #fd7e14;
+$danger-color: #dc3545;
+$info-color: #0dcaf0;
+$light-color: #f8f9fa;
+$dark-color: #212529;
+
+// Spacing and Layout
+$page-padding: 2rem;
+$card-radius: 16px;
+$card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+$card-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+
+// Page Header Section
+.page-header {
+  background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 10%) 100%);
+  color: white;
+  padding: 3rem $page-padding;
+  border-radius: $card-radius;
+  margin-bottom: 2rem;
+  box-shadow: $card-shadow;
+
+  .page-title {
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin-bottom: 0;
+    }
+  }
+
+  .page-actions {
+    .btn {
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 2rem 1.5rem;
+
+    .page-title h1 {
+      font-size: 2rem;
+    }
+
+    .d-flex {
+      flex-direction: column;
+      gap: 1.5rem;
+      text-align: center;
+    }
+  }
+}
+
+// Statistics Section
+.statistics-section {
+  margin-bottom: 2rem;
+
+  .stats-container {
+    padding: 0 $page-padding;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: $card-radius;
+    padding: 2rem;
+    box-shadow: $card-shadow;
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, $primary-color, $info-color);
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: $card-shadow-hover;
+    }
+
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: white;
+    }
+
+    .stat-content {
+      .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, $primary-color, $info-color);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .stat-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: $dark-color;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-description {
+        font-size: 0.9rem;
+        color: $secondary-color;
+      }
+    }
+
+    // Individual card colors
+    &.total-specialties {
+      &::before {
+        background: linear-gradient(90deg, $primary-color, darken($primary-color, 10%));
+      }
+
+      .stat-icon {
+        background: linear-gradient(135deg, $primary-color, darken($primary-color, 10%));
+      }
+    }
+
+    &.active-specialties {
+      &::before {
+        background: linear-gradient(90deg, $success-color, darken($success-color, 10%));
+      }
+
+      .stat-icon {
+        background: linear-gradient(135deg, $success-color, darken($success-color, 10%));
+      }
+    }
+
+    &.recent-specialties {
+      &::before {
+        background: linear-gradient(90deg, $info-color, darken($info-color, 10%));
+      }
+
+      .stat-icon {
+        background: linear-gradient(135deg, $info-color, darken($info-color, 10%));
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .stats-container {
+      padding: 0 1rem;
+    }
+
+    .stat-card {
+      padding: 1.5rem;
+
+      .stat-number {
+        font-size: 2rem;
+      }
+
+      .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+      }
+    }
+  }
+}
+
+// Search and Filters Section
+.search-filters-section {
+  margin-bottom: 2rem;
+
+  .filters-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    margin: 0 $page-padding;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, $primary-color 0%, $info-color 50%, $success-color 100%);
+    }
+
+    .filters-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+      .filter-header-content {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        .filter-icon {
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, $primary-color, $info-color);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.25rem;
+          box-shadow: 0 4px 12px rgba($primary-color, 0.2);
+        }
+
+        .filter-info {
+          .filters-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: $dark-color;
+            margin-bottom: 0.25rem;
+          }
+
+          .filters-subtitle {
+            font-size: 0.95rem;
+            color: $secondary-color;
+            margin-bottom: 0;
+          }
+        }
+      }
+
+      .toggle-filters {
+        color: $secondary-color;
+        border: none;
+        background: none;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-size: 1.1rem;
+
+        &:hover {
+          background: rgba($primary-color, 0.1);
+          color: $primary-color;
+        }
+      }
+    }
+
+    .filters-content {
+      .search-card {
+        background: linear-gradient(135deg, rgba($light-color, 0.8), rgba($light-color, 0.4));
+        border-radius: 16px;
+        padding: 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, $primary-color, $info-color);
+        }
+
+        .search-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          background: white;
+          border-radius: 12px;
+          border: 2px solid rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+          overflow: hidden;
+
+          &:focus-within {
+            border-color: $primary-color;
+            box-shadow: 0 0 0 4px rgba($primary-color, 0.1);
+            transform: translateY(-1px);
+          }
+
+          .search-icon-wrapper {
+            padding: 0 1.25rem;
+            color: $secondary-color;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .search-input-modern {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 1rem 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: $dark-color;
+            background: transparent;
+
+            &::placeholder {
+              color: $secondary-color;
+              font-weight: 400;
+            }
+
+            &:focus {
+              box-shadow: none;
+            }
+          }
+
+          .search-actions {
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+
+            .search-clear-btn {
+              color: $secondary-color;
+              border: none;
+              background: none;
+              padding: 0.5rem;
+              border-radius: 50%;
+              transition: all 0.2s ease;
+              font-size: 1.1rem;
+
+              &:hover {
+                background: rgba($danger-color, 0.1);
+                color: $danger-color;
+                transform: scale(1.1);
+              }
+            }
+          }
+        }
+
+        .search-hint {
+          margin-top: 1rem;
+          text-align: center;
+        }
+      }
+
+      .filter-controls-row {
+        display: flex;
+        gap: 2rem;
+        align-items: flex-start;
+
+        @media (max-width: 768px) {
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .filter-control-item {
+          flex: 1;
+
+          .filter-control-label {
+            display: block;
+            font-weight: 600;
+            color: $dark-color;
+            margin-bottom: 0.75rem;
+            font-size: 0.95rem;
+          }
+
+          .filter-select-wrapper {
+            .filter-select-modern {
+              width: 100%;
+              padding: 0.875rem 1rem;
+              border-radius: 12px;
+              border: 2px solid rgba(0, 0, 0, 0.08);
+              background: white;
+              font-size: 0.95rem;
+              font-weight: 500;
+              color: $dark-color;
+              transition: all 0.3s ease;
+              cursor: pointer;
+
+              &:focus {
+                outline: none;
+                border-color: $primary-color;
+                box-shadow: 0 0 0 4px rgba($primary-color, 0.1);
+              }
+
+              option {
+                padding: 0.5rem;
+                background: white;
+                color: $dark-color;
+              }
+            }
+          }
+
+          .quick-filters-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+
+            .quick-filter-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.5rem;
+              padding: 0.75rem 1.25rem;
+              border-radius: 12px;
+              border: 2px solid rgba($info-color, 0.2);
+              background: rgba($info-color, 0.05);
+              color: $info-color;
+              font-weight: 600;
+              font-size: 0.9rem;
+              transition: all 0.3s ease;
+              cursor: pointer;
+
+              &:hover {
+                background: $info-color;
+                color: white;
+                border-color: $info-color;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba($info-color, 0.2);
+              }
+
+              &.clear-all-btn {
+                border-color: rgba($danger-color, 0.2);
+                background: rgba($danger-color, 0.05);
+                color: $danger-color;
+
+                &:hover {
+                  background: $danger-color;
+                  border-color: $danger-color;
+                  box-shadow: 0 4px 12px rgba($danger-color, 0.2);
+                }
+              }
+
+              i {
+                font-size: 0.9rem;
+              }
+            }
+          }
+        }
+      }
+
+      .active-filters-display {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba($success-color, 0.05), rgba($success-color, 0.02));
+        border-radius: 12px;
+        border: 1px solid rgba($success-color, 0.1);
+
+        .active-filters-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 1rem;
+
+          i {
+            color: $success-color;
+            font-size: 1.1rem;
+          }
+
+          .active-filters-title {
+            font-weight: 600;
+            color: $dark-color;
+            margin-right: 0.5rem;
+          }
+
+          .active-filters-count {
+            background: $success-color;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+          }
+        }
+
+        .active-filters-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+
+          .filter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+
+            &.search-badge {
+              background: rgba($primary-color, 0.1);
+              color: $primary-color;
+              border: 1px solid rgba($primary-color, 0.2);
+            }
+
+            &.sort-badge {
+              background: rgba($secondary-color, 0.1);
+              color: $secondary-color;
+              border: 1px solid rgba($secondary-color, 0.2);
+            }
+
+            &.quick-badge {
+              background: rgba($success-color, 0.1);
+              color: $success-color;
+              border: 1px solid rgba($success-color, 0.2);
+            }
+
+            .badge-remove {
+              background: none;
+              border: none;
+              color: inherit;
+              padding: 0;
+              margin-left: 0.25rem;
+              border-radius: 50%;
+              width: 16px;
+              height: 16px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.8rem;
+              cursor: pointer;
+              transition: all 0.2s ease;
+
+              &:hover {
+                background: rgba(255, 255, 255, 0.2);
+                transform: scale(1.1);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .filters-container {
+      margin: 0 1rem;
+      padding: 1.5rem;
+
+      .filters-header {
+        .filter-header-content {
+          .filter-info {
+            .filters-title {
+              font-size: 1.25rem;
+            }
+          }
+        }
+      }
+
+      .filters-content {
+        .search-card {
+          padding: 1.5rem;
+
+          .search-input-wrapper {
+            .search-icon-wrapper {
+              padding: 0 1rem;
+            }
+
+            .search-input-modern {
+              font-size: 1rem;
+              padding: 0.875rem 0;
+            }
+          }
+        }
+
+        .filter-controls-row {
+          .filter-control-item {
+            .quick-filters-group {
+              .quick-filter-btn {
+                padding: 0.625rem 1rem;
+                font-size: 0.85rem;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Specialties Data Section
+.specialties-data-section {
+  .data-container {
+    padding: 0 $page-padding;
+  }
+
+  .table-responsive {
+    background: white;
+    border-radius: $card-radius;
+    box-shadow: $card-shadow;
+    overflow: hidden;
+  }
+
+  .specialty-table {
+    margin-bottom: 0;
+
+    .table-header {
+      background: linear-gradient(135deg, $light-color 0%, darken($light-color, 5%) 100%);
+      border: none;
+
+      th {
+        padding: 1.25rem 1rem;
+        font-weight: 700;
+        color: $dark-color;
+        border: none;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        i {
+          color: $primary-color;
+        }
+      }
+    }
+
+    .table-body {
+      .specialty-row {
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba($primary-color, 0.02);
+          transform: scale(1.01);
+        }
+
+        .specialty-code-cell {
+          .code-badge {
+            .badge {
+              font-size: 0.9rem;
+              padding: 0.5rem 0.75rem;
+              border-radius: 8px;
+              background: linear-gradient(135deg, $light-color, darken($light-color, 10%)) !important;
+              color: $dark-color !important;
+              border: 1px solid #dee2e6;
+            }
+          }
+        }
+
+        .specialty-info-cell {
+          .specialty-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, $warning-color, darken($warning-color, 10%));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+          }
+
+          .specialty-details {
+            .specialty-name {
+              font-size: 1.1rem;
+              margin-bottom: 0.25rem;
+            }
+
+            .specialty-description {
+              font-size: 0.85rem;
+              color: $secondary-color;
+            }
+          }
+        }
+
+        .description-cell {
+          .description-content {
+            max-width: 300px;
+          }
+        }
+
+        .created-cell {
+          .creation-info {
+            font-size: 0.9rem;
+          }
+        }
+
+        .actions-cell {
+          .action-buttons {
+            .action-btn {
+              border-radius: 8px;
+              padding: 0.5rem 0.75rem;
+              margin: 0 0.125rem;
+              transition: all 0.3s ease;
+              border: 2px solid;
+
+              &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+              }
+
+              &.btn-outline-warning:hover {
+                background: $warning-color;
+                border-color: $warning-color;
+              }
+
+              &.btn-outline-danger:hover {
+                background: $danger-color;
+                border-color: $danger-color;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    background: white;
+    border-radius: $card-radius;
+    box-shadow: $card-shadow;
+    padding: 4rem 2rem;
+    text-align: center;
+
+    .empty-state-icon {
+      font-size: 4rem;
+      color: $secondary-color;
+      opacity: 0.5;
+      margin-bottom: 1.5rem;
+    }
+
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: $dark-color;
+      margin-bottom: 1rem;
+    }
+
+    .empty-state-message {
+      font-size: 1rem;
+      color: $secondary-color;
+      margin-bottom: 2rem;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .empty-state-actions {
+      .btn {
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .data-container {
+      padding: 0 1rem;
+    }
+
+    .specialty-table {
+      .table-header th {
+        padding: 1rem 0.5rem;
+        font-size: 0.8rem;
+
+        &:not(.column-code):not(.column-specialty):not(.column-actions) {
+          display: none;
+        }
+      }
+
+      .specialty-row {
+        .specialty-info-cell {
+          .specialty-details {
+            .specialty-description {
+              display: block;
+            }
+          }
+        }
+
+        .actions-cell {
+          .action-buttons {
+            flex-direction: column;
+            gap: 0.25rem;
+
+            .action-btn {
+              width: 100%;
+              margin: 0;
+            }
+          }
+        }
+      }
+    }
+
+    .empty-state {
+      padding: 3rem 1.5rem;
+
+      .empty-state-icon {
+        font-size: 3rem;
+      }
+
+      .empty-state-title {
+        font-size: 1.25rem;
+      }
+    }
+  }
+
+  @media (max-width: 576px) {
+    .specialty-table {
+      .specialty-row {
+        .specialty-info-cell {
+          .specialty-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+          }
+
+          .specialty-details {
+            .specialty-name {
+              font-size: 1rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1200px) {
+  .page-header,
+  .filters-container,
+  .data-container {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .statistics-section .stats-container {
+    padding: 0 1rem;
+  }
+}
+
+// Animation Classes
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-card,
+.filters-container,
+.table-responsive,
+.empty-state {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+// Utility Classes
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

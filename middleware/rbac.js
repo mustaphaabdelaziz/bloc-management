@@ -33,17 +33,29 @@ function requireAny(...requiredPrivileges) {
   };
 }
 
-// Specific role middlewares (project uses 'medecin' for surgeons)
+// Specific role middlewares
 const ensureAdmin = requireAny('admin');
-const ensureSurgeon = requireAny('medecin');
-const ensureHeadChief = requireAny('chefBloc');
-const ensurePurchaser = requireAny('acheteur');
+const ensureDirection = requireAny('direction');
+const ensureHeadDepart = requireAny('headDepart');
+const ensureAssistante = requireAny('assistante');
+const ensureBuyer = requireAny('buyer');
 
-// Ownership guard for resource: allow admin and chefBloc; allow medecin only if linked to the resource
+// Combined role checks for common use cases
+const ensureAdminOrDirection = requireAny('admin', 'direction');
+const ensureManagementAccess = requireAny('admin', 'direction'); // Only admin/direction can manage (headDepart excluded)
+const ensureMaterialsAccess = requireAny('admin', 'buyer', 'headDepart'); // Can manage materials (admin, buyer, headDepart)
+const ensureViewPatients = requireAny('admin', 'direction', 'headDepart', 'assistante'); // Can view patients
+const ensureViewSurgeries = requireAny('admin', 'direction', 'headDepart', 'assistante'); // Can view surgeries
+const ensureViewMaterials = requireAny('admin', 'direction', 'headDepart', 'buyer'); // Can view materials
+const ensureViewPrestations = requireAny('admin', 'direction', 'headDepart'); // Can view prestations
+const ensureViewMedicalStaff = requireAny('admin', 'direction', 'headDepart'); // Can view medical staff
+const ensureViewSurgeons = requireAny('admin', 'direction', 'headDepart'); // Can view surgeons
+
+// Ownership guard for resource: allow admin and headDepart; allow direction only if linked to the resource
 // getResourceOwnerId may return an id or a Promise resolving to an id (ObjectId or string)
 function ensureOwnerOrRole(getResourceOwnerId, options = {}) {
   // options.allowedRoles could be used to expand bypass roles
-  const allowedRoles = options.allowedRoles || ['admin', 'chefBloc'];
+  const allowedRoles = options.allowedRoles || ['admin', 'headDepart'];
   return async (req, res, next) => {
     if (!req.isAuthenticated || !req.isAuthenticated()) {
       return sendUnauthorized(req, res, 'Vous devez être connecté', '/login');
@@ -55,8 +67,8 @@ function ensureOwnerOrRole(getResourceOwnerId, options = {}) {
       if (userPriv.includes(role)) return next();
     }
 
-    // If user is medecin (surgeon), check ownership
-    if (userPriv.includes('medecin')) {
+    // If user is direction, check ownership
+    if (userPriv.includes('direction')) {
       try {
         const ownerId = await Promise.resolve(getResourceOwnerId(req));
         if (!ownerId) {
@@ -72,7 +84,7 @@ function ensureOwnerOrRole(getResourceOwnerId, options = {}) {
           return next();
         }
 
-        return sendUnauthorized(req, res, 'Accès non autorisé - ressource appartenant à un autre chirurgien');
+        return sendUnauthorized(req, res, 'Accès non autorisé - vous ne pouvez accéder qu\'à vos propres ressources');
       } catch (err) {
         return sendUnauthorized(req, res, 'Erreur lors de la vérification des droits');
       }
@@ -85,9 +97,19 @@ function ensureOwnerOrRole(getResourceOwnerId, options = {}) {
 module.exports = {
   requireAny,
   ensureAdmin,
-  ensureSurgeon,
-  ensureHeadChief,
-  ensurePurchaser,
+  ensureDirection,
+  ensureHeadDepart,
+  ensureAssistante,
+  ensureBuyer,
+  ensureAdminOrDirection,
+  ensureManagementAccess,
+  ensureMaterialsAccess,
+  ensureViewPatients,
+  ensureViewSurgeries,
+  ensureViewMaterials,
+  ensureViewPrestations,
+  ensureViewMedicalStaff,
+  ensureViewSurgeons,
   ensureOwnerOrRole,
   sendUnauthorized,
 };

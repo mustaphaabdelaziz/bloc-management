@@ -1,103 +1,115 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/materials/new.ejs -->
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="bi bi-plus-circle me-2"></i>Nouveau Matériau
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/materials" onsubmit="console.log('Form data:', new FormData(this)); return true;">
-                    <div class="row">
-                    <div class="row">
-                      
-                        <div class="col-md-12">
-                            <div class="mb-3">
-                                <label for="category" class="form-label">Catégorie *</label>
-                                <select name="category" id="category" class="form-select" required>
-                                    <option value="">Sélectionner une catégorie</option>
-                                    <option value="consumable" <%= material.category === 'consumable' ? 'selected' : '' %>>
-                                        Consommable (jetable)
-                                    </option>
-                                    <option value="patient" <%= material.category === 'patient' ? 'selected' : '' %>>
-                                        Matériel patient (implant)
-                                    </option>
-                                </select>
-                                <div class="form-text">
-                                    <strong>Consommable :</strong> matériel à usage unique (gants, fils, etc.)<br>
-                                    <strong>Patient :</strong> matériel implanté ou attaché au patient (prothèses, plaques, etc.)
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="designation" class="form-label">Désignation *</label>
-                        <input type="text" class="form-control" id="designation" name="designation" value="<%= material.designation || '' %>" required>
-                        <div class="form-text">Nom complet du matériau</div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="priceHT" class="form-label">Prix HT (DA) *</label>
-                                <input type="number" class="form-control" id="priceHT" name="priceHT" value="<%= material.priceHT || '' %>" min="0" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="tva" class="form-label">TVA *</label>
-                                <select name="tva" id="tva" class="form-select" required>
-                                    <option value="0" <%= material.tva === 0 ? 'selected' : '' %>>0% (Exonéré)</option>
-                                    <option value="0.09" <%= material.tva === 0.09 ? 'selected' : '' %>>9%</option>
-                                    <option value="0.19" <%= !material.tva || material.tva === 0.19 ? 'selected' : '' %>>19% (Standard)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="unitOfMeasure" class="form-label">Unité de mesure *</label>
-                                <input type="text" class="form-control" id="unitOfMeasure" name="unitOfMeasure" value="<%= material.unitOfMeasure || '' %>" required>
-                                <div class="form-text">Ex: pièce, boîte, ml, kg, etc.</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="specialty" class="form-label">Spécialités</label>
-                                <select name="specialty" id="specialty" class="form-select" multiple size="4">
-                                    <% specialties.forEach(specialty => { %>
-                                        <option value="<%= specialty._id %>" <%= (material.specialty && material.specialty.includes(specialty._id)) ? 'selected' : '' %>>
-                                            <%= specialty.name %> (<%= specialty.code %>)
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="material-card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="bi bi-plus-circle"></i>Nouveau Matériau
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/materials" onsubmit="console.log('Form data:', new FormData(this)); return true;">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label required-field">Catégorie</label>
+                                    <select name="category" id="category" class="form-select" required>
+                                        <option value="">Sélectionner une catégorie</option>
+                                        <option value="consumable" <%= material.category === 'consumable' ? 'selected' : '' %>>
+                                            Consommable (jetable)
                                         </option>
-                                    <% }); %>
-                                </select>
-                                <div class="form-text">
-                                    <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                        <option value="patient" <%= material.category === 'patient' ? 'selected' : '' %>>
+                                            Matériel patient (implant)
+                                        </option>
+                                    </select>
+                                    <div class="form-text">
+                                        <strong>Consommable :</strong> matériel à usage unique (gants, fils, etc.)<br>
+                                        <strong>Patient :</strong> matériel implanté ou attaché au patient (prothèses, plaques, etc.)
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="stock" class="form-label">Stock initial</label>
-                                <input type="number" class="form-control" id="stock" name="stock" value="<%= material.stock || 0 %>" min="0" step="0.01">
+                        
+                        <div class="mb-3">
+                            <label for="designation" class="form-label required-field">Désignation</label>
+                            <input type="text" class="form-control" id="designation" name="designation" value="<%= material.designation || '' %>" required>
+                            <div class="form-text">Nom complet du matériau</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tva" class="form-label required-field">TVA</label>
+                                    <select name="tva" id="tva" class="form-select" required>
+                                        <option value="0" <%= material.tva === 0 ? 'selected' : '' %>>0% (Exonéré)</option>
+                                        <option value="0.09" <%= material.tva === 0.09 ? 'selected' : '' %>>9%</option>
+                                        <option value="0.19" <%= !material.tva || material.tva === 0.19 ? 'selected' : '' %>>19% (Standard)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="unitOfMeasure" class="form-label required-field">Unité de mesure</label>
+                                    <input type="text" class="form-control" id="unitOfMeasure" name="unitOfMeasure" value="<%= material.unitOfMeasure || '' %>" required>
+                                    <div class="form-text">Ex: pièce, boîte, ml, kg, etc.</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="/materials" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Retour
-                        </a>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-save me-2"></i>Enregistrer
-                        </button>
-                    </div>
-                </form>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="specialty" class="form-label">Spécialités</label>
+                                    <select name="specialty" id="specialty" class="form-select" multiple size="4">
+                                        <% specialties.forEach(specialty => { %>
+                                            <option value="<%= specialty._id %>" <%= (material.specialty && material.specialty.includes(specialty._id)) ? 'selected' : '' %>>
+                                                <%= specialty.name %> (<%= specialty.code %>)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                    <div class="form-text">
+                                        <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="brand" class="form-label">Marque</label>
+                                    <input type="text" class="form-control" id="brand" name="brand" value="<%= material.brand || '' %>">
+                                    <div class="form-text">Nom du fabricant ou de la marque</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="stockMinimum" class="form-label required-field">Stock Minimum</label>
+                                    <input type="number" class="form-control" id="stockMinimum" name="stockMinimum" value="<%= material.stockMinimum || 10 %>" min="0" step="1" required>
+                                    <div class="form-text">Seuil d'alerte bas</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="alertLevel" class="form-label required-field">Alerte Critique</label>
+                                    <input type="number" class="form-control" id="alertLevel" name="alertLevel" value="<%= material.alertLevel || 5 %>" min="0" step="1" required>
+                                    <div class="form-text">Seuil d'alerte critique</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="/materials" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i>Retour
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-save"></i>Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -109,16 +121,20 @@ document.getElementById('category').addEventListener('change', function() {
     const category = this.value;
     const specialtySelect = document.getElementById('specialty');
     const specialtyLabel = specialtySelect.previousElementSibling;
+    const barcodeField = document.getElementById('barcodeField');
 
     if (category === 'consumable') {
         specialtyLabel.innerHTML = 'Spécialités <small class="text-muted">(optionnel pour les consommables)</small>';
         specialtySelect.required = false;
+        if (barcodeField) barcodeField.style.display = 'none';
     } else if (category === 'patient') {
         specialtyLabel.innerHTML = 'Spécialités <small class="text-warning">(recommandé pour les matériels patient)</small>';
-        specialtySelect.required = false; // Still optional but recommended
+        specialtySelect.required = false;
+        if (barcodeField) barcodeField.style.display = 'block';
     } else {
         specialtyLabel.innerHTML = 'Spécialités';
         specialtySelect.required = false;
+        if (barcodeField) barcodeField.style.display = 'none';
     }
 });
 

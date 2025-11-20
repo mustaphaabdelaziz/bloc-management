@@ -1,100 +1,118 @@
 <% layout('layouts/boilerplate') %>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/">Tableau de bord</a></li>
-                    <li class="breadcrumb-item"><a href="/users">Utilisateurs</a></li>
-                    <li class="breadcrumb-item"><a href="/users/<%= user._id %>"><%= user.firstname %> <%= user.lastname %></a></li>
-                    <li class="breadcrumb-item active">Modifier</li>
-                </ol>
-            </nav>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Tableau de bord</a></li>
+                        <li class="breadcrumb-item"><a href="/users">Utilisateurs</a></li>
+                        <li class="breadcrumb-item"><a href="/users/<%= user._id %>">
+                                <%= user.firstname %>
+                                    <%= user.lastname %>
+                            </a></li>
+                        <li class="breadcrumb-item active">Modifier</li>
+                    </ol>
+                </nav>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="mb-0">
-                    <i class="bi bi-pencil-square me-2 text-warning"></i>
-                    Modifier l'utilisateur
-                </h3>
-                <a href="/users/<%= user._id %>" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left me-1"></i>
-                    Retour
-                </a>
-            </div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="mb-0">
+                        <i class="bi bi-pencil-square me-2 text-warning"></i>
+                        Modifier l'utilisateur
+                    </h3>
+                    <a href="/users/<%= user._id %>" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Retour
+                    </a>
+                </div>
 
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-warning text-dark">
-                            <h5 class="mb-0">
-                                <i class="bi bi-person-gear me-2"></i>
-                                Modifier les informations
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <form action="/users/<%= user._id %>?_method=PUT" method="POST">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="firstname" class="form-label">
-                                                <i class="bi bi-person me-1"></i>
-                                                Prénom <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" class="form-control" id="firstname" name="firstname"
-                                                   value="<%= user.firstname %>" required>
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-person-gear me-2"></i>
+                                    Modifier les informations
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form action="/users/<%= user._id %>?_method=PUT" method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="firstname" class="form-label">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    Prénom <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" class="form-control" id="firstname" name="firstname"
+                                                    value="<%= user.firstname %>" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="lastname" class="form-label">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    Nom <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" class="form-control" id="lastname" name="lastname"
+                                                    value="<%= user.lastname %>" required>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="lastname" class="form-label">
-                                                <i class="bi bi-person me-1"></i>
-                                                Nom <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" class="form-control" id="lastname" name="lastname"
-                                                   value="<%= user.lastname %>" required>
-                                        </div>
+
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">
+                                            <i class="bi bi-at me-1"></i>
+                                            Nom d'utilisateur <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control" id="username" name="username"
+                                            value="<%= user.email %>" required>
+                                        <div class="form-text">Le nom d'utilisateur doit être unique.</div>
                                     </div>
-                                </div>
 
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">
-                                        <i class="bi bi-at me-1"></i>
-                                        Nom d'utilisateur <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" class="form-control" id="username" name="username"
-                                           value="<%= user.username %>" required>
-                                    <div class="form-text">Le nom d'utilisateur doit être unique.</div>
-                                </div>
+                                    <div class="mb-3">
+                                        <label for="privileges" class="form-label">
+                                            <i class="bi bi-shield-check me-1"></i>
+                                            Privilèges <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select" id="privileges" name="privileges" multiple required
+                                            size="5">
+                                            <option value="admin" <%=user.privileges &&
+                                                user.privileges.includes('admin') ? 'selected' : '' %>>Administrateur
+                                            </option>
+                                            <option value="direction" <%=user.privileges &&
+                                                user.privileges.includes('direction') ? 'selected' : '' %>>Direction
+                                            </option>
+                                            <option value="headDepart" <%=user.privileges &&
+                                                user.privileges.includes('headDepart') ? 'selected' : '' %>>Chef de Département
+                                            </option>
+                                            <option value="assistante" <%=user.privileges &&
+                                                user.privileges.includes('assistante') ? 'selected' : '' %>>Assistante
+                                            </option>
+                                            <option value="buyer" <%=user.privileges &&
+                                                user.privileges.includes('buyer') ? 'selected' : '' %>>Acheteur</option>
+                                        </select>
+                                        <div class="form-text">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs
+                                            privilèges.</div>
+                                    </div>
 
-                                <div class="mb-3">
-                                    <label for="privileges" class="form-label">
-                                        <i class="bi bi-shield-check me-1"></i>
-                                        Privilèges
-                                    </label>
-                                    <input type="text" class="form-control" id="privileges" name="privileges"
-                                           value="<%= user.privileges ? user.privileges.join(', ') : '' %>"
-                                           placeholder="admin, user, etc.">
-                                    <div class="form-text">Séparez les privilèges par des virgules (ex: admin, user).</div>
-                                </div>
-
-                                <div class="d-flex justify-content-end gap-2">
-                                    <a href="/users/<%= user._id %>" class="btn btn-secondary">
-                                        <i class="bi bi-x-circle me-1"></i>
-                                        Annuler
-                                    </a>
-                                    <button type="submit" class="btn btn-warning">
-                                        <i class="bi bi-check-circle me-1"></i>
-                                        Enregistrer les modifications
-                                    </button>
-                                </div>
-                            </form>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="/users/<%= user._id %>" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Annuler
+                                        </a>
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Enregistrer les modifications
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<%- include("../layouts/footer") %>
+    <%- include("../layouts/footer") %>

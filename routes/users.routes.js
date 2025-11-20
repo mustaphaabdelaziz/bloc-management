@@ -7,7 +7,7 @@ const { ensureAdmin } = require('../middleware/rbac');
 
 // Show all users (admin only)
 router.get("/", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
-    const users = await User.find({}).select('-password');
+    const users = await User.find({}).select('-password').sort({ lastname: 1 });
     res.render("users/index", {
         title: "Gestion des Utilisateurs",
         currentUser: req.user,

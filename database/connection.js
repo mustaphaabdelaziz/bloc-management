@@ -4,7 +4,7 @@ const User = require("../models/User");
 // ============ database connection ====================
 // const dbUrl ="mongodb+srv://aziz:dancemonkey@cluster0.koaje.mongodb.net/eventplus?retryWrites=true&w=majority";
 // const dbUrl = process.env.DB_URL || process.env.LOCAL_DB_URL;
-const dbUrl = process.env.MONGODB_URI;
+const dbUrl = process.env.DB_URL;
 
 // Function to connect to the database
 const connectDB = async () => {
