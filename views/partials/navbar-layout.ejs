@@ -42,13 +42,38 @@
 
                             <!-- Surgeries - All can view except buyer (filtered by role in controller) -->
                             <% if (!onlyAcheteur) { %>
-                                <li class="nav-item" role="none">
-                                    <a class="nav-link <%= (typeof currentPage !== 'undefined' && currentPage === 'surgeries') ? 'active' : '' %>"
-                                        href="/surgeries" role="menuitem"
-                                        aria-current="<%= (typeof currentPage !== 'undefined' && currentPage === 'surgeries') ? 'page' : 'false' %>">
+                                <li class="nav-item dropdown" role="none">
+                                    <a class="nav-link dropdown-toggle <%= (typeof currentPage !== 'undefined' && ['surgeries', 'planning'].includes(currentPage)) ? 'active' : '' %>"
+                                        href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        aria-haspopup="true">
                                         <i class="bi bi-scissors" aria-hidden="true"></i>
                                         <span>Chirurgies</span>
                                     </a>
+                                    <ul class="dropdown-menu" role="menu">
+                                        <li role="none">
+                                            <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'surgeries') ? 'active' : '' %>"
+                                                href="/surgeries" role="menuitem">
+                                                <i class="bi bi-list-ul me-2" aria-hidden="true"></i>
+                                                <span>Liste des chirurgies</span>
+                                            </a>
+                                        </li>
+                                        <% if (typeof permissions !== 'undefined' && permissions.canViewPlanning) { %>
+                                        <li role="none">
+                                            <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'planning') ? 'active' : '' %>"
+                                                href="/surgeries/planning/view" role="menuitem">
+                                                <i class="bi bi-calendar3 me-2" aria-hidden="true"></i>
+                                                <span>Planification des salles</span>
+                                            </a>
+                                        </li>
+                                        <li role="none">
+                                            <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'slotBooking') ? 'active' : '' %>"
+                                                href="/surgeries/planning/book-slots" role="menuitem">
+                                                <i class="bi bi-calendar-check me-2" aria-hidden="true"></i>
+                                                <span>Réservation par créneaux</span>
+                                            </a>
+                                        </li>
+                                        <% } %>
+                                    </ul>
                                 </li>
                                 <% } %>
 
@@ -75,9 +100,9 @@
                                         </a>
                                     </li>
 
-                                    <!-- Administrative sections - Admin and chefBloc and direction -->
+                                    <!-- Administrative sections - Admin, chefBloc, direction, and headDepart -->
                                     <% if (typeof permissions !=='undefined' && (permissions.isAdmin ||
-                                        permissions.isChefBloc || permissions.isDirection) && !onlyAcheteur) { %>
+                                        permissions.isChefBloc || permissions.isDirection || permissions.isHeadDepart) && !onlyAcheteur) { %>
                                         <li class="nav-item dropdown" role="none">
                                             <a class="nav-link dropdown-toggle <%= (typeof currentPage !== 'undefined' && ['administration', 'users', 'settings', 'specialties', 'fonctions', 'surgeons', 'prestations', 'medical-staff'].includes(currentPage)) ? 'active' : '' %>"
                                                 href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"
@@ -133,6 +158,8 @@
                                                         <span>Personnel Médical</span>
                                                     </a>
                                                 </li>
+                                                <!-- Surgeons - visible to admin, direction, headDepart -->
+                                                <% if (permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart) { %>
                                                 <li role="none">
                                                     <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'surgeons') ? 'active' : '' %>"
                                                         href="/surgeons" role="menuitem">
@@ -140,6 +167,9 @@
                                                         <span>Chirurgiens</span>
                                                     </a>
                                                 </li>
+                                                <% } %>
+                                                <!-- Prestations - visible to admin, direction, headDepart -->
+                                                <% if (permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart) { %>
                                                 <li role="none">
                                                     <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'prestations') ? 'active' : '' %>"
                                                         href="/prestations" role="menuitem">
@@ -147,6 +177,37 @@
                                                         <span>Prestations</span>
                                                     </a>
                                                 </li>
+                                                <% } %>
+                                                <!-- Operating Rooms - visible to admin, direction -->
+                                                <% if (permissions.canManageRooms) { %>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'operating-rooms') ? 'active' : '' %>"
+                                                        href="/operating-rooms" role="menuitem">
+                                                        <i class="bi bi-hospital me-2" aria-hidden="true"></i>
+                                                        <span>Salles Opératoires</span>
+                                                    </a>
+                                                </li>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'families') ? 'active' : '' %>"
+                                                        href="/families" role="menuitem">
+                                                        <i class="bi bi-collection me-2" aria-hidden="true"></i>
+                                                        <span>Familles de Prestations</span>
+                                                    </a>
+                                                </li>
+                                                <% } %>
+                                                <!-- ASA Pricing - Admin and Direction only -->
+                                                <% if (permissions.isAdmin || permissions.isDirection) { %>
+                                                <li role="none">
+                                                    <hr class="dropdown-divider" role="separator">
+                                                </li>
+                                                <li role="none">
+                                                    <a class="dropdown-item <%= (typeof currentPage !== 'undefined' && currentPage === 'asa-pricing') ? 'active' : '' %>"
+                                                        href="/asa-pricing" role="menuitem">
+                                                        <i class="bi bi-heart-pulse me-2" aria-hidden="true"></i>
+                                                        <span>Tarifs ASA</span>
+                                                    </a>
+                                                </li>
+                                                <% } %>
                                             </ul>
                                         </li>
                                         <% } %>

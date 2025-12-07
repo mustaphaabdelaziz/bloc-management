@@ -27,13 +27,13 @@ module.exports.locals = (req, res, next) => {
   
   // Convenience derived flags for specific access patterns
   // General abilities
-  permissions.canManageMaterials = permissions.isAdmin || permissions.isBuyer || permissions.isHeadDepart;
-  permissions.canManageSurgeries = permissions.isAdmin || permissions.isDirection; // headDepart excluded from management
+  permissions.canManageMaterials = permissions.isAdmin || permissions.isBuyer || permissions.isDirection; // headDepart excluded from material management
+  permissions.canManageSurgeries = permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart; // Can manage surgeries but with restrictions
   permissions.canManagePrestations = permissions.isAdmin || permissions.isDirection; // Can manage prestations (actes)
   permissions.canManageSurgeons = permissions.isAdmin || permissions.isDirection; // Can manage surgeons
   permissions.canManageMedicalStaff = permissions.isAdmin || permissions.isDirection; // Can manage medical staff
-  permissions.canManageSpecialties = permissions.isAdmin || permissions.isDirection; // Can manage specialties
-  permissions.canManageFonctions = permissions.isAdmin || permissions.isDirection; // Can manage fonctions
+  permissions.canManageSpecialties = permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart; // Can manage specialties
+  permissions.canManageFonctions = permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart; // Can manage fonctions
   permissions.canManageUsers = permissions.isAdmin; // Only admin - restrict from direction
   permissions.canManageSystemConfig = permissions.isAdmin; // Only admin for system configuration - restrict from direction
   
@@ -55,6 +55,16 @@ module.exports.locals = (req, res, next) => {
   
   // Assistante specific permissions (view-only without sensitive data)
   permissions.isAssistanteOnly = permissions.isAssistante && !permissions.isAdmin && !permissions.isDirection && !permissions.isHeadDepart;
+  
+  // Surgery lifecycle management
+  permissions.canCloseSurgeries = permissions.isAdmin; // Only admin can close surgeries
+  permissions.canReopenSurgeries = permissions.isAdmin; // Only admin can reopen closed surgeries
+  permissions.canEditClosedSurgeries = permissions.isAdmin; // Only admin can edit closed surgeries
+  
+  // Operating room management and planning
+  permissions.canManageRooms = permissions.isAdmin || permissions.isDirection; // Can create/edit/delete operating rooms
+  permissions.canViewPlanning = permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart || permissions.isAssistante; // Can view planning timeline
+  permissions.canCreateReservations = permissions.isAdmin || permissions.isDirection || permissions.isHeadDepart; // Can make room reservations
   
   res.locals.permissions = permissions;
 

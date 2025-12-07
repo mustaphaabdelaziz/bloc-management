@@ -46,6 +46,28 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="family" class="form-label">
+                                        <i class="bi bi-collection me-1"></i>Famille
+                                    </label>
+                                    <select class="form-select" id="family" name="family">
+                                        <option value="">Aucune famille</option>
+                                        <% families.forEach(family => { %>
+                                            <option value="<%= family._id %>" data-specialty="<%= family.specialty._id %>" <%= prestation.family && prestation.family._id && prestation.family._id.toString() === family._id.toString() ? 'selected' : '' %>>
+                                                <%= family.name %> (<%= family.specialty.name %>)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                    <div class="form-text">Famille au sein de la spécialité (optionnel)</div>
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <a href="/families/new" target="_blank">Créer une nouvelle famille</a> si nécessaire
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Section Tarification et Durée -->
@@ -78,15 +100,28 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
-                                    <label for="duration" class="form-label">
-                                        <i class="bi bi-clock me-1"></i>Durée (minutes) *
+                                    <label for="minDuration" class="form-label">
+                                        <i class="bi bi-arrow-down-short me-1"></i>Durée Min (minutes) *
                                     </label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" id="duration" name="duration" value="<%= prestation.duration %>" min="1" required>
+                                        <input type="number" class="form-control" id="minDuration" name="minDuration" value="<%= prestation.minDuration || '' %>" min="1" required>
                                         <span class="input-group-text">min</span>
                                     </div>
+                                    <div class="form-text">Durée minimale</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="maxDuration" class="form-label">
+                                        <i class="bi bi-arrow-up-short me-1"></i>Durée Max (minutes) *
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="maxDuration" name="maxDuration" value="<%= prestation.maxDuration || '' %>" min="1" required>
+                                        <span class="input-group-text">min</span>
+                                    </div>
+                                    <div class="form-text">Durée maximale (calcul honoraires)</div>
                                 </div>
                             </div>
                         </div>
@@ -103,7 +138,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <div class="mb-3">
                                             <label for="exceededDurationUnit" class="form-label">
                                                 <i class="bi bi-stopwatch me-1"></i>Unité de dépassement (minutes)
@@ -115,7 +150,24 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="exceededDurationTolerance" class="form-label">
+                                                <i class="bi bi-hourglass-split me-1"></i>Marge de tolérance (minutes)
+                                                <% if (permissions.isAdmin || permissions.isDirection) { %>
+                                                    <span class="badge bg-info ms-1">Admin/Direction</span>
+                                                <% } %>
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" id="exceededDurationTolerance" name="exceededDurationTolerance"
+                                                       value="<%= prestation.exceededDurationTolerance || 15 %>" min="0"
+                                                       <%= !(permissions.isAdmin || permissions.isDirection) ? 'readonly' : '' %>>
+                                                <span class="input-group-text">min</span>
+                                            </div>
+                                            <div class="form-text">Dépassement toléré avant facturation</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
                                         <div class="mb-3">
                                             <label for="exceededDurationFee" class="form-label">
                                                 <i class="bi bi-cash me-1"></i>Frais par unité (DA)
@@ -158,3 +210,40 @@
         </div>
     </div>
 </div>
+
+<script>
+// Filter families based on selected specialty
+document.getElementById('specialty').addEventListener('change', function() {
+    const selectedSpecialty = this.value;
+    const familySelect = document.getElementById('family');
+    const allOptions = familySelect.querySelectorAll('option');
+    
+    allOptions.forEach(option => {
+        if (option.value === '') {
+            // Always show "Aucune famille" option
+            option.style.display = 'block';
+        } else {
+            const familySpecialty = option.getAttribute('data-specialty');
+            if (selectedSpecialty === '' || familySpecialty === selectedSpecialty) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    });
+    
+    // Reset family selection if current selection is not valid for new specialty
+    const currentOption = familySelect.options[familySelect.selectedIndex];
+    if (currentOption && currentOption.value !== '' && currentOption.style.display === 'none') {
+        familySelect.value = '';
+    }
+});
+
+// Trigger on page load to filter based on pre-selected specialty
+document.addEventListener('DOMContentLoaded', function() {
+    const specialtySelect = document.getElementById('specialty');
+    if (specialtySelect.value) {
+        specialtySelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>

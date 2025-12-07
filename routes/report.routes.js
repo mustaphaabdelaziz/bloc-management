@@ -6,6 +6,7 @@ const { ensureAdminOrDirection } = require('../middleware/rbac');
 const {
   statisticsReport,
   materialConsumptionReport,
+  materialUsageReport,
   medicalStaffActivityReport,
   surgeonFeesReport,
   clinicRevenueReport,
@@ -22,8 +23,11 @@ router.get("/surgeon-fees", isLoggedIn, ensureAdminOrDirection, catchAsync(surge
 // Rapport d'activité du personnel médical
 router.get("/medical-staff-activity", isLoggedIn, ensureAdminOrDirection, catchAsync(medicalStaffActivityReport));
 
-// Rapport de consommation des matériaux
+// Rapport de consommation des matériaux (legacy)
 router.get("/material-consumption", isLoggedIn, ensureAdminOrDirection, catchAsync(materialConsumptionReport));
+
+// Rapport d'utilisation des matériaux (nouveau avec statistiques détaillées)
+router.get("/material-usage", isLoggedIn, ensureAdminOrDirection, catchAsync(materialUsageReport));
 
 // Rapport des revenus cliniques
 router.get("/clinic-revenue", isLoggedIn, ensureAdminOrDirection, catchAsync(clinicRevenueReport));

@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const catchAsync = require("../utils/catchAsync");
 const User = require("../models/User");
+const Surgeon = require("../models/Surgeon");
+const Surgery = require("../models/Surgery");
 const { isLoggedIn } = require("../middleware/auth");
 const { ensureAdmin } = require('../middleware/rbac');
 
@@ -46,11 +48,22 @@ router.get("/:id/edit", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => 
 // Update user (admin only)
 router.put("/:id", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
     const { firstname, lastname, username, privileges } = req.body;
+    
+    // Handle privileges: can be array (from multiple select) or string (for compatibility)
+    let privilegesArray = [];
+    if (privileges) {
+        if (Array.isArray(privileges)) {
+            privilegesArray = privileges;
+        } else if (typeof privileges === 'string') {
+            privilegesArray = privileges.split(',').map(p => p.trim());
+        }
+    }
+    
     const user = await User.findByIdAndUpdate(req.params.id, {
         firstname,
         lastname,
         username,
-        privileges: privileges ? privileges.split(',').map(p => p.trim()) : []
+        privileges: privilegesArray
     }, { new: true });
 
     if (!user) {
@@ -74,6 +87,16 @@ router.delete("/:id", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
     if (user._id.equals(req.user._id)) {
         req.flash('error', 'Vous ne pouvez pas supprimer votre propre compte');
         return res.redirect('/users');
+    }
+
+    // Check if user is linked to a surgeon that is used in surgeries
+    const surgeon = await Surgeon.findOne({ user: req.params.id });
+    if (surgeon) {
+        const surgeriesCount = await Surgery.countDocuments({ surgeon: surgeon._id });
+        if (surgeriesCount > 0) {
+            req.flash('error', `Cet utilisateur ne peut pas être supprimé car il est lié à un chirurgien utilisé dans ${surgeriesCount} chirurgie(s)`);
+            return res.redirect('/users');
+        }
     }
 
     await User.findByIdAndDelete(req.params.id);

@@ -475,7 +475,7 @@
 .status-planned {
     display: inline-block;
     padding: 0.25rem 0.75rem;
-    background: linear-gradient(135deg, var(--surgery-info), #74c0fc);
+    background: linear-gradient(135deg, var(--surgery-secondary), #1fcac2);
     color: white;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -765,6 +765,559 @@
     padding-right: 3rem;
 }
 
+/* Modern Status Select Styling */
+.status-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 2px solid var(--surgery-gray-300);
+    border-radius: var(--surgery-border-radius);
+    transition: var(--surgery-transition);
+    overflow: hidden;
+}
+
+.status-select-wrapper:hover {
+    border-color: var(--surgery-gray-400);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-select-wrapper.focused {
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.status-select-wrapper.status-planned {
+    border-left: 4px solid var(--surgery-secondary);
+    background: linear-gradient(90deg, rgba(32, 201, 151, 0.08) 0%, rgba(32, 201, 151, 0.04) 100%);
+}
+
+.status-select-wrapper.status-planned.focused {
+    box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.15);
+}
+
+.status-select-wrapper.status-urgent {
+    border-left: 4px solid var(--surgery-danger);
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.08) 0%, rgba(220, 53, 69, 0.04) 100%);
+}
+
+.status-select-wrapper.status-urgent.focused {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
+}
+
+.status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    border-right: 1px solid var(--surgery-gray-200);
+    color: var(--surgery-gray-600);
+    transition: var(--surgery-transition);
+}
+
+.status-select-wrapper.status-planned .status-icon {
+    color: var(--surgery-secondary);
+    background: rgba(32, 201, 151, 0.1);
+}
+
+.status-select-wrapper.status-urgent .status-icon {
+    color: var(--surgery-danger);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+#status {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--surgery-dark);
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+#status:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+#status:hover {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+/* Status option styling with better contrast */
+#status option {
+    padding: 0.75rem 1rem;
+    background: white;
+    color: var(--surgery-dark);
+    font-weight: 500;
+}
+
+#status option[value="planned"] {
+    background: linear-gradient(135deg, var(--surgery-secondary), #20c997);
+    color: white;
+}
+
+#status option[value="urgent"] {
+    background: linear-gradient(135deg, var(--surgery-danger), #fd7e14);
+    color: white;
+}
+
+/* Status badge for display */
+.status-badge-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: var(--surgery-transition);
+}
+
+.status-badge-modern.status-planned {
+    background: linear-gradient(135deg, var(--surgery-secondary), #20c997);
+    color: white;
+    box-shadow: 0 2px 8px rgba(32, 201, 151, 0.3);
+}
+
+.status-badge-modern.status-urgent {
+    background: linear-gradient(135deg, var(--surgery-danger), #fd7e14);
+    color: white;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.status-badge-modern i {
+    font-size: 0.9em;
+}
+
+/* Custom Medical Status Select */
+.custom-status-select {
+    position: relative;
+    width: 100%;
+}
+
+.status-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    background: #ffffff;
+    border: 2px solid var(--surgery-gray-300);
+    border-radius: var(--surgery-border-radius);
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--surgery-dark);
+    min-height: 48px;
+}
+
+.status-select-trigger:focus {
+    outline: none;
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+}
+
+.status-select-trigger.active {
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.status-select-trigger.status-planned {
+    border-left: 4px solid transparent;
+    color: var(--surgery-dark);
+}
+
+.status-select-trigger.status-planned:focus,
+.status-select-trigger.status-planned.active {
+    border-color: var(--surgery-gray-300);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.status-select-trigger.status-urgent {
+    border-left: 4px solid transparent;
+    color: var(--surgery-dark);
+}
+
+.status-select-trigger.status-urgent:focus,
+.status-select-trigger.status-urgent.active {
+    border-color: var(--surgery-gray-300);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.status-select-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.status-select-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: var(--surgery-transition);
+    background: transparent;
+}
+
+.status-select-trigger.status-planned .status-select-icon {
+    color: var(--surgery-dark);
+}
+
+.status-select-trigger.status-urgent .status-select-icon {
+    color: var(--surgery-dark);
+}
+
+.status-select-text {
+    flex: 1;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+}
+
+.status-select-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--surgery-gray-600);
+    transition: var(--surgery-transition);
+    transform: rotate(0deg);
+}
+
+.status-select-trigger.active .status-select-arrow {
+    color: var(--surgery-gray-600);
+    transform: rotate(180deg);
+}
+
+.status-select-trigger.status-planned.active .status-select-arrow {
+    color: var(--surgery-gray-600);
+}
+
+.status-select-trigger.status-urgent.active .status-select-arrow {
+    color: var(--surgery-gray-600);
+}
+
+/* Custom Dropdown */
+.status-select-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: var(--surgery-border-radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--surgery-gray-200);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.95);
+    transition: var(--surgery-transition);
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.status-select-dropdown.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.status-select-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    border-bottom: 1px solid var(--surgery-gray-100);
+}
+
+.status-select-option:last-child {
+    border-bottom: none;
+}
+
+.status-select-option:hover {
+    transform: translateX(4px);
+}
+
+.status-select-option.selected {
+    color: var(--surgery-dark);
+    font-weight: 600;
+}
+
+.status-select-option[data-value="planned"] {
+    border-left: 4px solid transparent;
+    color: var(--surgery-dark);
+}
+
+.status-select-option[data-value="planned"].selected {
+    background: rgba(32, 201, 151, 0.1);
+    color: var(--surgery-dark);
+    font-weight: 600;
+}
+
+.status-select-option[data-value="urgent"] {
+    border-left: 4px solid transparent;
+    color: var(--surgery-dark);
+}
+
+.status-select-option[data-value="urgent"].selected {
+    color: var(--surgery-dark);
+    font-weight: 600;
+}
+
+.status-option-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: transparent;
+}
+
+.status-select-option[data-value="planned"] .status-option-icon {
+    color: var(--surgery-secondary);
+    background: rgba(32, 201, 151, 0.1);
+}
+
+.status-select-option[data-value="urgent"] .status-option-icon {
+    color: var(--surgery-dark);
+}
+
+.status-option-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.status-option-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: transparent;
+}
+
+.status-select-option[data-value="planned"] .status-option-badge {
+    background: var(--surgery-secondary);
+    color: white;
+}
+
+.status-select-option[data-value="urgent"] .status-option-badge {
+    color: var(--surgery-dark);
+}
+
+/* Hide native select */
+.custom-status-select select {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+/* Custom Role Select */
+.custom-role-select {
+    position: relative;
+    width: 100%;
+}
+
+.role-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: #ffffff;
+    border: 2px solid var(--surgery-gray-300);
+    border-radius: var(--surgery-border-radius);
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--surgery-dark);
+    min-height: 50px;
+}
+
+.role-select-trigger:focus {
+    outline: none;
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+}
+
+.role-select-trigger.active {
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.role-select-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.role-select-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: var(--surgery-transition);
+    background: var(--surgery-gray-100);
+    color: var(--surgery-gray-600);
+}
+
+.role-select-text {
+    flex: 1;
+    font-weight: 500;
+    color: var(--surgery-gray-600);
+}
+
+.role-select-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--surgery-gray-600);
+    transition: var(--surgery-transition);
+    transform: rotate(0deg);
+}
+
+.role-select-trigger.active .role-select-arrow {
+    transform: rotate(180deg);
+}
+
+/* Custom Role Dropdown */
+.role-select-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: var(--surgery-border-radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--surgery-gray-200);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.95);
+    transition: var(--surgery-transition);
+    z-index: 1000;
+    overflow: hidden;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.role-select-dropdown.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.role-select-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    border-bottom: 1px solid var(--surgery-gray-100);
+    font-size: 1rem;
+}
+
+.role-select-option:last-child {
+    border-bottom: none;
+}
+
+.role-select-option:hover {
+    background: var(--surgery-gray-50);
+    transform: translateX(2px);
+}
+
+.role-select-option.selected {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--surgery-primary);
+    font-weight: 600;
+}
+
+.role-option-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    background: var(--surgery-gray-100);
+    color: var(--surgery-gray-600);
+    transition: var(--surgery-transition);
+}
+
+.role-select-option:hover .role-option-icon {
+    background: var(--surgery-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.role-select-option.selected .role-option-icon {
+    background: var(--surgery-primary);
+    color: white;
+}
+
+.role-option-text {
+    flex: 1;
+    font-weight: 500;
+    color: var(--surgery-gray-700);
+}
+
+.role-select-option.selected .role-option-text {
+    color: var(--surgery-primary);
+}
+
+/* Hide native select for role */
+.custom-role-select select {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
 .input-feedback {
     margin-top: 0.5rem;
 }
@@ -971,6 +1524,89 @@
 
 .remove-staff-btn:hover {
     background: #c82333;
+    transform: scale(1.1);
+}
+
+/* Staff Action Buttons */
+.btn-staff-action {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: var(--surgery-border-radius);
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-staff-action::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: var(--surgery-transition);
+}
+
+.btn-staff-action:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+.btn-staff-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-staff-action:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-staff-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-staff-action:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-staff-action:disabled::before {
+    display: none;
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, var(--surgery-danger), #c82333);
+    color: white;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-delete:hover {
+    background: linear-gradient(135deg, #c82333, #a71e2a);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.btn-delete:active {
+    background: linear-gradient(135deg, #a71e2a, #8b1a22);
+}
+
+.btn-delete i {
+    transition: var(--surgery-transition);
+}
+
+.btn-delete:hover i {
     transform: scale(1.1);
 }
 

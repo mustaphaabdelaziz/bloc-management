@@ -177,3 +177,139 @@ Complete documentation available in:
 
 **Status:** ✅ Implementation Complete & Ready for Use
 **Date:** November 19, 2025
+
+---
+
+# ✅ Materials Excel Import Feature - Implementation Complete
+
+## Summary
+Successfully implemented Excel bulk import functionality for the Materials management system. Users can now import multiple materials from an Excel file instead of manually creating each one. **Code is strictly required** and duplicate codes are automatically skipped.
+
+## What Was Implemented
+
+### 1. Backend - Route & File Upload
+**File:** `routes/material.routes.js`
+- Added `POST /materials/import` endpoint
+- Added `GET /materials/template` endpoint for server-side template download
+- Integrated multer middleware for Excel file handling
+- Configured file validation (type: .xlsx/.xls, size: max 10MB)
+- Protected route with authentication & authorization (admin/buyer/direction via `ensureMaterialsCreateImport`)
+
+### 2. Backend - Import Logic
+**File:** `controller/material.controller.js`
+- Added `importMaterials()` function that:
+  - Parses Excel files using xlsx library
+  - Validates each row independently
+  - **Enforces unique codes** - code is required and not auto-generated
+  - **Skips duplicate codes** - both existing in DB and within the file
+  - Maps specialty names to MongoDB ObjectIds
+  - Converts percentages to decimals (TVA)
+  - Validates category ("consumable" or "patient")
+  - Creates Material documents in bulk
+  - Collects detailed error messages per row
+  - Performs partial success (valid rows inserted even if some fail)
+
+- Added `downloadMaterialTemplate()` function that:
+  - Generates a pre-formatted Excel template with sample data
+  - Includes all available specialties in the instructions
+  - Provides clear guidance on required vs optional columns
+
+### 3. Frontend - User Interface
+**File:** `views/materials/index.ejs`
+- Added "Importer Excel" button in the materials list header (visible to management users only)
+- Created Bootstrap modal with:
+  - File input with validation
+  - Template download buttons (browser-side and server-side)
+  - Clear instructions on required/optional columns
+  - Emphasis on mandatory code field and duplicate handling
+
+### 4. Frontend - Client-Side Validation
+**File:** `public/js/material.js` (NEW)
+- File type validation (.xlsx, .xls)
+- File size validation (10 MB max)
+- Real-time error/success messaging
+- Template generation via XLSX library
+- Form submission with loading state
+
+### 5. Results Display
+**File:** `views/materials/import-results.ejs` (NEW)
+- Summary cards (total rows, imported, skipped, errors)
+- Separate tracking for skipped duplicates vs validation errors
+- Detailed error table with row numbers and descriptions
+- Color-coded badges (warning for skipped, danger for errors)
+- Troubleshooting tips
+- Links for navigation
+
+## Materials Import Format
+
+### Required Columns
+- **Code** - **REQUIRED** - Unique material code (not auto-generated)
+- **Désignation** - Material name
+- **Prix HT (DA)** - Price excluding tax (positive number)
+- **TVA (%)** - VAT rate (e.g., 9, 19)
+- **Catégorie** - "consumable" or "patient"
+- **Unité de Mesure** - Unit of measurement (e.g., Boîte, Unité)
+
+### Optional Columns
+- **Spécialité** - Medical specialty (must match existing)
+- **Marque** - Brand/manufacturer
+
+## Duplicate Handling
+
+The import process handles duplicates as follows:
+1. **Database duplicates**: Rows with codes already in the database are **skipped** (not errors)
+2. **In-file duplicates**: Rows with codes that appear earlier in the same file are **skipped**
+3. **Skipped rows** are reported separately from validation errors in the results
+
+## Files Modified/Created
+
+| File | Type | Status |
+|------|------|--------|
+| `routes/material.routes.js` | Modified | ✅ |
+| `controller/material.controller.js` | Modified | ✅ |
+| `views/materials/index.ejs` | Modified | ✅ |
+| `public/js/material.js` | NEW | ✅ |
+| `views/materials/import-results.ejs` | NEW | ✅ |
+
+## How to Use
+
+### For End Users
+1. Navigate to **Materials Management** (`/materials`)
+2. Click **"Importer Excel"** button
+3. Download the template via "Télécharger (Serveur)" or "Télécharger (Navigateur)"
+4. Fill in your materials data (ensure unique codes for each row)
+5. Select your Excel file (.xlsx or .xls)
+6. Click **"Importer"**
+7. View results with success/skipped/error summary
+
+### Key Differences from Prestation Import
+- **Code is required** - Materials must have a unique code; it won't be auto-generated
+- **10MB file size** - Larger limit to accommodate more materials
+- **Category validation** - Must be "consumable"/"consommable" or "patient"
+- **Duplicate skipping** - Duplicates are gracefully skipped, not hard errors
+
+## Security
+
+✅ Authentication required (must be logged in)  
+✅ Authorization required (admin, buyer or direction via `ensureMaterialsCreateImport`)  
+✅ File type validation (.xlsx, .xls only)  
+✅ File size limit (10 MB max)  
+✅ Memory storage (no disk persistence)  
+✅ No file execution risk  
+
+## Error Handling
+
+- ✅ Missing/empty file
+- ✅ Invalid file format
+- ✅ File size exceeded
+- ✅ Missing required columns (including mandatory code)
+- ✅ Invalid numeric values
+- ✅ Invalid category values
+- ✅ Non-existent specialties
+- ✅ Duplicate codes (skipped, not errors)
+- ✅ Detailed per-row messages
+
+---
+
+**Status:** ✅ Materials Import Implementation Complete & Ready for Use
+**Date:** November 25, 2025

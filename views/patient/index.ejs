@@ -58,6 +58,8 @@
                                 <th>NIN</th>
                                 <th>Naiss.</th>
                                 <th>Tél.</th>
+                                <th>Créé par</th>
+                                <th>Modifié par</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -86,6 +88,9 @@
                                     <td>
                                         <% if (patient.dateOfBirth) { %>
                                             <%= typeof moment !== 'undefined' ? moment(patient.dateOfBirth).format('DD/MM/YYYY') : new Date(patient.dateOfBirth).toLocaleDateString('fr-FR') %>
+                                        <% } else if (patient.birthdatePresumed) { %>
+                                            ~<%= typeof moment !== 'undefined' ? moment().diff(patient.birthdatePresumed, 'years') : '' %> ans
+                                            <small class="text-muted">(est. <%= typeof moment !== 'undefined' ? moment(patient.birthdatePresumed).format('YYYY') : '' %>)</small>
                                         <% } else if (patient.presumedAge) { %>
                                             ~<%= patient.presumedAge %> ans
                                         <% } else { %>
@@ -98,6 +103,28 @@
                                         <% } else { %>
                                             <span class="text-muted">-</span>
                                         <% } %>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (patient.createdBy) { %>
+                                                <%= patient.createdBy.firstname %> <%= patient.createdBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(patient.createdAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (patient.updatedBy) { %>
+                                                <%= patient.updatedBy.firstname %> <%= patient.updatedBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(patient.updatedAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
                                     </td>
                                     <td>
                                         <div class="material-actions">

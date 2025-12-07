@@ -55,10 +55,10 @@ async function calculateSurgeonFees(surgeryId) {
   let surgeonAmount = 0;
   let clinicAmount = 0;
 
-  if (surgeon.contractType === "allocation") {
+  if (surgeon.contractType === "location") {
     const duration = surgery.actualDuration || 0;
     const durationInHours = duration / 60;
-    const allocationCost = durationInHours * (surgeon.allocationRate || 0);
+    const locationCost = durationInHours * (surgeon.locationRate || 0);
 
     surgeonAmount = 0;
 
@@ -72,7 +72,7 @@ async function calculateSurgeonFees(surgeryId) {
       }
     }
 
-    clinicAmount = allocationCost + totalMaterialCost + effectivePersonalFees + extraFees;
+    clinicAmount = locationCost + totalMaterialCost + effectivePersonalFees + extraFees;
   } else if (surgeon.contractType === "percentage") {
     let extraDuration = surgery.actualDuration - prestation.duration;
     let extraUnits = 0;

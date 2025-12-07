@@ -14,7 +14,7 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="mb-3">
-                                    <label for="category" class="form-label required-field">Catégorie</label>
+                                    <label for="category" class="form-label required-field">Catégorie <span class="text-danger">*</span></label>
                                     <select name="category" id="category" class="form-select" required>
                                         <option value="">Sélectionner une catégorie</option>
                                         <option value="consumable" <%= material.category === 'consumable' ? 'selected' : '' %>>
@@ -33,15 +33,38 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="designation" class="form-label required-field">Désignation</label>
+                            <label for="designation" class="form-label required-field">Désignation <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="designation" name="designation" value="<%= material.designation || '' %>" required>
                             <div class="form-text">Nom complet du matériau</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reference" class="form-label">Référence</label>
+                            <input type="text" class="form-control" id="reference" name="reference" value="<%= material.reference || '' %>">
+                            <div class="form-text">Numéro de référence ou code du fabricant</div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="tva" class="form-label required-field">TVA</label>
+                                    <label for="priceHT" class="form-label required-field">Prix d'Achat HT (DA) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="priceHT" name="priceHT" value="<%= material.priceHT || '' %>" min="0" step="0.01" required>
+                                    <div class="form-text">Prix d'achat de base (utilisé si pas d'historique)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sellingMarkupPercent" class="form-label">Marge de Vente (%)</label>
+                                    <input type="number" class="form-control" id="sellingMarkupPercent" name="sellingMarkupPercent" value="<%= material.sellingMarkupPercent || 0 %>" min="0" step="0.1">
+                                    <div class="form-text">Pourcentage de marge appliqué au prix d'achat</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tva" class="form-label required-field">TVA <span class="text-danger">*</span></label>
                                     <select name="tva" id="tva" class="form-select" required>
                                         <option value="0" <%= material.tva === 0 ? 'selected' : '' %>>0% (Exonéré)</option>
                                         <option value="0.09" <%= material.tva === 0.09 ? 'selected' : '' %>>9%</option>
@@ -49,11 +72,122 @@
                                     </select>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="unitOfMeasure" class="form-label required-field">Unité de mesure</label>
-                                    <input type="text" class="form-control" id="unitOfMeasure" name="unitOfMeasure" value="<%= material.unitOfMeasure || '' %>" required>
-                                    <div class="form-text">Ex: pièce, boîte, ml, kg, etc.</div>
+                                    <label for="unitOfMeasure" class="form-label required-field">Unité de mesure <span class="text-danger">*</span></label>
+                                    <div class="custom-unit-select">
+                                        <select class="form-select" name="unitOfMeasure" id="unitOfMeasure" style="display: none;" required>
+                                            <option value="pièce (Pce)" <%= material.unitOfMeasure === 'pièce (Pce)' ? 'selected' : '' %>>pièce (Pce)</option>
+                                            <option value="boîte (Bt)" <%= material.unitOfMeasure === 'boîte (Bt)' ? 'selected' : '' %>>boîte (Bt)</option>
+                                            <option value="paquet (Paq)" <%= material.unitOfMeasure === 'paquet (Paq)' ? 'selected' : '' %>>paquet (Paq)</option>
+                                            <option value="sachet (S)" <%= material.unitOfMeasure === 'sachet (S)' ? 'selected' : '' %>>sachet (S)</option>
+                                            <option value="flacon (Fl)" <%= material.unitOfMeasure === 'flacon (Fl)' ? 'selected' : '' %>>flacon (Fl)</option>
+                                            <option value="unité (U)" <%= material.unitOfMeasure === 'unité (U)' ? 'selected' : '' %>>unité (U)</option>
+                                            <option value="mètre (m)" <%= material.unitOfMeasure === 'mètre (m)' ? 'selected' : '' %>>mètre (m)</option>
+                                            <option value="litre (L)" <%= material.unitOfMeasure === 'litre (L)' ? 'selected' : '' %>>litre (L)</option>
+                                            <option value="millilitre (mL)" <%= material.unitOfMeasure === 'millilitre (mL)' ? 'selected' : '' %>>millilitre (mL)</option>
+                                            <option value="gramme (g)" <%= material.unitOfMeasure === 'gramme (g)' ? 'selected' : '' %>>gramme (g)</option>
+                                            <option value="milligramme (mg)" <%= material.unitOfMeasure === 'milligramme (mg)' ? 'selected' : '' %>>milligramme (mg)</option>
+                                            <option value="centimètre (cm)" <%= material.unitOfMeasure === 'centimètre (cm)' ? 'selected' : '' %>>centimètre (cm)</option>
+                                            <option value="ampoule (Amp)" <%= material.unitOfMeasure === 'ampoule (Amp)' ? 'selected' : '' %>>ampoule (Amp)</option>
+                                            <option value="seringue (Ser)" <%= material.unitOfMeasure === 'seringue (Ser)' ? 'selected' : '' %>>seringue (Ser)</option>
+                                            <option value="tube (Tb)" <%= material.unitOfMeasure === 'tube (Tb)' ? 'selected' : '' %>>tube (Tb)</option>
+                                            <option value="rouleau (Rl)" <%= material.unitOfMeasure === 'rouleau (Rl)' ? 'selected' : '' %>>rouleau (Rl)</option>
+                                        </select>
+                                        <div class="unit-select-trigger">
+                                            <div class="unit-select-value">
+                                                <span class="unit-icon">📦</span>
+                                                <span id="unitText"><%= material.unitOfMeasure ? material.unitOfMeasure.toUpperCase() : 'SÉLECTIONNER...' %></span>
+                                            </div>
+                                            <i class="bi bi-chevron-down"></i>
+                                        </div>
+                                        <div class="unit-select-dropdown">
+                                            <div class="unit-select-option" data-value="pièce (Pce)">
+                                                <span class="unit-option-icon">🔧</span>
+                                                <span class="unit-option-text">pièce (Pce)</span>
+                                                <small class="unit-option-desc">instruments individuels</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="boîte (Bt)">
+                                                <span class="unit-option-icon">📦</span>
+                                                <span class="unit-option-text">boîte (Bt)</span>
+                                                <small class="unit-option-desc">kits stériles</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="paquet (Paq)">
+                                                <span class="unit-option-icon">📋</span>
+                                                <span class="unit-option-text">paquet (Paq)</span>
+                                                <small class="unit-option-desc">compresses, gants</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="sachet (S)">
+                                                <span class="unit-option-icon">🛍️</span>
+                                                <span class="unit-option-text">sachet (S)</span>
+                                                <small class="unit-option-desc">emballage individuel</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="flacon (Fl)">
+                                                <span class="unit-option-icon">🧴</span>
+                                                <span class="unit-option-text">flacon (Fl)</span>
+                                                <small class="unit-option-desc">solutions, antiseptiques</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="unité (U)">
+                                                <span class="unit-option-icon">1️⃣</span>
+                                                <span class="unit-option-text">unité (U)</span>
+                                                <small class="unit-option-desc">pièce unique</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="mètre (m)">
+                                                <span class="unit-option-icon">📏</span>
+                                                <span class="unit-option-text">mètre (m)</span>
+                                                <small class="unit-option-desc">fils, tubulures</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="centimètre (cm)">
+                                                <span class="unit-option-icon">📐</span>
+                                                <span class="unit-option-text">centimètre (cm)</span>
+                                                <small class="unit-option-desc">petites longueurs</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="litre (L)">
+                                                <span class="unit-option-icon">🫗</span>
+                                                <span class="unit-option-text">litre (L)</span>
+                                                <small class="unit-option-desc">liquides</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="millilitre (mL)">
+                                                <span class="unit-option-icon">💧</span>
+                                                <span class="unit-option-text">millilitre (mL)</span>
+                                                <small class="unit-option-desc">petits volumes</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="gramme (g)">
+                                                <span class="unit-option-icon">⚖️</span>
+                                                <span class="unit-option-text">gramme (g)</span>
+                                                <small class="unit-option-desc">poudres</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="milligramme (mg)">
+                                                <span class="unit-option-icon">💊</span>
+                                                <span class="unit-option-text">milligramme (mg)</span>
+                                                <small class="unit-option-desc">médicaments</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="ampoule (Amp)">
+                                                <span class="unit-option-icon">💉</span>
+                                                <span class="unit-option-text">ampoule (Amp)</span>
+                                                <small class="unit-option-desc">médicaments injectables</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="seringue (Ser)">
+                                                <span class="unit-option-icon">🩺</span>
+                                                <span class="unit-option-text">seringue (Ser)</span>
+                                                <small class="unit-option-desc">seringues pré-remplies</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="tube (Tb)">
+                                                <span class="unit-option-icon">🧪</span>
+                                                <span class="unit-option-text">tube (Tb)</span>
+                                                <small class="unit-option-desc">crèmes, pommades</small>
+                                            </div>
+                                            <div class="unit-select-option" data-value="rouleau (Rl)">
+                                                <span class="unit-option-icon">🧻</span>
+                                                <span class="unit-option-text">rouleau (Rl)</span>
+                                                <small class="unit-option-desc">bandages, sparadrap</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-text">Sélectionnez l'unité de mesure appropriée</div>
                                 </div>
                             </div>
                         </div>
@@ -62,15 +196,18 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="specialty" class="form-label">Spécialités</label>
-                                    <select name="specialty" id="specialty" class="form-select" multiple size="4">
+                                    <select name="specialty" id="specialty" class="form-select" multiple size="5">
+                                        <option value="all" class="fw-bold text-primary" <%= material.appliesToAllSpecialties ? 'selected' : '' %>>
+                                            🌐 Toutes les spécialités
+                                        </option>
                                         <% specialties.forEach(specialty => { %>
-                                            <option value="<%= specialty._id %>" <%= (material.specialty && material.specialty.includes(specialty._id)) ? 'selected' : '' %>>
+                                            <option value="<%= specialty._id %>" <%= (material.specialty && material.specialty.includes && material.specialty.includes(specialty._id.toString())) ? 'selected' : '' %>>
                                                 <%= specialty.name %> (<%= specialty.code %>)
                                             </option>
                                         <% }); %>
                                     </select>
                                     <div class="form-text">
-                                        <small class="text-muted">Sélectionnez une ou plusieurs spécialités (laissez vide pour toutes les spécialités)</small>
+                                        <small class="text-muted">Sélectionnez "Toutes les spécialités" pour un matériau universel, ou choisissez des spécialités spécifiques</small>
                                     </div>
                                 </div>
                             </div>
@@ -79,23 +216,6 @@
                                     <label for="brand" class="form-label">Marque</label>
                                     <input type="text" class="form-control" id="brand" name="brand" value="<%= material.brand || '' %>">
                                     <div class="form-text">Nom du fabricant ou de la marque</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="stockMinimum" class="form-label required-field">Stock Minimum</label>
-                                    <input type="number" class="form-control" id="stockMinimum" name="stockMinimum" value="<%= material.stockMinimum || 10 %>" min="0" step="1" required>
-                                    <div class="form-text">Seuil d'alerte bas</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="alertLevel" class="form-label required-field">Alerte Critique</label>
-                                    <input type="number" class="form-control" id="alertLevel" name="alertLevel" value="<%= material.alertLevel || 5 %>" min="0" step="1" required>
-                                    <div class="form-text">Seuil d'alerte critique</div>
                                 </div>
                             </div>
                         </div>
@@ -138,20 +258,29 @@ document.getElementById('category').addEventListener('change', function() {
     }
 });
 
-// Update code preview when specialty changes
+// Specialty select - handle "All" option exclusivity
 document.getElementById('specialty').addEventListener('change', function() {
     const specialtySelect = this;
     const selectedOptions = Array.from(specialtySelect.selectedOptions);
-
-    if (selectedOptions.length === 0) {
-        // No specialties selected - use GEN
+    const allOption = specialtySelect.querySelector('option[value="all"]');
+    
+    // Check if "all" was just selected
+    const allSelected = selectedOptions.some(opt => opt.value === 'all');
+    
+    if (allSelected && selectedOptions.length > 1) {
+        // If "all" is selected along with others, keep only "all"
+        Array.from(specialtySelect.options).forEach(opt => {
+            opt.selected = opt.value === 'all';
+        });
+        updateCodePreview('ALL');
+    } else if (allSelected) {
+        updateCodePreview('ALL');
+    } else if (selectedOptions.length === 0) {
         updateCodePreview('GEN');
     } else if (selectedOptions.length === 1) {
-        // Single specialty selected
-        const specialtyCode = selectedOptions[0].getAttribute('data-code') || selectedOptions[0].textContent.split('(')[1]?.replace(')', '') || 'GEN';
-        updateCodePreview(specialtyCode);
+        const specialtyCode = selectedOptions[0].textContent.match(/\(([^)]+)\)/)?.[1] || 'GEN';
+        updateCodePreview(specialtyCode.trim());
     } else {
-        // Multiple specialties selected - use MUL for multiple
         updateCodePreview('MUL');
     }
 });
@@ -163,11 +292,82 @@ function updateCodePreview(specialtyCode) {
     }
 }
 
-// Initialize on page load
+// Unit of Measure Custom Select
 document.addEventListener('DOMContentLoaded', function() {
+    const customSelect = document.querySelector('.custom-unit-select');
+    if (customSelect) {
+        const selectTrigger = customSelect.querySelector('.unit-select-trigger');
+        const dropdown = customSelect.querySelector('.unit-select-dropdown');
+        const hiddenSelect = customSelect.querySelector('select');
+        const unitText = customSelect.querySelector('#unitText');
+        const unitIcon = customSelect.querySelector('.unit-icon');
+        const options = customSelect.querySelectorAll('.unit-select-option');
+
+        // Icon mapping
+        const iconMap = {
+            'pièce (Pce)': '🔧',
+            'boîte (Bt)': '📦',
+            'paquet (Paq)': '📋',
+            'sachet (S)': '🛍️',
+            'flacon (Fl)': '🧴',
+            'unité (U)': '1️⃣',
+            'mètre (m)': '📏',
+            'centimètre (cm)': '📐',
+            'litre (L)': '🫗',
+            'millilitre (mL)': '💧',
+            'gramme (g)': '⚖️',
+            'milligramme (mg)': '💊',
+            'ampoule (Amp)': '💉',
+            'seringue (Ser)': '🩺',
+            'tube (Tb)': '🧪',
+            'rouleau (Rl)': '🧻'
+        };
+
+        // Toggle dropdown
+        selectTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        // Handle option selection
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                hiddenSelect.value = value;
+                unitText.textContent = value.toUpperCase();
+                unitIcon.textContent = iconMap[value] || '📦';
+                
+                // Update selected state
+                options.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                dropdown.classList.remove('open');
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!customSelect.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // Initialize selected state from hidden select
+        const currentValue = hiddenSelect.value;
+        if (currentValue) {
+            unitText.textContent = currentValue.toUpperCase();
+            unitIcon.textContent = iconMap[currentValue] || '📦';
+            options.forEach(opt => {
+                if (opt.getAttribute('data-value') === currentValue) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+    }
+
     // Trigger category change to set initial state
     const categorySelect = document.getElementById('category');
-    if (categorySelect.value) {
+    if (categorySelect && categorySelect.value) {
         categorySelect.dispatchEvent(new Event('change'));
     }
 
@@ -178,3 +378,112 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<style>
+/* Custom Unit Select Styles */
+.custom-unit-select {
+    position: relative;
+}
+
+.unit-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.unit-select-trigger:hover {
+    border-color: #ffc107;
+}
+
+.unit-select-value {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.unit-icon {
+    font-size: 1.25rem;
+}
+
+#unitText {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.unit-select-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.unit-select-dropdown.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.unit-select-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-wrap: wrap;
+}
+
+.unit-select-option:hover {
+    background: #fff8e1;
+}
+
+.unit-select-option.selected {
+    background: #ffc107;
+    color: white;
+}
+
+.unit-select-option.selected .unit-option-desc {
+    color: rgba(255,255,255,0.8);
+}
+
+.unit-option-icon {
+    font-size: 1.25rem;
+}
+
+.unit-option-text {
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-transform: capitalize;
+}
+
+.unit-option-desc {
+    width: 100%;
+    margin-left: 2.5rem;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+/* Specialty select styling */
+#specialty option[value="all"] {
+    background-color: #e3f2fd;
+    font-weight: bold;
+}
+</style>

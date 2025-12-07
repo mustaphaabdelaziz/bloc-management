@@ -4,8 +4,8 @@ const surgerySchema = new mongoose.Schema(
   {
     code: {
       type: String,
+      required: true,
       unique: true,
-      sparse: true,
     },
     patient: {
       type: mongoose.Schema.Types.ObjectId,
@@ -22,17 +22,40 @@ const surgerySchema = new mongoose.Schema(
       ref: "Prestation",
       required: true,
     },
-    beginDateTime: {
+    entreeBloc: {
+      type: Date,
+    },
+    entreeSalle: {
+      type: Date,
+    },
+    sortieSalle: {
+      type: Date,
+    },
+    incisionTime: {
       type: Date,
       required: true,
     },
-    endDateTime: {
+    closingIncisionTime: {
       type: Date,
     },
     status: {
       type: String,
       enum: ["urgent", "planned"],
       default: "planned",
+    },
+    statusLifecycle: {
+      type: String,
+      enum: ["editable", "closed"],
+      default: "editable",
+    },
+    closedAt: {
+      type: Date,
+      default: null,
+    },
+    closedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     medicalStaff: [
       {
@@ -57,8 +80,17 @@ const surgerySchema = new mongoose.Schema(
           required: true,
         },
         priceUsed: {
-          type: Number, // Price of the material at the time of surgery
+          type: Number, // Price per unit of the material at the time of surgery
           required: true,
+        },
+        unitOfMeasure: {
+          type: String, // Frozen unit of measure (e.g., 'mètre (m)', 'litre (L)', 'pièce (Pce)')
+          required: false, // Optional for backward compatibility with existing data
+        },
+        patientReference: {
+          type: String, // Reference/serial/lot number of the material consumed by this patient
+          trim: true,
+          required: false, // Optional for backward compatibility
         },
       },
     ],
@@ -82,36 +114,59 @@ const surgerySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Payment"
     },
+    asaClass: {
+      type: String,
+      enum: ["I", "II", "III"],
+      default: null,
+    },
+    asaUrgent: {
+      type: Boolean,
+      default: false,
+    },
     notes: {
       type: String,
+    },
+    // Operating Room Reservation Fields
+    operatingRoom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'OperatingRoom',
+      default: null
+    },
+    scheduledStartTime: {
+      type: Date,
+      default: null
+    },
+    scheduledEndTime: {
+      type: Date,
+      default: null
+    },
+    reservationStatus: {
+      type: String,
+      enum: ['reserved', 'confirmed', 'cancelled', 'completed'],
+      default: null
+    },
+    reservationNotes: {
+      type: String,
+      trim: true
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
     },
   },
   { timestamps: true }
 );
 
-// Auto-generate surgery code with pattern: YYYY/XXXXX (e.g., 2025/00001)
-surgerySchema.pre("save", async function (next) {
-  if (!this.code) {
-    try {
-      const currentYear = new Date().getFullYear();
-      // Count surgeries created in the current year
-      const startOfYear = new Date(currentYear, 0, 1);
-      const endOfYear = new Date(currentYear + 1, 0, 1);
-      const count = await this.constructor.countDocuments({
-        createdAt: { $gte: startOfYear, $lt: endOfYear }
-      });
-      this.code = `${currentYear}/${String(count + 1).padStart(5, "0")}`;
-    } catch (error) {
-      return next(error);
-    }
-  }
-  next();
-});
-
 // Calcul de la durée
 surgerySchema.virtual("actualDuration").get(function () {
-  if (this.beginDateTime && this.endDateTime) {
-    return Math.round((this.endDateTime - this.beginDateTime) / (1000 * 60)); // en minutes
+  if (this.incisionTime && this.closingIncisionTime) {
+    return Math.round((this.closingIncisionTime - this.incisionTime) / (1000 * 60)); // en minutes
   }
   return 0;
 });

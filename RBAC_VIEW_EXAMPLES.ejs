@@ -62,15 +62,15 @@
     <label for="contractType" class="form-label">Type de Contrat</label>
     <select class="form-select" id="contractType" name="contractType" required>
       <option value="">-- Sélectionner --</option>
-      <option value="allocation" <%= surgeon.contractType === 'allocation' ? 'selected' : '' %>>Allocation</option>
+      <option value="location" <%= surgeon.contractType === 'location' ? 'selected' : '' %>>location</option>
       <option value="percentage" <%= surgeon.contractType === 'percentage' ? 'selected' : '' %>>Pourcentage</option>
     </select>
   </div>
 
-  <div class="mb-3" id="allocationRateDiv" style="display: none;">
-    <label for="allocationRate" class="form-label">Taux Allocation (DA/heure)</label>
-    <input type="number" class="form-control" id="allocationRate" name="allocationRate" 
-           value="<%= surgeon.allocationRate || '' %>" step="0.01">
+  <div class="mb-3" id="locationRateDiv" style="display: none;">
+    <label for="locationRate" class="form-label">Taux location (DA/heure)</label>
+    <input type="number" class="form-control" id="locationRate" name="locationRate" 
+           value="<%= surgeon.locationRate || '' %>" step="0.01">
   </div>
 
   <div class="mb-3" id="percentageRateDiv" style="display: none;">
@@ -152,12 +152,12 @@
       <hr>
       <h6>Informations Contractuelles</h6>
       <p><strong>Type de Contrat:</strong> 
-        <span class="badge bg-<%= surgeon.contractType === 'allocation' ? 'primary' : 'success' %>">
-          <%= surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
+        <span class="badge bg-<%= surgeon.contractType === 'location' ? 'primary' : 'success' %>">
+          <%= surgeon.contractType === 'location' ? 'location' : 'Pourcentage' %>
         </span>
       </p>
-      <% if (surgeon.contractType === 'allocation') { %>
-        <p><strong>Taux Allocation:</strong> <%= surgeon.allocationRate %> DA/heure</p>
+      <% if (surgeon.contractType === 'location') { %>
+        <p><strong>Taux location:</strong> <%= surgeon.locationRate %> DA/heure</p>
       <% } else if (surgeon.contractType === 'percentage') { %>
         <p><strong>Taux Chirurgien:</strong> <%= surgeon.percentageRate %>%</p>
       <% } %>

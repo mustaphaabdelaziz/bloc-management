@@ -88,7 +88,7 @@
                                             <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
                                         </td>
                                         <td><%= surgery.patient.firstName %> <%= surgery.patient.lastName %></td>
-                                        <td>Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %></td>
+                                        <td>Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %></td>
                                         <td>
                                             <% const staffRole = surgery.medicalStaff.find(ms => ms.staff.toString() === staff._id.toString()); %>
                                             <% if (staffRole && staffRole.rolePlayedId) { %>

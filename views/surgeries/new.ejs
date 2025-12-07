@@ -5,12 +5,17 @@
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-title">
-            <h1><i class="bi bi-plus-circle-fill me-3"></i>Nouvelle Chirurgie</h1>
-            <p>Programmer une nouvelle intervention chirurgicale</p>
+            <% if (typeof fromReservation !== 'undefined' && fromReservation) { %>
+                <h1><i class="bi bi-arrow-right-circle-fill me-3"></i>Convertir Réservation en Chirurgie</h1>
+                <p>Confirmer la réservation <%= reservation.temporaryCode %> comme chirurgie complète</p>
+            <% } else { %>
+                <h1><i class="bi bi-plus-circle-fill me-3"></i>Nouvelle Chirurgie</h1>
+                <p>Programmer une nouvelle intervention chirurgicale</p>
+            <% } %>
         </div>
         <div class="page-actions">
-            <a href="/surgeries" class="btn btn-light">
-                <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+            <a href="<%= typeof fromReservation !== 'undefined' && fromReservation ? '/surgeries/planning/view' : '/surgeries' %>" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la <%= typeof fromReservation !== 'undefined' && fromReservation ? 'planification' : 'liste' %>
             </a>
         </div>
     </div>
@@ -19,10 +24,32 @@
         <!-- Main Form -->
         <div class="col-lg-8">
             <div class="surgery-form-container">
-                <form method="POST" action="/surgeries" id="surgeryForm" class="surgery-form">
+                <form method="POST" action="<%= typeof fromReservation !== 'undefined' && fromReservation ? '/surgeries/new/from-reservation/' + reservation._id : '/surgeries' %>" id="surgeryForm" class="surgery-form">
                     <!-- Basic Information Section -->
                     <div class="form-section">
                         <h3><i class="bi bi-info-circle me-2"></i>Informations de Base</h3>
+
+                        <% if (typeof fromReservation !== 'undefined' && fromReservation) { %>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Cette chirurgie est créée à partir de la réservation <strong><%= reservation.temporaryCode %></strong>. 
+                            Les informations de base sont pré-remplies.
+                        </div>
+                        <% } %>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Code Chirurgie <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-barcode"></i>
+                                    <input type="text" class="form-control-modern" id="code" name="code"
+                                           placeholder="Entrer un code unique" required autocomplete="off">
+                                </div>
+                                <div class="form-help-text">
+                                    Exemple: CH-2025-001 ou SALLE-001
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="form-row">
                             <div class="form-group">
@@ -56,7 +83,7 @@
                                 </div>
                                 <datalist id="surgeonsList">
                                     <% surgeons.forEach(surgeon => { %>
-                                        <option value="Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>"
+                                        <option value="Dr. <%= surgeon.lastName %> <%= surgeon.firstName %> - <%= surgeon.specialty.name %>"
                                                 data-id="<%= surgeon._id %>"
                                                 data-specialty="<%= surgeon.specialty._id %>"
                                                 data-contract="<%= surgeon.contractType %>">
@@ -68,17 +95,21 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Prestation <span class="text-danger">*</span></label>
-                                <select class="form-select-modern" id="prestation" name="prestation" required>
-                                    <option value="">Choisir une prestation...</option>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-clipboard-check"></i>
+                                    <input type="text" class="form-control-modern" id="prestationInput" name="prestationName"
+                                           list="prestationsList" placeholder="Rechercher une prestation..." required autocomplete="off">
+                                    <input type="hidden" name="prestation" id="prestationId">
+                                </div>
+                                <datalist id="prestationsList">
                                     <% prestations.forEach(prestation => { %>
-                                        <option value="<%= prestation._id %>"
+                                        <option value="<%= prestation.designation %> - <%= prestation.specialty.name %> (<%= prestation.duration %> min)"
+                                                data-id="<%= prestation._id %>"
                                                 data-specialty="<%= prestation.specialty._id %>"
                                                 data-duration="<%= prestation.duration %>"
                                                 data-price="<%= prestation.priceHT %>">
-                                            <%= prestation.designation %> - <%= prestation.specialty.name %> (<%= prestation.duration %> min)
-                                        </option>
                                     <% }); %>
-                                </select>
+                                </datalist>
                             </div>
 
                             <% if (canEditSurgeryFinancials) { %>
@@ -95,6 +126,23 @@
                             </div>
                             <% } %>
                         </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Salle d'Opération <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-hospital"></i>
+                                    <select class="form-control-modern" id="operatingRoom" name="operatingRoom" required>
+                                        <option value="">-- Sélectionner une salle --</option>
+                                        <% operatingRooms.forEach(room => { %>
+                                            <option value="<%= room._id %>">
+                                                <%= room.name %> (<%= room.code %>)
+                                            </option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Scheduling Section -->
@@ -104,35 +152,98 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Statut <span class="text-danger">*</span></label>
-                                <select class="form-select-modern" name="status" id="status" required>
-                                    <option value="planned">Planifiée</option>
-                                    <option value="urgent">Urgente</option>
-                                </select>
+                                <div class="custom-status-select">
+                                    <select class="form-select-modern" name="status" id="status" required>
+                                        <option value="planned">Planifiée</option>
+                                        <option value="urgent">Urgente</option>
+                                    </select>
+                                    <div class="status-select-trigger">
+                                        <div class="status-select-content">
+                                            <div class="status-select-icon">
+                                                <i class="bi bi-flag-fill"></i>
+                                            </div>
+                                            <div class="status-select-text" id="statusText">PLANIFIÉE</div>
+                                        </div>
+                                        <div class="status-select-arrow">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="status-select-dropdown">
+                                        <div class="status-select-option" data-value="planned">
+                                            <div class="status-option-icon">
+                                                <i class="bi bi-calendar-check"></i>
+                                            </div>
+                                            <div class="status-option-text">Planifiée</div>
+                                            <div class="status-option-badge">Planifiée</div>
+                                        </div>
+                                        <div class="status-select-option" data-value="urgent">
+                                            <div class="status-option-icon">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                            </div>
+                                            <div class="status-option-text">En Urgence</div>
+                                            <div class="status-option-badge">En Urgence</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Date et heure de début <span class="text-danger">*</span></label>
+                                <label class="form-label">Entrée au Bloc <span class="text-danger">*</span></label>
                                 <div class="input-wrapper-modern">
-                                    <i class="input-icon-wrapper bi bi-calendar-event"></i>
-                                    <input type="datetime-local" class="form-control-modern" id="beginDateTime"
-                                           name="beginDateTime" required>
+                                    <i class="input-icon-wrapper bi bi-door-open"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="entreeBloc"
+                                           name="entreeBloc" required>
                                 </div>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Date et heure de fin</label>
+                                <label class="form-label">Entrée en Salle d'Opération <span class="text-danger">*</span></label>
                                 <div class="input-wrapper-modern">
-                                    <i class="input-icon-wrapper bi bi-calendar-check"></i>
-                                    <input type="datetime-local" class="form-control-modern" id="endDateTime"
-                                           name="endDateTime">
+                                    <i class="input-icon-wrapper bi bi-door-open"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="entreeSalle"
+                                           name="entreeSalle" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Heure d'Incision <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-clock"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="incisionTime"
+                                           name="incisionTime" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Heure de Fermeture d'Incision</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-clock"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="closingIncisionTime"
+                                           name="closingIncisionTime">
                                 </div>
                                 <div class="form-help-text">
                                     Optionnel - permet le calcul automatique de la durée
                                 </div>
                             </div>
 
+                            <div class="form-group">
+                                <label class="form-label">Sortie de Salle d'Opération</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-door-closed"></i>
+                                    <input type="datetime-local" class="form-control-modern" id="sortieSalle"
+                                           name="sortieSalle">
+                                </div>
+                                <div class="form-help-text">
+                                    Optionnel - enregistré après la fin de l'opération
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Frais supplémentaires</label>
                                 <div class="form-check-modern">
@@ -149,6 +260,54 @@
                         </div>
                     </div>
 
+                    <!-- ASA Classification Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-heart-pulse me-2"></i>Classification ASA (American Society of Anesthesiologists)</h3>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <strong><i class="bi bi-info-circle me-2"></i>À propos de la classification ASA:</strong>
+                            <div class="mt-2">
+                                <ul class="mb-0 small">
+                                    <li><strong>ASA I:</strong> Patient normal et en bonne santé (aucune maladie organique, physiologique ou psychiatrique)</li>
+                                    <li><strong>ASA II:</strong> Patient avec maladie systémique légère et bien contrôlée (ex: hypertension légère, diabète contrôlé)</li>
+                                    <li><strong>ASA III:</strong> Patient avec maladie systémique grave (impact sur la santé, limite l'activité, ex: angor stable, diabète mal contrôlé)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Classe ASA</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-heart-pulse"></i>
+                                    <select class="form-select-modern" id="asaClass" name="asaClass">
+                                        <option value="">Non spécifiée</option>
+                                        <option value="I">ASA I - Patient en bonne santé</option>
+                                        <option value="II">ASA II - Maladie systémique légère</option>
+                                        <option value="III">ASA III - Maladie systémique grave</option>
+                                    </select>
+                                </div>
+                                <div class="form-help-text">
+                                    Évaluation de l'état de santé physique du patient avant l'intervention
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Urgence ASA</label>
+                                <div class="form-check-modern">
+                                    <input class="form-check-input-modern" type="checkbox" id="asaUrgent" name="asaUrgent">
+                                    <label class="form-check-label-modern" for="asaUrgent">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Marquer comme ASA Urgent (U)
+                                    </label>
+                                </div>
+                                <div class="form-help-text text-warning">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Si activé, la classe ASA sera complétée par "U" (ex: ASA III U)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Medical Staff Section -->
                     <div class="medical-staff-section">
                         <div class="medical-staff-header">
@@ -158,21 +317,66 @@
                             </button>
                         </div>
 
+                        <datalist id="medicalStaffList">
+                            <% medicalStaff.forEach(ms => { %>
+                                <option value="<%= ms.firstName %> <%= ms.lastName %>"
+                                        data-id="<%= ms._id %>"
+                                        data-fonctions="<%= ms.fonctions ? ms.fonctions.map(f => f._id).join(',') : '' %>">
+                            <% }); %>
+                        </datalist>
+
                         <div id="medicalStaffContainer">
                             <div class="staff-row">
-                                <select name="medicalStaff" class="form-select-modern" onchange="updateRolesForStaff(this)">
-                                    <option value="">Sélectionner personnel</option>
-                                    <% medicalStaff.forEach(ms => { %>
-                                        <option value="<%= ms._id %>"><%= ms.firstName %> <%= ms.lastName %></option>
-                                    <% }); %>
-                                </select>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-person"></i>
+                                    <input type="text" id="medicalStaffInput_0" class="form-control-modern" name="medicalStaffName" list="medicalStaffList" placeholder="Rechercher personnel..." onchange="updateRolesForStaff(this)">
+                                    <input type="hidden" name="medicalStaff" id="medicalStaffId_0">
+                                </div>
 
-                                <select name="rolePlayedId" class="form-select-modern">
-                                    <option value="">Sélectionner rôle</option>
-                                    <% fonctions.forEach(fonction => { %>
-                                        <option value="<%= fonction._id %>"><%= fonction.name %></option>
-                                    <% }); %>
-                                </select>
+                                <div class="custom-role-select">
+                                    <select name="rolePlayedId" class="form-select-modern" style="display: none;">
+                                        <option value="">Sélectionner rôle</option>
+                                        <% fonctions.forEach(fonction => { %>
+                                            <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                                        <% }); %>
+                                    </select>
+                                    <div class="role-select-trigger">
+                                        <div class="role-select-content">
+                                            <div class="role-select-icon">
+                                                <i class="bi bi-person-badge"></i>
+                                            </div>
+                                            <div class="role-select-text" id="roleText_0">Sélectionner rôle</div>
+                                        </div>
+                                        <div class="role-select-arrow">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="role-select-dropdown">
+                                        <div class="role-select-option" data-value="">
+                                            <div class="role-option-icon">
+                                                <i class="bi bi-dash-circle"></i>
+                                            </div>
+                                            <div class="role-option-text">Sélectionner rôle</div>
+                                        </div>
+                                        <% fonctions.forEach(fonction => { %>
+                                            <div class="role-select-option" data-value="<%= fonction._id %>">
+                                                <div class="role-option-icon">
+                                                    <% 
+                                                    const roleName = fonction.name.toLowerCase();
+                                                    let iconClass = 'bi-person-fill';
+                                                    if (roleName.includes('anesthésie')) iconClass = 'bi-heart-pulse';
+                                                    else if (roleName.includes('instrumentistes')) iconClass = 'bi-tools';
+                                                    else if (roleName.includes('hygiene')) iconClass = 'bi-shield-check';
+                                                    else if (roleName.includes('médecin') || roleName.includes('anesthésiste')) iconClass = 'bi-stethoscope';
+                                                    else if (roleName.includes('panseuse')) iconClass = 'bi-bandage';
+                                                    %>
+                                                    <i class="bi <%= iconClass %>"></i>
+                                                </div>
+                                                <div class="role-option-text"><%= fonction.name %></div>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                </div>
 
                                 <button type="button" class="btn-staff-action btn-delete" onclick="removeStaffRow(this)" disabled>
                                     <i class="bi bi-trash"></i>
@@ -185,25 +389,47 @@
                     <div class="form-section">
                         <h3><i class="bi bi-box-seam me-2"></i>Matériaux et Consommables</h3>
 
+                        <datalist id="consumableMaterialsList">
+                            <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
+                                <option value="<%= mat.designation %>"
+                                        data-id="<%= mat._id %>"
+                                        data-designation="<%= mat.designation %>"
+                                        data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                                        data-applies-to-all="<%= mat.appliesToAllSpecialties ? 'true' : 'false' %>"
+                                        data-category="<%= mat.category %>"
+                                        data-price="<%= mat.priceHT %>"
+                                        data-unit="<%= mat.unitOfMeasure %>">
+                                    <%= mat.designation %>
+                                </option>
+                            <% }); %>
+                        </datalist>
+
+                        <datalist id="patientMaterialsList">
+                            <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+                                <option value="<%= mat.designation %>"
+                                        data-id="<%= mat._id %>"
+                                        data-designation="<%= mat.designation %>"
+                                        data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+                                        data-applies-to-all="<%= mat.appliesToAllSpecialties ? 'true' : 'false' %>"
+                                        data-category="<%= mat.category %>"
+                                        data-price="<%= mat.priceHT %>"
+                                        data-unit="<%= mat.unitOfMeasure %>">
+                                    <%= mat.designation %>
+                                </option>
+                            <% }); %>
+                        </datalist>
+
                         <!-- Consumable Materials -->
                         <div class="mb-4">
                             <h5 class="text-primary mb-3"><i class="bi bi-tools me-2"></i>Matériaux Consommables</h5>
                             <div id="consumableMaterialsContainer">
                                 <div class="row mb-3 consumable-material-row">
                                     <div class="col-md-6">
-                                        <select class="form-select-modern" name="consumableMaterialId">
-                                            <option value="">Choisir un matériau consommable...</option>
-                                            <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
-                                                <option
-                                                  value="<%= mat._id %>"
-                                                  data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
-                                                  data-category="<%= mat.category %>"
-                                                  data-price="<%= mat.priceHT %>"
-                                                  data-unit="<%= mat.unitOfMeasure %>">
-                                                  <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                                                </option>
-                                            <% }) %>
-                                        </select>
+                                        <div class="input-wrapper-modern">
+                                            <i class="input-icon-wrapper bi bi-tools"></i>
+                                            <input type="text" id="consumableMaterialInput_0" class="form-control-modern" name="consumableMaterialName" list="consumableMaterialsList" placeholder="Rechercher matériau consommable...">
+                                            <input type="hidden" name="consumableMaterialId" id="consumableMaterialId_0">
+                                        </div>
                                     </div>
                                     <div class="col-md-4">
                                         <input type="number" name="consumableMaterialQuantity" class="form-control-modern"
@@ -227,24 +453,20 @@
                             <h5 class="text-info mb-3"><i class="bi bi-person me-2"></i>Matériaux Patient</h5>
                             <div id="patientMaterialsContainer">
                                 <div class="row mb-3 patient-material-row">
-                                    <div class="col-md-6">
-                                        <select class="form-select-modern" name="patientMaterialId">
-                                            <option value="">Choisir un matériau patient...</option>
-                                            <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
-                                                <option
-                                                  value="<%= mat._id %>"
-                                                  data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
-                                                  data-category="<%= mat.category %>"
-                                                  data-price="<%= mat.priceHT %>"
-                                                  data-unit="<%= mat.unitOfMeasure %>">
-                                                  <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
-                                                </option>
-                                            <% }) %>
-                                        </select>
+                                    <div class="col-md-5">
+                                        <div class="input-wrapper-modern">
+                                            <i class="input-icon-wrapper bi bi-person"></i>
+                                            <input type="text" id="patientMaterialInput_0" class="form-control-modern" name="patientMaterialName" list="patientMaterialsList" placeholder="Rechercher matériau patient...">
+                                            <input type="hidden" name="patientMaterialId" id="patientMaterialId_0">
+                                        </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-2">
                                         <input type="number" name="patientMaterialQuantity" class="form-control-modern"
-                                               min="1" step="0.01" placeholder="Quantité">
+                                               min="1" step="0.01" placeholder="Qté">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" name="patientMaterialReference" class="form-control-modern"
+                                               placeholder="Référence/N° série" title="Référence ou numéro de série du matériau">
                                     </div>
                                     <div class="col-md-2">
                                         <button type="button" class="btn-staff-action btn-delete"
@@ -369,12 +591,14 @@ window.staffOptions = `
 window.consumableMaterialOptions = `
   <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
     <option
-      value="<%= mat._id %>"
-      data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+      value="<%= mat.designation %>"
+      data-id="<%= mat._id %>"
+      data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+      data-applies-to-all="<%= mat.appliesToAllSpecialties ? 'true' : 'false' %>"
       data-category="<%= mat.category %>"
       data-price="<%= mat.priceHT %>"
       data-unit="<%= mat.unitOfMeasure %>">
-      <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+      <%= mat.designation %>
     </option>
   <% }) %>
 `;
@@ -383,12 +607,14 @@ window.consumableMaterialOptions = `
 window.patientMaterialOptions = `
   <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
     <option
-      value="<%= mat._id %>"
-      data-specialty="<%= mat.specialty ? mat.specialty._id : '' %>"
+      value="<%= mat.designation %>"
+      data-id="<%= mat._id %>"
+      data-specialty="<%= mat.specialty && Array.isArray(mat.specialty) ? mat.specialty.map(s => s._id).join(',') : (mat.specialty ? mat.specialty._id : '') %>"
+      data-applies-to-all="<%= mat.appliesToAllSpecialties ? 'true' : 'false' %>"
       data-category="<%= mat.category %>"
       data-price="<%= mat.priceHT %>"
       data-unit="<%= mat.unitOfMeasure %>">
-      <%= mat.designation %> (Stock: <%= mat.stock %> <%= mat.unitOfMeasure %>)
+      <%= mat.designation %>
     </option>
   <% }) %>
 `;
@@ -405,6 +631,76 @@ window.fonctionsOptions = [
 <script>
 // Real-time preview updates
 document.addEventListener('DOMContentLoaded', function() {
+    // Custom Status Select Functionality
+    const customSelect = document.querySelector('.custom-status-select');
+    const selectTrigger = customSelect.querySelector('.status-select-trigger');
+    const selectDropdown = customSelect.querySelector('.status-select-dropdown');
+    const selectOptions = customSelect.querySelectorAll('.status-select-option');
+    const hiddenSelect = customSelect.querySelector('select');
+    const statusText = customSelect.querySelector('#statusText');
+
+    let isOpen = false;
+
+    // Toggle dropdown
+    selectTrigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        toggleDropdown();
+    });
+
+    // Handle option selection
+    selectOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const text = this.querySelector('.status-option-text').textContent.toUpperCase();
+
+            // Update hidden select
+            hiddenSelect.value = value;
+
+            // Update trigger appearance
+            selectTrigger.classList.remove('status-planned', 'status-urgent');
+            selectTrigger.classList.add('status-' + value);
+            statusText.textContent = text;
+
+            // Update selected state
+            selectOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+
+            // Close dropdown
+            isOpen = false;
+            toggleDropdown();
+
+            // Trigger change event for form validation
+            hiddenSelect.dispatchEvent(new Event('change'));
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!customSelect.contains(e.target)) {
+            isOpen = false;
+            toggleDropdown();
+        }
+    });
+
+    // Toggle dropdown function
+    function toggleDropdown() {
+        if (isOpen) {
+            selectDropdown.classList.add('open');
+            selectTrigger.classList.add('active');
+        } else {
+            selectDropdown.classList.remove('open');
+            selectTrigger.classList.remove('active');
+        }
+    }
+
+    // Initialize with default selection
+    const defaultValue = hiddenSelect.value || 'planned';
+    const defaultOption = customSelect.querySelector(`[data-value="${defaultValue}"]`);
+    if (defaultOption) {
+        defaultOption.click();
+    }
+
     // Update preview when form changes
     const form = document.getElementById('surgeryForm');
     const inputs = form.querySelectorAll('input, select, textarea');
@@ -415,6 +711,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function updatePreview() {
+        // Update code
+        const codeInput = document.getElementById('code');
+        document.getElementById('previewCode').textContent =
+            codeInput.value || 'Code...';
+
         // Update patient
         const patientInput = document.getElementById('patient');
         document.getElementById('previewPatient').textContent =
@@ -426,10 +727,20 @@ document.addEventListener('DOMContentLoaded', function() {
             surgeonInput.value || '-';
 
         // Update prestation
-        const prestationSelect = document.getElementById('prestation');
-        const selectedOption = prestationSelect.options[prestationSelect.selectedIndex];
-        document.getElementById('previewPrestation').textContent =
-            selectedOption ? selectedOption.text.split(' - ')[0] || '-' : '-';
+        const prestationInput = document.getElementById('prestationInput');
+        const prestationId = document.getElementById('prestationId').value;
+        if (prestationId) {
+            const datalist = document.getElementById('prestationsList');
+            const options = datalist.querySelectorAll('option');
+            for (let option of options) {
+                if (option.getAttribute('data-id') === prestationId) {
+                    document.getElementById('previewPrestation').textContent = option.value.split(' - ')[0] || '-';
+                    break;
+                }
+            }
+        } else {
+            document.getElementById('previewPrestation').textContent = '-';
+        }
 
         // Update status
         const statusSelect = document.getElementById('status');
@@ -437,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('previewStatus').textContent = statusText;
 
         // Update date/time
-        const dateTimeInput = document.getElementById('beginDateTime');
+        const dateTimeInput = document.getElementById('incisionTime');
         if (dateTimeInput.value) {
             const date = new Date(dateTimeInput.value);
             document.getElementById('previewDateTime').textContent =
@@ -447,17 +758,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Update duration
-        if (selectedOption && selectedOption.getAttribute('data-duration')) {
-            document.getElementById('previewDuration').textContent =
-                selectedOption.getAttribute('data-duration') + ' min';
+        const selectedId = document.getElementById('prestationId').value;
+        if (selectedId) {
+            const datalist = document.getElementById('prestationsList');
+            const options = datalist.querySelectorAll('option');
+            for (let option of options) {
+                if (option.getAttribute('data-id') === selectedId) {
+                    const duration = option.getAttribute('data-duration');
+                    document.getElementById('previewDuration').textContent = duration ? duration + ' min' : '-';
+                    break;
+                }
+            }
         } else {
             document.getElementById('previewDuration').textContent = '-';
         }
 
         // Update price
         const adjustedPriceInput = document.getElementById('adjustedPrice');
-        const basePrice = selectedOption ? selectedOption.getAttribute('data-price') : null;
-        const displayPrice = adjustedPriceInput.value || basePrice;
+        let displayPrice = adjustedPriceInput.value;
+        if (!displayPrice && selectedId) {
+            const datalist = document.getElementById('prestationsList');
+            const options = datalist.querySelectorAll('option');
+            for (let option of options) {
+                if (option.getAttribute('data-id') === selectedId) {
+                    displayPrice = option.getAttribute('data-price');
+                    break;
+                }
+            }
+        }
         if (displayPrice) {
             document.getElementById('previewPrice').textContent =
                 new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(displayPrice);
@@ -466,15 +794,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Generate surgery code
-    function generateSurgeryCode() {
-        const now = new Date();
-        const year = now.getFullYear().toString().slice(-2);
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        document.getElementById('previewCode').textContent = `CH-${year}${month}-${random}`;
-    }
+    // Role select initialization is now handled in surgeries-new.js
 
-    generateSurgeryCode();
+    // Prefill form from reservation data if converting
+    <% if (typeof fromReservation !== 'undefined' && fromReservation && surgery) { %>
+    window.addEventListener('DOMContentLoaded', () => {
+        // Prefill patient
+        <% if (surgery.patient) { %>
+        const patientInput = document.getElementById('patient');
+        const patientId = document.getElementById('patientId');
+        patientInput.value = '<%= surgery.patient.firstName %> <%= surgery.patient.lastName %> - <%= surgery.patient.code %>';
+        patientId.value = '<%= surgery.patient._id %>';
+        <% } %>
+
+        // Prefill surgeon
+        <% if (surgery.surgeon) { %>
+        const surgeonInput = document.getElementById('surgeon');
+        const surgeonId = document.getElementById('surgeonId');
+        surgeonInput.value = 'Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %> - <%= surgery.surgeon.specialty ? surgery.surgeon.specialty.name : '' %>';
+        surgeonId.value = '<%= surgery.surgeon._id %>';
+        <% } %>
+
+        // Prefill prestation
+        <% if (surgery.prestation) { %>
+        const prestationInput = document.getElementById('prestationInput');
+        const prestationId = document.getElementById('prestationId');
+        prestationInput.value = '<%= surgery.prestation.designation %> - <%= surgery.prestation.specialty ? surgery.prestation.specialty.name : '' %> (<%= surgery.prestation.duration %> min)';
+        prestationId.value = '<%= surgery.prestation._id %>';
+        <% } %>
+
+        // Prefill operating room
+        <% if (surgery.operatingRoom) { %>
+        const operatingRoomSelect = document.getElementById('operatingRoom');
+        operatingRoomSelect.value = '<%= surgery.operatingRoom._id %>';
+        <% } %>
+
+        // Set default times from reservation
+        <% if (surgery.scheduledStartTime) { %>
+        const scheduledStart = new Date('<%= surgery.scheduledStartTime %>');
+        const entreeBlocInput = document.getElementById('entreeBloc');
+        const entreeSalleInput = document.getElementById('entreeSalle');
+        const incisionTimeInput = document.getElementById('incisionTime');
+        
+        // Set entreeBloc to 30 minutes before scheduled start
+        const entreeBloc = new Date(scheduledStart.getTime() - 30 * 60 * 1000);
+        entreeBlocInput.value = entreeBloc.toISOString().slice(0, 16);
+        
+        // Set entreeSalle to scheduled start
+        entreeSalleInput.value = scheduledStart.toISOString().slice(0, 16);
+        
+        // Set incisionTime to 15 minutes after scheduled start
+        const incisionTime = new Date(scheduledStart.getTime() + 15 * 60 * 1000);
+        incisionTimeInput.value = incisionTime.toISOString().slice(0, 16);
+        <% } %>
+    });
+    <% } %>
 });
 </script>
+

@@ -1,0 +1,152 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/operatingRooms/index.ejs -->
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Salles Opératoires</h1>
+                <p class="page-subtitle">Configuration et suivi des salles d'opération</p>
+            </div>
+            <% if (permissions.canManageRooms) { %>
+            <a href="/operating-rooms/new" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouvelle Salle
+            </a>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Statut</label>
+                <select name="status" class="form-select">
+                    <option value="">Toutes les salles</option>
+                    <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Actives</option>
+                    <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactives</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Code, nom, localisation..." value="<%= filters.search || '' %>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/operating-rooms" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des salles -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Salles Opératoires
+                <span class="badge bg-light text-primary ms-2"><%= operatingRooms.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (operatingRooms.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Nom</th>
+                                <th>Localisation</th>
+                                <th>Capacité</th>
+                                <th>Équipements</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% operatingRooms.forEach(room => { %>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark fw-bold"><%= room.code %></span>
+                                    </td>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-hospital"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= room.name %></h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <% if (room.location || room.floor) { %>
+                                            <small class="text-muted">
+                                                <% if (room.location) { %><%= room.location %><% } %>
+                                                <% if (room.location && room.floor) { %>, <% } %>
+                                                <% if (room.floor) { %>Étage <%= room.floor %><% } %>
+                                            </small>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info"><%= room.capacity %></span>
+                                    </td>
+                                    <td>
+                                        <% if (room.equipment && room.equipment.length > 0) { %>
+                                            <small class="text-muted"><%= room.equipment.length %> équipement(s)</small>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (room.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="material-actions">
+                                            <a href="/operating-rooms/<%= room._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <% if (permissions.canManageRooms) { %>
+                                                <a href="/operating-rooms/<%= room._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-hospital"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune salle opératoire trouvée</h5>
+                    <p class="empty-description">Commencez par créer des salles opératoires</p>
+                    <% if (permissions.canManageRooms) { %>
+                    <a href="/operating-rooms/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Créer une salle
+                    </a>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>

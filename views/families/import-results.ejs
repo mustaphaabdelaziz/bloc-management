@@ -1,0 +1,180 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/families/import-results.ejs -->
+
+<div class="specialty-card mb-4">
+  <div class="specialty-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="specialty-title">
+          <i class="bi bi-file-earmark-spreadsheet me-2"></i>Résultats de l'Import
+        </h3>
+        <p class="specialty-subtitle">Résumé de l'importation des familles</p>
+      </div>
+      <a href="/families" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-2"></i>Retour aux Familles
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="specialty-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Total des lignes</h5>
+            <h2 class="text-primary mb-0"><%= totalRows %></h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="specialty-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Importées avec succès</h5>
+            <h2 class="text-success mb-0">
+              <i class="bi bi-check-circle me-1"></i><%= results.imported %>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="specialty-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Erreurs</h5>
+            <h2 class="text-danger mb-0">
+              <i class="bi bi-exclamation-circle me-1"></i><%= results.failed %>
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Success Alert -->
+  <% if (results.imported > 0) { %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">
+      <i class="bi bi-check-circle me-2"></i>Importation réussie
+    </h4>
+    <p class="mb-0">
+      <strong><%= results.imported %> famille<%= results.imported > 1 ? 's' : '' %></strong> 
+      <%= results.imported > 1 ? 'ont été importées' : 'a été importée' %> avec succès.
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+  </div>
+  <% } %>
+
+  <!-- Error Details Section -->
+  <% if (results.errors && results.errors.length > 0) { %>
+  <div class="specialty-card mt-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-exclamation-triangle me-2"></i>Erreurs d'Importation
+        <span class="badge bg-light text-danger float-end"><%= results.failed %></span>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="specialty-table table">
+          <thead>
+            <tr>
+              <th>Ligne</th>
+              <th>Nom</th>
+              <th>Spécialité</th>
+              <th>Messages d'Erreur</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.errors.forEach((error, index) => { %>
+            <tr class="align-middle">
+              <td>
+                <strong><%= error.row %></strong>
+              </td>
+              <td>
+                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<%= error.name %>">
+                  <%= error.name %>
+                </span>
+              </td>
+              <td>
+                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<%= error.specialty %>">
+                  <%= error.specialty %>
+                </span>
+              </td>
+              <td>
+                <div class="error-messages">
+                  <% error.messages.forEach((msg, idx) => { %>
+                  <div class="error-item mb-2">
+                    <span class="badge bg-danger">
+                      <i class="bi bi-exclamation-circle me-1"></i><%= msg %>
+                    </span>
+                  </div>
+                  <% }); %>
+                </div>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Footer Actions -->
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <a href="/families" class="btn btn-outline-primary btn-lg w-100">
+        <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+      </a>
+    </div>
+    <div class="col-md-6">
+      <a href="/families/new" class="btn btn-outline-success btn-lg w-100">
+        <i class="bi bi-plus-circle me-2"></i>Ajouter une famille
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .specialty-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .specialty-header {
+    padding: 24px;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .specialty-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: #212529;
+  }
+
+  .specialty-subtitle {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 8px 0 0 0;
+  }
+
+  .error-item {
+    display: flex;
+    align-items: center;
+  }
+
+  .error-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .specialty-table {
+    margin-bottom: 0;
+  }
+
+  .specialty-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+</style>

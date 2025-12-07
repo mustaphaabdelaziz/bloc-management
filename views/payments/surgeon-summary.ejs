@@ -10,10 +10,10 @@
     <div class="d-flex justify-content-between align-items-start">
       <div>
         <h3 class="mb-1">
-          <i class="bi bi-person-circle me-2"></i>Paiements - Dr. <%= surgeon.lastname %> <%= surgeon.firstname %>
+          <i class="bi bi-person-circle me-2"></i>Paiements - Dr. <%= surgeon.lastName %> <%= surgeon.firstName %>
         </h3>
         <p class="text-muted mb-0">
-          Type de contrat: <strong><%= surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %></strong>
+          Type de contrat: <strong><%= surgeon.contractType === 'location' ? 'location' : 'Pourcentage' %></strong>
         </p>
       </div>
       <a href="/surgeons/<%= surgeon._id %>" class="btn btn-outline-primary">
@@ -165,7 +165,7 @@
                     <td class="payment-patient">
                       <%= payment.surgery.patient.lastName %> <%= payment.surgery.patient.firstName %>
                     </td>
-                    <td><%= moment(payment.surgery.beginDateTime).format('DD/MM/YYYY') %></td>
+                    <td><%= moment(payment.surgery.incisionTime).format('DD/MM/YYYY') %></td>
                     <td>
                       <% if(payment.paymentType === 'outgoing') { %>
                         <span class="payment-type-badge outgoing">

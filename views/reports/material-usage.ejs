@@ -1,0 +1,256 @@
+<% layout('layouts/boilerplate') %>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-box-seam text-primary"></i> Rapport d'Utilisation des Matériaux
+                    </h2>
+                    <p class="text-muted mb-0">Statistiques de consommation et analyse des coûts</p>
+                </div>
+                <a href="/reports" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Retour aux rapports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Date début</label>
+                    <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date fin</label>
+                    <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Catégorie</label>
+                    <select name="category" class="form-select">
+                        <option value="">Toutes</option>
+                        <option value="patient" <%= filters.category === 'patient' ? 'selected' : '' %>>Patient</option>
+                        <option value="consumable" <%= filters.category === 'consumable' ? 'selected' : '' %>>Consommable</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Valeur Totale Consommée</h6>
+                    <h3 class="card-title mb-0">
+                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(summary.totalMaterialValue) %>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Matériaux Patient</h6>
+                    <h3 class="card-title mb-0">
+                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(summary.totalPatientMaterialValue) %>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Consommables</h6>
+                    <h3 class="card-title mb-0">
+                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(summary.totalConsumableMaterialValue) %>
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Chirurgies / Matériaux uniques</h6>
+                    <h3 class="card-title mb-0">
+                        <%= summary.totalSurgeries %> / <%= summary.uniqueMaterials %>
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Material Usage Table -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Détail par Matériau</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Matériau</th>
+                                    <th>Catégorie</th>
+                                    <th class="text-end">Quantité</th>
+                                    <th class="text-end">Chirurgies</th>
+                                    <th class="text-end">Moy/Chirurgie</th>
+                                    <th class="text-end">Valeur Totale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (materialList && materialList.length > 0) { %>
+                                    <% materialList.forEach(item => { %>
+                                    <tr>
+                                        <td>
+                                            <a href="/materials/<%= item.material._id %>" class="text-decoration-none">
+                                                <strong><%= item.code %></strong><br>
+                                                <small class="text-muted"><%= item.designation %></small>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <% if (item.category === 'patient') { %>
+                                                <span class="badge bg-success">Patient</span>
+                                            <% } else { %>
+                                                <span class="badge bg-secondary">Consommable</span>
+                                            <% } %>
+                                        </td>
+                                        <td class="text-end"><%= item.totalQuantity.toFixed(1) %></td>
+                                        <td class="text-end"><%= item.surgeryCount %></td>
+                                        <td class="text-end"><%= item.avgPerSurgery.toFixed(2) %></td>
+                                        <td class="text-end fw-bold">
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.totalValue) %>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            Aucune donnée de consommation pour cette période
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Trend -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Tendance Mensuelle</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Mois</th>
+                                    <th class="text-end">Chirurgies</th>
+                                    <th class="text-end">Patient</th>
+                                    <th class="text-end">Consommable</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (monthlyData && monthlyData.length > 0) { %>
+                                    <% monthlyData.forEach(item => { %>
+                                    <tr>
+                                        <td><strong><%= item.month %></strong></td>
+                                        <td class="text-end"><%= item.count %></td>
+                                        <td class="text-end text-success">
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.patientValue) %>
+                                        </td>
+                                        <td class="text-end text-info">
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.consumableValue) %>
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.value) %>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            Aucune donnée mensuelle
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Usage by Surgeon -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-person-badge"></i> Par Chirurgien (Top 10)</h5>
+                </div>
+                <div class="card-body">
+                    <% if (surgeonData && surgeonData.length > 0) { %>
+                        <div class="list-group list-group-flush">
+                            <% surgeonData.slice(0, 10).forEach((item, index) => { %>
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <span class="badge bg-primary me-2"><%= index + 1 %></span>
+                                    <%= item.name %>
+                                </div>
+                                <strong class="text-end">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.totalValue) %>
+                                </strong>
+                            </div>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <p class="text-muted text-center mb-0">Aucune donnée</p>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Usage by Prestation -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard2-pulse"></i> Par Type d'Intervention (Top 10)</h5>
+                </div>
+                <div class="card-body">
+                    <% if (prestationData && prestationData.length > 0) { %>
+                        <div class="list-group list-group-flush">
+                            <% prestationData.slice(0, 10).forEach((item, index) => { %>
+                            <div class="list-group-item d-flex justify-content-between align-items-start px-0">
+                                <div class="me-2">
+                                    <span class="badge bg-info me-1"><%= index + 1 %></span>
+                                    <small><%= item.name.substring(0, 30) %><%= item.name.length > 30 ? '...' : '' %></small>
+                                </div>
+                                <strong class="text-end text-nowrap">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.totalValue) %>
+                                </strong>
+                            </div>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <p class="text-muted text-center mb-0">Aucune donnée</p>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,149 +1,506 @@
 <% layout('layouts/boilerplate') %>
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h3 class="mb-0">Rapport de Consommation des Matériaux</h3>
-        <p class="text-muted">Analyse des coûts et quantités consommées</p>
+<!-- views/reports/material-consumption.ejs -->
+<style>
+/* Modern Statistics Dashboard Styles */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --info-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    --danger-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    --card-shadow-hover: 0 20px 40px rgba(0,0,0,0.15);
+    --border-radius: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    background: var(--light-bg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header Section */
+.stats-header {
+    background: var(--primary-gradient);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+    box-shadow: var(--card-shadow);
+}
+
+.stats-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+}
+
+.stats-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 0;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.filter-form .form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.filter-form .form-control {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.filter-form .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-btn {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: white;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* KPI Cards */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.kpi-card:nth-child(2)::before { background: var(--secondary-gradient); }
+.kpi-card:nth-child(3)::before { background: var(--success-gradient); }
+.kpi-card:nth-child(4)::before { background: var(--warning-gradient); }
+
+.kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.kpi-card:nth-child(1) .kpi-icon { background: var(--primary-gradient); }
+.kpi-card:nth-child(2) .kpi-icon { background: var(--secondary-gradient); }
+.kpi-card:nth-child(3) .kpi-icon { background: var(--success-gradient); }
+.kpi-card:nth-child(4)::before { background: var(--warning-gradient); }
+
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.025em;
+}
+
+.kpi-label {
+    font-size: 0.95rem;
+    color: #6b7280;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Charts Section */
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.chart-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.chart-header {
+    background: var(--dark-gradient);
+    color: white;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.chart-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-body {
+    padding: 1.5rem;
+}
+
+/* Data Table */
+.data-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.data-header {
+    background: var(--warning-gradient);
+    color: #1f2937;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.data-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 1rem 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid #e5e7eb;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.data-table td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.data-table tr:hover {
+    background: #f9fafb;
+}
+
+/* Empty States */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #6b7280;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h6 {
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .stats-header {
+        padding: 1.5rem;
+    }
+
+    .stats-header h1 {
+        font-size: 2rem;
+    }
+
+    .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .charts-section {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .kpi-card {
+        padding: 1.5rem;
+    }
+
+    .kpi-value {
+        font-size: 2rem;
+    }
+
+    .data-table {
+        font-size: 0.85rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white !important;
+    }
+
+    .stats-header,
+    .filter-section,
+    .kpi-card,
+    .chart-card,
+    .data-section {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+
+    .filter-section {
+        display: none !important;
+    }
+}
+</style>
+
+<!-- Header Section -->
+<div class="stats-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>📦 Consommation des Matériaux</h1>
+            <p>Analyse des coûts et quantités consommées</p>
+        </div>
+        <button onclick="window.print()" class="report-btn btn-outline-primary">
+            <i class="bi bi-printer me-2"></i>Imprimer
+        </button>
     </div>
-    <button onclick="window.print()" class="report-btn btn-outline-primary">
-        <i class="bi bi-printer me-2"></i>Imprimer
-    </button>
 </div>
 
-<!-- Filtres -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-5">
-                <label class="form-label">Date début</label>
-                <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
-            </div>
-            <div class="col-md-5">
-                <label class="form-label">Date fin</label>
-                <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <div class="d-grid">
-                    <button type="submit" class="report-btn btn-primary">
-                        <i class="bi bi-funnel me-1"></i>Filtrer
-                    </button>
-                </div>
-            </div>
-        </form>
+<!-- Filter Section -->
+<div class="filter-section">
+    <form method="GET" class="filter-form row g-3">
+        <div class="col-md-5">
+            <label class="form-label">📅 Date début</label>
+            <input type="date" name="startDate" class="form-control" value="<%= filters.startDate %>">
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">📅 Date fin</label>
+            <input type="date" name="endDate" class="form-control" value="<%= filters.endDate %>">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">&nbsp;</label>
+            <button type="submit" class="report-btn btn-primary w-100">
+                <i class="bi bi-funnel me-1"></i>Filtrer
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon">
+            <i class="bi bi-box"></i>
+        </div>
+        <div class="kpi-value"><%= report.length %></div>
+        <div class="kpi-label">Matériaux utilisés</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon">
+            <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <div class="kpi-value"><%= report.reduce((sum, item) => sum + item.usageCount, 0) %></div>
+        <div class="kpi-label">Utilisations totales</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon">
+            <i class="bi bi-cash"></i>
+        </div>
+        <div class="kpi-value">
+            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalValue, 0)) %>
+        </div>
+        <div class="kpi-label">Valeur totale</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon">
+            <i class="bi bi-graph-up"></i>
+        </div>
+        <div class="kpi-value">
+            <%
+            const avgValue = report.length > 0 ? report.reduce((sum, item) => sum + item.totalValue, 0) / report.length : 0;
+            %>
+            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(avgValue) %>
+        </div>
+        <div class="kpi-label">Valeur moyenne</div>
     </div>
 </div>
 
-<!-- Résultats -->
-<% if (report.length > 0) { %>
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="stats-card text-center">
-                <h3><%= report.length %></h3>
-                <p class="mb-0">Matériaux utilisés</p>
-            </div>
+<!-- Charts Section -->
+<div class="charts-section">
+    <!-- Category Distribution -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h5><i class="bi bi-pie-chart"></i>Répartition par Catégorie</h5>
         </div>
-        <div class="col-md-3">
-            <div class="stats-card text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <h3><%= report.reduce((sum, item) => sum + item.usageCount, 0) %></h3>
-                <p class="mb-0">Utilisations</p>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="stats-card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <h3><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalValue, 0)) %></h3>
-                <p class="mb-0">Valeur totale consommée</p>
-            </div>
+        <div class="chart-body">
+            <canvas id="categoryChart"></canvas>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Matériau</th>
-                            <th>Catégorie</th>
-                            <th>Quantité totale</th>
-                            <th>Prix unitaire</th>
-                            <th>Valeur totale</th>
-                            <th>Utilisations</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% report.forEach(material => { %>
-                            <tr>
-                                <td>
-                                    <div class="fw-bold"><%= material.materialName %></div>
-                                </td>
-                                <td>
-                                    <span class="badge <%= material.category === 'consumable' ? 'bg-secondary' : 'bg-primary' %>">
-                                        <%= material.category === 'consumable' ? 'Consommable' : 'Patient' %>
-                                    </span>
-                                </td>
-                                <td>
-                                    <strong><%= material.totalQuantity %></strong> <%= material.unitOfMeasure %>
-                                </td>
-                                <td>
-                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.unitPrice) %>
-                                </td>
-                                <td>
-                                    <strong class="text-warning">
-                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.totalValue) %>
-                                    </strong>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info"><%= material.usageCount %></span>
-                                </td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
-                    <tfoot class="table-dark">
-                        <tr>
-                            <th colspan="4">Total</th>
-                            <th class="text-warning">
-                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalValue, 0)) %>
-                            </th>
-                            <th>
-                                <%= report.reduce((sum, item) => sum + item.usageCount, 0) %>
-                            </th>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+    <!-- Top Materials -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h5><i class="bi bi-bar-chart"></i>Top 5 Matériaux Coûteux</h5>
+        </div>
+        <div class="chart-body">
+            <canvas id="topMaterialsChart"></canvas>
         </div>
     </div>
+</div>
 
-    <!-- Graphique de répartition -->
-    <div class="row mt-4">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Répartition par catégorie</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Top 5 des matériaux les plus coûteux</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="topMaterialsChart"></canvas>
-                </div>
-            </div>
-        </div>
+<!-- Data Table -->
+<div class="data-section">
+    <div class="data-header">
+        <h5><i class="bi bi-list-check"></i>Détail de la Consommation (<%= report.length %> matériaux)</h5>
     </div>
-<% } else { %>
-    <div class="text-center py-5">
-        <i class="bi bi-box fa-3x text-muted mb-3"></i>
-        <h5 class="text-muted">Aucune consommation trouvée</h5>
-        <p class="text-muted">Aucun matériau consommé dans cette période</p>
+    <div class="table-responsive">
+        <% if (report.length > 0) { %>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Matériau</th>
+                        <th>Catégorie</th>
+                        <th>Quantité totale</th>
+                        <th>Prix unitaire</th>
+                        <th>Valeur totale</th>
+                        <th>Utilisations</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% report.forEach(material => { %>
+                        <tr>
+                            <td>
+                                <div class="fw-bold"><%= material.materialName %></div>
+                            </td>
+                            <td>
+                                <span class="badge <%= material.category === 'consumable' ? 'bg-secondary' : 'bg-primary' %>">
+                                    <%= material.category === 'consumable' ? 'Consommable' : 'Patient' %>
+                                </span>
+                            </td>
+                            <td>
+                                <strong><%= material.totalQuantity %></strong> <%= material.unitOfMeasure %>
+                            </td>
+                            <td>
+                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.unitPrice) %>
+                            </td>
+                            <td>
+                                <strong class="text-warning">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.totalValue) %>
+                                </strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info"><%= material.usageCount %></span>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+                <tfoot class="table-dark">
+                    <tr>
+                        <th colspan="4">Total</th>
+                        <th class="text-warning">
+                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(report.reduce((sum, item) => sum + item.totalValue, 0)) %>
+                        </th>
+                        <th>
+                            <%= report.reduce((sum, item) => sum + item.usageCount, 0) %>
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        <% } else { %>
+            <div class="empty-state">
+                <i class="bi bi-box"></i>
+                <h6>Aucune consommation trouvée</h6>
+                <p>Aucun matériau consommé dans cette période</p>
+            </div>
+        <% } %>
     </div>
-<% } %>
+</div>
 
 <script>
 <% if (report.length > 0) { %>
@@ -215,6 +572,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+    });
+
+    // Animation des chiffres au scroll
+    const animateNumbers = () => {
+        document.querySelectorAll('.kpi-value').forEach(element => {
+            const targetText = element.textContent.trim();
+            if (targetText === '0' || targetText === '') return; // Skip zeros and empty values
+            
+            let isCurrency = false;
+            let currencySymbol = '';
+            let target = 0;
+            
+            if (targetText.includes('DZD')) {
+                isCurrency = true;
+                // Extract numeric value from currency string like "1 234,56 DZD"
+                const numericPart = targetText.replace(/[^\d,]/g, '').replace(',', '.');
+                target = parseFloat(numericPart);
+                currencySymbol = ' DZD';
+            } else {
+                target = parseInt(targetText.replace(/\D/g, ''));
+            }
+            
+            if (!target) return;
+
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                
+                if (isCurrency) {
+                    // Format as currency during animation
+                    element.textContent = new Intl.NumberFormat('fr-DZ', { 
+                        style: 'currency', 
+                        currency: 'DZD',
+                        maximumFractionDigits: 0 
+                    }).format(Math.floor(current));
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 30);
+        });
+    };
+
+    // Observer pour déclencher l'animation
+    const animationObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateNumbers();
+                animationObserver.unobserve(entry.target);
+            }
+        });
+    });
+
+    document.querySelectorAll('.kpi-card').forEach(el => {
+        animationObserver.observe(el);
     });
 });
 <% } %>

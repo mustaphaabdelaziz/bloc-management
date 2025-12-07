@@ -24,30 +24,26 @@ function initializeStaffFunctionsMap(staffData) {
  * @param {string} specialtyId - The specialty ID to filter by
  */
 function filterPrestationsBySpecialty(specialtyId) {
-  const prestationSelect = document.getElementById('prestation');
-  if (!prestationSelect || !specialtyId) return;
+  const datalist = document.getElementById('prestationsList');
+  if (!datalist || !specialtyId) return;
 
-  const options = prestationSelect.querySelectorAll('option');
-  options.forEach((option, idx) => {
-    // Always show the placeholder option
-    if (idx === 0) {
-      option.hidden = false;
-      return;
-    }
+  // Clear current options
+  datalist.innerHTML = '';
 
-    const optionSpecialty = option.getAttribute('data-specialty');
-    const isMatch = optionSpecialty === specialtyId;
-    option.hidden = !isMatch;
-  });
-
-  // Reset selection if current selection is now hidden
-  if (prestationSelect.value) {
-    const selectedOption = prestationSelect.selectedOptions[0];
-    if (selectedOption && selectedOption.hidden) {
-      prestationSelect.value = '';
-      updateBasePrice(); // Update price display
-    }
+  // Get all prestations from window object or from initial data
+  // Assuming we have window.prestationsData or similar
+  // For now, since it's server-rendered, we need to store initial options
+  if (!window.initialPrestations) {
+    window.initialPrestations = Array.from(datalist.children);
   }
+
+  // Add options that match specialty
+  window.initialPrestations.forEach(option => {
+    const optionSpecialty = option.getAttribute('data-specialty');
+    if (!optionSpecialty || optionSpecialty === specialtyId) {
+      datalist.appendChild(option.cloneNode(true));
+    }
+  });
 }
 
 /**
@@ -57,56 +53,98 @@ function filterPrestationsBySpecialty(specialtyId) {
 function filterMaterialsBySpecialty(specialtyId) {
   if (!specialtyId) return;
   
-  const materialSelects = document.querySelectorAll(
-    'select[name="consumableMaterialId"], select[name="patientMaterialId"]'
-  );
-  
-  materialSelects.forEach(select => {
-    const options = select.querySelectorAll('option');
-    options.forEach((option, idx) => {
-      if (idx === 0) return (option.hidden = false);
-      
-      const optionSpecialties = option.getAttribute('data-specialty') || '';
-      const specialtyList = optionSpecialties.split(',').filter(s => s);
-      option.hidden = specialtyList.length > 0 && !specialtyList.includes(specialtyId);
-    });
-    
-    // Reset selection if not visible
-    if (select.value) {
-      const selectedOpt = select.selectedOptions[0];
-      if (selectedOpt && selectedOpt.hidden) {
-        select.value = '';
-      }
+  // Filter consumable materials
+  const consumableDatalist = document.getElementById('consumableMaterialsList');
+  if (consumableDatalist) {
+    if (!window.initialConsumableMaterials) {
+      window.initialConsumableMaterials = Array.from(consumableDatalist.children);
     }
-  });
+    consumableDatalist.innerHTML = '';
+    window.initialConsumableMaterials.forEach(option => {
+      const optionSpecialties = option.getAttribute('data-specialty') || '';
+      const appliesToAll = option.getAttribute('data-applies-to-all') === 'true';
+      const specialtyList = optionSpecialties.split(',').filter(s => s);
+      // Show if: applies to all, no specialty assigned, or matches the selected specialty
+      if (appliesToAll || specialtyList.length === 0 || specialtyList.includes(specialtyId)) {
+        consumableDatalist.appendChild(option.cloneNode(true));
+      }
+    });
+  }
+
+  // Filter patient materials
+  const patientDatalist = document.getElementById('patientMaterialsList');
+  if (patientDatalist) {
+    if (!window.initialPatientMaterials) {
+      window.initialPatientMaterials = Array.from(patientDatalist.children);
+    }
+    patientDatalist.innerHTML = '';
+    window.initialPatientMaterials.forEach(option => {
+      const optionSpecialties = option.getAttribute('data-specialty') || '';
+      const appliesToAll = option.getAttribute('data-applies-to-all') === 'true';
+      const specialtyList = optionSpecialties.split(',').filter(s => s);
+      // Show if: applies to all, no specialty assigned, or matches the selected specialty
+      if (appliesToAll || specialtyList.length === 0 || specialtyList.includes(specialtyId)) {
+        patientDatalist.appendChild(option.cloneNode(true));
+      }
+    });
+  }
 }
 
 /**
  * Update role dropdown based on selected medical staff
- * @param {HTMLElement} selectElement - The medical staff select element
+ * Filters rolePlayedId options to only show the staff member's assigned functions
+ * @param {HTMLElement} inputElement - The medical staff input element
  */
-function updateRolesForStaff(selectElement) {
-  const row = selectElement.closest('.medical-staff-row');
+function updateRolesForStaff(inputElement) {
+  const row = inputElement.closest('.staff-row');
   if (!row) return;
   
+  const hiddenInput = row.querySelector('input[type="hidden"][name="medicalStaff"]');
   const roleSelect = row.querySelector('select[name="rolePlayedId"]');
-  if (!roleSelect) return;
+  const roleDropdown = row.querySelector('.role-select-dropdown');
+  const roleText = row.querySelector('.role-select-text');
   
-  const staffId = selectElement.value;
+  if (!roleSelect || !hiddenInput) return;
+  
+  const staffId = hiddenInput.value;
+  const staffName = inputElement.value.trim();
+
+  // Get the staff's fonctions from the datalist
+  let allowedFunctions = [];
+  const datalist = document.getElementById('medicalStaffList');
+  if (datalist && staffName) {
+    const options = datalist.querySelectorAll('option');
+    for (let option of options) {
+      if (option.value === staffName) {
+        const fonctionsAttr = option.getAttribute('data-fonctions');
+        if (fonctionsAttr) {
+          allowedFunctions = fonctionsAttr.split(',').filter(f => f.trim());
+        }
+        break;
+      }
+    }
+  }
+
+  // Fallback to staffFunctionsMap if no fonctions found from datalist
+  if (allowedFunctions.length === 0 && staffId && staffFunctionsMap[staffId]) {
+    allowedFunctions = staffFunctionsMap[staffId];
+  }
 
   // Clear current options except the placeholder
   roleSelect.innerHTML = '<option value="">Sélectionner rôle</option>';
 
-  if (!staffId) {
+  if (!staffId && !staffName) {
     roleSelect.disabled = true;
+    if (roleText) roleText.textContent = 'Sélectionner rôle';
+    updateRoleDropdownOptions(roleDropdown, [], window.fonctionsOptions || []);
     return;
   }
-
-  const allowedFunctions = staffFunctionsMap[staffId] || [];
 
   if (allowedFunctions.length === 0) {
     roleSelect.disabled = true;
     roleSelect.innerHTML = '<option value="">Ce personnel n\'a pas de fonction</option>';
+    if (roleText) roleText.textContent = 'Aucune fonction disponible';
+    updateRoleDropdownOptions(roleDropdown, [], window.fonctionsOptions || []);
     return;
   }
 
@@ -124,6 +162,41 @@ function updateRolesForStaff(selectElement) {
       roleSelect.appendChild(option);
     }
   });
+
+  // Update the custom dropdown to show only allowed functions
+  updateRoleDropdownOptions(roleDropdown, allowedFunctions, allFonctions);
+  
+  // Reset role text
+  if (roleText) roleText.textContent = 'Sélectionner rôle';
+}
+
+/**
+ * Update the custom role dropdown options based on allowed functions
+ * @param {HTMLElement} dropdown - The role dropdown element
+ * @param {Array} allowedFunctions - Array of allowed function IDs
+ * @param {Array} allFonctions - Array of all fonction objects {id, name}
+ */
+function updateRoleDropdownOptions(dropdown, allowedFunctions, allFonctions) {
+  if (!dropdown) return;
+  
+  // Get all role options except the placeholder
+  const options = dropdown.querySelectorAll('.role-select-option');
+  
+  options.forEach(option => {
+    const value = option.getAttribute('data-value');
+    if (!value) {
+      // Keep placeholder visible
+      option.style.display = '';
+      return;
+    }
+    
+    // Show/hide based on whether this function is in the allowed list
+    if (allowedFunctions.length === 0 || allowedFunctions.includes(value)) {
+      option.style.display = '';
+    } else {
+      option.style.display = 'none';
+    }
+  });
 }
 
 /**
@@ -133,27 +206,77 @@ function addStaffRow() {
   const container = document.getElementById('medicalStaffContainer');
   if (!container) return;
   
+  const rowCount = container.querySelectorAll('.staff-row').length;
   const newRow = document.createElement('div');
-  newRow.className = 'row mb-3 medical-staff-row';
+  newRow.className = 'staff-row';
   newRow.innerHTML = `
-    <div class="col-md-5">
-      <select name="medicalStaff" class="form-select" onchange="updateRolesForStaff(this)">
-        <option value="">Sélectionner personnel</option>
-        ${getStaffOptionsHTML()}
-      </select>
+    <div class="input-wrapper-modern">
+      <i class="input-icon-wrapper bi bi-person"></i>
+      <input type="text" class="form-control-modern" name="medicalStaffName" list="medicalStaffList" placeholder="Rechercher personnel..." onchange="updateRolesForStaff(this)">
+      <input type="hidden" name="medicalStaff" id="medicalStaffId_${rowCount}">
     </div>
-    <div class="col-md-5">
-      <select name="rolePlayedId" class="form-select">
+
+    <div class="custom-role-select">
+      <select name="rolePlayedId" class="form-select-modern" style="display: none;">
         <option value="">Sélectionner rôle</option>
+        ${window.fonctionsOptions ? window.fonctionsOptions.map(fonction => 
+          `<option value="${fonction.id}">${fonction.name}</option>`
+        ).join('') : ''}
       </select>
+      <div class="role-select-trigger">
+        <div class="role-select-content">
+          <div class="role-select-icon">
+            <i class="bi bi-person-badge"></i>
+          </div>
+          <div class="role-select-text" id="roleText_${rowCount}">Sélectionner rôle</div>
+        </div>
+        <div class="role-select-arrow">
+          <i class="bi bi-chevron-down"></i>
+        </div>
+      </div>
+      <div class="role-select-dropdown">
+        <div class="role-select-option" data-value="">
+          <div class="role-option-icon">
+            <i class="bi bi-dash-circle"></i>
+          </div>
+          <div class="role-option-text">Sélectionner rôle</div>
+        </div>
+        ${window.fonctionsOptions ? window.fonctionsOptions.map(fonction => {
+          const roleName = fonction.name.toLowerCase();
+          let iconClass = 'bi-person-fill';
+          if (roleName.includes('anesthésie')) iconClass = 'bi-heart-pulse';
+          else if (roleName.includes('instrumentistes')) iconClass = 'bi-tools';
+          else if (roleName.includes('hygiene')) iconClass = 'bi-shield-check';
+          else if (roleName.includes('médecin') || roleName.includes('anesthésiste')) iconClass = 'bi-stethoscope';
+          else if (roleName.includes('panseuse')) iconClass = 'bi-bandage';
+          
+          return `
+            <div class="role-select-option" data-value="${fonction.id}">
+              <div class="role-option-icon">
+                <i class="bi ${iconClass}"></i>
+              </div>
+              <div class="role-option-text">${fonction.name}</div>
+            </div>
+          `;
+        }).join('') : ''}
+      </div>
     </div>
-    <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removeStaffRow(this)">
-        <i class="bi bi-trash"></i>
-      </button>
-    </div>
+
+    <button type="button" class="btn-staff-action btn-delete" onclick="removeStaffRow(this)">
+      <i class="bi bi-trash"></i>
+    </button>
   `;
   container.appendChild(newRow);
+
+  // Setup datalist handler for the new row
+  const input = newRow.querySelector('input[list="medicalStaffList"]');
+  const hidden = newRow.querySelector('input[type="hidden"][name="medicalStaff"]');
+  if (input && hidden) {
+    setupDatalistHandler(input.id || `medicalStaffInput_${rowCount}`, 'medicalStaffList', hidden.id);
+  }
+
+  // Initialize role select for the new row
+  initializeRoleSelect(newRow, rowCount);
 }
 
 /**
@@ -161,8 +284,8 @@ function addStaffRow() {
  * @param {HTMLElement} button - The delete button element
  */
 function removeStaffRow(button) {
-  const row = button.closest('.medical-staff-row');
-  if (row && document.querySelectorAll('.medical-staff-row').length > 1) {
+  const row = button.closest('.staff-row');
+  if (row && document.querySelectorAll('.staff-row').length > 1) {
     row.remove();
   }
 }
@@ -183,25 +306,50 @@ function getStaffOptionsHTML() {
  * Update base price display
  */
 function updateBasePrice() {
-  const prestationSelect = document.getElementById('prestation');
+  const prestationInput = document.getElementById('prestationInput');
+  const hiddenInput = document.getElementById('prestationId');
   const basePriceDisplay = document.getElementById('basePrice');
 
-  if (!basePriceDisplay || !prestationSelect) return;
+  if (!basePriceDisplay || !prestationInput || !hiddenInput) return;
 
-  const selectedOption = prestationSelect.selectedOptions[0];
-  if (selectedOption && selectedOption.value) {
-    const basePriceValue = selectedOption.getAttribute('data-price');
-    if (basePriceValue && !isNaN(parseFloat(basePriceValue))) {
-      const basePrice = parseFloat(basePriceValue);
-      basePriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', {
-        style: 'currency',
-        currency: 'DZD'
-      }).format(basePrice);
-    } else {
-      basePriceDisplay.textContent = 'Prix non disponible';
+  const selectedId = hiddenInput.value;
+  if (selectedId) {
+    // Find the option with matching data-id
+    const datalist = document.getElementById('prestationsList');
+    const options = datalist.querySelectorAll('option');
+    for (let option of options) {
+      if (option.getAttribute('data-id') === selectedId) {
+        const basePriceValue = option.getAttribute('data-price');
+        if (basePriceValue && !isNaN(parseFloat(basePriceValue))) {
+          const basePrice = parseFloat(basePriceValue);
+          basePriceDisplay.textContent = new Intl.NumberFormat('fr-DZ', {
+            style: 'currency',
+            currency: 'DZD'
+          }).format(basePrice);
+        } else {
+          basePriceDisplay.textContent = 'Prix non disponible';
+        }
+        return;
+      }
     }
-  } else {
-    basePriceDisplay.textContent = 'Sélectionnez une prestation';
+  }
+  basePriceDisplay.textContent = 'Sélectionnez une prestation';
+}
+
+/**
+ * Toggle adjusted price visibility based on surgeon selection
+ */
+function toggleAdjustedPriceVisibility() {
+  const surgeonInput = document.getElementById('surgeon');
+  const adjustedPriceGroup = document.getElementById('adjustedPrice')?.closest('.form-group');
+  
+  if (adjustedPriceGroup) {
+    // Show adjusted price field only if a surgeon is selected
+    if (surgeonInput && surgeonInput.value) {
+      adjustedPriceGroup.style.display = 'block';
+    } else {
+      adjustedPriceGroup.style.display = 'none';
+    }
   }
 }
 
@@ -211,30 +359,33 @@ function updateBasePrice() {
 function addConsumableMaterialRow() {
   const container = document.getElementById('consumableMaterialsContainer');
   if (!container) return;
+  const rowCount = container.querySelectorAll('.consumable-material-row').length;
   const newRow = document.createElement('div');
   newRow.className = 'row mb-3 consumable-material-row';
   newRow.innerHTML = `
     <div class="col-md-6">
-      <select class="form-select" name="consumableMaterialId">
-        <option value="">Choisir un matériau...</option>
-        ${window.consumableMaterialOptions || ''}
-      </select>
+      <div class="input-wrapper-modern">
+        <i class="input-icon-wrapper bi bi-tools"></i>
+        <input type="text" class="form-control-modern" name="consumableMaterialName" list="consumableMaterialsList" placeholder="Rechercher matériau consommable...">
+        <input type="hidden" name="consumableMaterialId" id="consumableMaterialId_${rowCount}">
+      </div>
     </div>
     <div class="col-md-4">
-      <input type="number" name="consumableMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
+      <input type="number" name="consumableMaterialQuantity" class="form-control-modern" min="1" step="0.01" placeholder="Quantité">
     </div>
     <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
+      <button type="button" class="btn-staff-action btn-delete" onclick="removeConsumableMaterialRow(this)">
         <i class="bi bi-trash"></i>
       </button>
     </div>
   `;
   container.appendChild(newRow);
   
-  // Apply specialty filter if surgeon is selected
-  const surgeon = document.getElementById('surgeon');
-  if (surgeon && surgeon.getAttribute('data-selected-specialty')) {
-    filterMaterialsBySpecialty(surgeon.getAttribute('data-selected-specialty'));
+  // Setup datalist handler
+  const input = newRow.querySelector('input[list="consumableMaterialsList"]');
+  const hidden = newRow.querySelector('input[type="hidden"][name="consumableMaterialId"]');
+  if (input && hidden) {
+    setupDatalistHandler(input.id || `consumableMaterialInput_${rowCount}`, 'consumableMaterialsList', hidden.id);
   }
 }
 
@@ -255,30 +406,36 @@ function removeConsumableMaterialRow(button) {
 function addPatientMaterialRow() {
   const container = document.getElementById('patientMaterialsContainer');
   if (!container) return;
+  const rowCount = container.querySelectorAll('.patient-material-row').length;
   const newRow = document.createElement('div');
   newRow.className = 'row mb-3 patient-material-row';
   newRow.innerHTML = `
-    <div class="col-md-6">
-      <select class="form-select" name="patientMaterialId">
-        <option value="">Choisir un matériau patient...</option>
-        ${window.patientMaterialOptions || ''}
-      </select>
-    </div>
-    <div class="col-md-4">
-      <input type="number" name="patientMaterialQuantity" class="form-control" min="1" step="0.01" placeholder="Quantité">
+    <div class="col-md-5">
+      <div class="input-wrapper-modern">
+        <i class="input-icon-wrapper bi bi-person"></i>
+        <input type="text" class="form-control-modern" name="patientMaterialName" list="patientMaterialsList" placeholder="Rechercher matériau patient...">
+        <input type="hidden" name="patientMaterialId" id="patientMaterialId_${rowCount}">
+      </div>
     </div>
     <div class="col-md-2">
-      <button type="button" class="btn btn-outline-danger" onclick="removePatientMaterialRow(this)">
+      <input type="number" name="patientMaterialQuantity" class="form-control-modern" min="1" step="0.01" placeholder="Qté">
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="patientMaterialReference" class="form-control-modern" placeholder="Référence/N° série" title="Référence ou numéro de série du matériau">
+    </div>
+    <div class="col-md-2">
+      <button type="button" class="btn-staff-action btn-delete" onclick="removePatientMaterialRow(this)">
         <i class="bi bi-trash"></i>
       </button>
     </div>
   `;
   container.appendChild(newRow);
   
-  // Apply specialty filter if surgeon is selected
-  const surgeon = document.getElementById('surgeon');
-  if (surgeon && surgeon.getAttribute('data-selected-specialty')) {
-    filterMaterialsBySpecialty(surgeon.getAttribute('data-selected-specialty'));
+  // Setup datalist handler
+  const input = newRow.querySelector('input[list="patientMaterialsList"]');
+  const hidden = newRow.querySelector('input[type="hidden"][name="patientMaterialId"]');
+  if (input && hidden) {
+    setupDatalistHandler(input.id || `patientMaterialInput_${rowCount}`, 'patientMaterialsList', hidden.id);
   }
 }
 
@@ -302,9 +459,12 @@ function validateSurgeryForm() {
   const patientIdInput = document.getElementById('patientId');
   const surgeonInput = document.getElementById('surgeon');
   const surgeonIdInput = document.getElementById('surgeonId');
-  const prestationInput = document.getElementById('prestation');
-  const beginDateTime = document.getElementById('beginDateTime');
-  const endDateTime = document.getElementById('endDateTime');
+  const prestationInput = document.getElementById('prestationInput');
+  const prestationIdInput = document.getElementById('prestationId');
+  const entreeBloc = document.getElementById('entreeBloc');
+  const entreeSalle = document.getElementById('entreeSalle');
+  const incisionTime = document.getElementById('incisionTime');
+  const closingIncisionTime = document.getElementById('closingIncisionTime');
 
   if (!patientInput.value || !patientIdInput.value) {
     alert('Veuillez sélectionner un patient valide.');
@@ -316,27 +476,53 @@ function validateSurgeryForm() {
     surgeonInput.focus();
     return false;
   }
-  if (!prestationInput.value) {
+  if (!prestationInput.value || !prestationIdInput.value) {
     alert('Veuillez sélectionner une prestation valide.');
     prestationInput.focus();
     return false;
   }
-  if (!beginDateTime.value) {
-    alert('Veuillez saisir la date et l\'heure de début.');
-    beginDateTime.focus();
+  if (!entreeBloc.value) {
+    alert('Veuillez saisir l\'heure d\'entrée au bloc.');
+    entreeBloc.focus();
     return false;
   }
-  if (!endDateTime.value) {
-    alert('Veuillez saisir la date et l\'heure de fin.');
-    endDateTime.focus();
+  if (!entreeSalle.value) {
+    alert('Veuillez saisir l\'heure d\'entrée en salle d\'opération.');
+    entreeSalle.focus();
+    return false;
+  }
+  if (!incisionTime.value) {
+    alert('Veuillez saisir l\'heure d\'incision.');
+    incisionTime.focus();
+    return false;
+  }
+  if (!closingIncisionTime.value) {
+    alert('Veuillez saisir l\'heure de fermeture d\'incision.');
+    closingIncisionTime.focus();
     return false;
   }
 
-  const beginDate = new Date(beginDateTime.value);
-  const endDate = new Date(endDateTime.value);
-  if (endDate <= beginDate) {
-    alert('La date et l\'heure de fin doit être après la date et l\'heure de début.');
-    endDateTime.focus();
+  // Validate chronological order of events
+  const entreeBlocDate = new Date(entreeBloc.value);
+  const entreeSalleDate = new Date(entreeSalle.value);
+  const incisionDate = new Date(incisionTime.value);
+  const closingDate = new Date(closingIncisionTime.value);
+
+  if (entreeBlocDate >= entreeSalleDate) {
+    alert('L\'entrée au bloc doit être avant l\'entrée en salle.');
+    entreeSalle.focus();
+    return false;
+  }
+
+  if (entreeSalleDate >= incisionDate) {
+    alert('L\'entrée en salle doit être avant l\'incision.');
+    incisionTime.focus();
+    return false;
+  }
+
+  if (incisionDate >= closingDate) {
+    alert('L\'heure d\'incision doit être avant la fermeture d\'incision.');
+    closingIncisionTime.focus();
     return false;
   }
 
@@ -344,13 +530,13 @@ function validateSurgeryForm() {
     '.consumable-material-row, .patient-material-row'
   );
   for (let row of materialRows) {
-    const select = row.querySelector(
-      'select[name="consumableMaterialId"], select[name="patientMaterialId"]'
+    const hiddenInput = row.querySelector(
+      'input[type="hidden"][name="consumableMaterialId"], input[type="hidden"][name="patientMaterialId"]'
     );
     const quantityInput = row.querySelector(
       'input[name="consumableMaterialQuantity"], input[name="patientMaterialQuantity"]'
     );
-    if (select && select.value) {
+    if (hiddenInput && hiddenInput.value) {
       if (!quantityInput.value || quantityInput.value <= 0) {
         alert('Veuillez saisir une quantité valide pour le matériau.');
         quantityInput.focus();
@@ -381,9 +567,20 @@ function setupDatalistHandler(inputId, listId, hiddenInputId, attr = 'data-id') 
     const opts = datalist.options;
 
     for (let i = 0; i < opts.length; i++) {
-      if (opts[i].value === val) {
-        const attrValue = opts[i].getAttribute(attr);
+      // For material datalists, the value IS the ID, so direct match
+      // For other datalists, match by value (which is the display text)
+      const isMatch = opts[i].value === val;
+      
+      if (isMatch) {
+        // For materials: value is already the ID, so use it directly
+        const attrValue = opts[i].getAttribute(attr) || opts[i].value;
         hiddenInput.value = attrValue;
+        
+        // If this is a material input and we have a data-designation, update the display text
+        const designation = opts[i].getAttribute('data-designation');
+        if (designation && listId.includes('Material')) {
+          input.value = designation;
+        }
 
         if (inputId === 'surgeon') {
           const specialty = opts[i].getAttribute('data-specialty');
@@ -421,6 +618,14 @@ function initializeSurgeryForm() {
   // Set up datalist handlers
   setupDatalistHandler('patient', 'patientsList', 'patientId');
   setupDatalistHandler('surgeon', 'surgeonsList', 'surgeonId');
+  setupDatalistHandler('prestationInput', 'prestationsList', 'prestationId');
+  
+  // Setup for initial medical staff row
+  setupDatalistHandler('medicalStaffInput_0', 'medicalStaffList', 'medicalStaffId_0');
+  
+  // Setup for initial material rows
+  setupDatalistHandler('consumableMaterialInput_0', 'consumableMaterialsList', 'consumableMaterialId_0');
+  setupDatalistHandler('patientMaterialInput_0', 'patientMaterialsList', 'patientMaterialId_0');
   
   // Add event listener for surgeon change to toggle adjustedPrice visibility
   const surgeonInput = document.getElementById('surgeon');
@@ -430,9 +635,10 @@ function initializeSurgeryForm() {
   }
 
   // Set up prestation change listener
-  const prestationSelect = document.getElementById('prestation');
-  if (prestationSelect) {
-    prestationSelect.addEventListener('change', updateBasePrice);
+  const prestationInput = document.getElementById('prestationInput');
+  if (prestationInput) {
+    prestationInput.addEventListener('change', updateBasePrice);
+    prestationInput.addEventListener('input', updateBasePrice);
   }
   updateBasePrice();
   
@@ -440,14 +646,107 @@ function initializeSurgeryForm() {
   toggleAdjustedPriceVisibility();
 
   // Initialize role filtering for existing medical staff rows
-  const existingStaffSelects = document.querySelectorAll(
-    '.medical-staff-row select[name="medicalStaff"]'
-  );
-  existingStaffSelects.forEach(select => {
-    if (select.value) {
-      updateRolesForStaff(select);
+  const existingStaffInputs = document.querySelectorAll('.staff-row input[list="medicalStaffList"]');
+  existingStaffInputs.forEach(input => {
+    const hidden = input.parentNode.querySelector('input[type="hidden"][name="medicalStaff"]');
+    if (hidden && hidden.value) {
+      updateRolesForStaff(input);
     }
   });
+
+  // Initialize role selects for existing rows
+  const existingStaffRows = document.querySelectorAll('.staff-row');
+  existingStaffRows.forEach((row, index) => {
+    initializeRoleSelect(row, index);
+  });
+
+  // Store initial datalist options for filtering
+  if (!window.initialPrestations) {
+    const datalist = document.getElementById('prestationsList');
+    window.initialPrestations = Array.from(datalist.children);
+  }
+  if (!window.initialConsumableMaterials) {
+    const datalist = document.getElementById('consumableMaterialsList');
+    window.initialConsumableMaterials = Array.from(datalist.children);
+  }
+  if (!window.initialPatientMaterials) {
+    const datalist = document.getElementById('patientMaterialsList');
+    window.initialPatientMaterials = Array.from(datalist.children);
+  }
+}
+
+// Initialize Role Selects
+function initializeRoleSelect(container, index) {
+  const customSelect = container.querySelector('.custom-role-select');
+  if (!customSelect) return;
+
+  const selectTrigger = customSelect.querySelector('.role-select-trigger');
+  const selectDropdown = customSelect.querySelector('.role-select-dropdown');
+  const selectOptions = customSelect.querySelectorAll('.role-select-option');
+  const hiddenSelect = customSelect.querySelector('select');
+  const roleText = customSelect.querySelector('.role-select-text');
+
+  let isOpen = false;
+
+  // Toggle dropdown
+  selectTrigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    isOpen = !isOpen;
+    toggleDropdown();
+  });
+
+  // Handle option selection
+  selectOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      const value = this.getAttribute('data-value');
+      const text = this.querySelector('.role-option-text').textContent;
+
+      // Update hidden select
+      hiddenSelect.value = value;
+
+      // Update trigger text
+      roleText.textContent = text;
+
+      // Update selected state
+      selectOptions.forEach(opt => opt.classList.remove('selected'));
+      this.classList.add('selected');
+
+      // Close dropdown
+      isOpen = false;
+      toggleDropdown();
+
+      // Trigger change event
+      hiddenSelect.dispatchEvent(new Event('change'));
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!customSelect.contains(e.target)) {
+      isOpen = false;
+      toggleDropdown();
+    }
+  });
+
+  // Toggle dropdown function
+  function toggleDropdown() {
+    if (isOpen) {
+      selectDropdown.classList.add('open');
+      selectTrigger.classList.add('active');
+    } else {
+      selectDropdown.classList.remove('open');
+      selectTrigger.classList.remove('active');
+    }
+  }
+
+  // Initialize with default selection
+  const defaultValue = hiddenSelect.value || '';
+  if (defaultValue) {
+    const defaultOption = customSelect.querySelector(`[data-value="${defaultValue}"]`);
+    if (defaultOption) {
+      defaultOption.click();
+    }
+  }
 }
 
 // Initialize when DOM is ready

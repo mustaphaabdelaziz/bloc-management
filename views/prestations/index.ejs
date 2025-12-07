@@ -12,9 +12,20 @@
                 <a href="/prestations/new" class="action-button">
                     <i class="bi bi-plus-circle"></i>Nouvelle Prestation
                 </a>
-                <button type="button" class="action-button" onclick="showImportModal()">
-                    <i class="bi bi-upload"></i>Importer Excel
-                </button>
+                <div class="dropdown">
+                    <button class="action-button dropdown-toggle" type="button" id="excelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>Import Excel
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="excelDropdown">
+                        <li><a class="dropdown-item" href="/prestations/template" target="_blank">
+                            <i class="bi bi-download me-2"></i>Télécharger Modèle
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showImportModal()">
+                            <i class="bi bi-upload me-2"></i>Importer Fichier
+                        </a></li>
+                    </ul>
+                </div>
             </div>
             <% } %>
         </div>
@@ -60,18 +71,25 @@
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>Code</th>
                                 <th>Désignation</th>
                                 <th>Spécialité</th>
+                                <th>Famille</th>
                                 <% if (permissions.canViewPricing) { %>
                                 <th>Prix</th>
                                 <% } %>
-                                <th>Durée</th>
+                                <th>Durée Min/Max</th>
+                                <th>Créé par</th>
+                                <th>Modifié par</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% prestations.forEach(prestation => { %>
                                 <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark"><%= prestation.code %></span>
+                                    </td>
                                     <td>
                                         <div class="material-name">
                                             <div class="material-avatar">
@@ -88,6 +106,13 @@
                                     <td>
                                         <span class="badge bg-info"><%= prestation.specialty.name %></span>
                                     </td>
+                                    <td>
+                                        <% if (prestation.family) { %>
+                                            <span class="badge bg-secondary"><%= prestation.family.name %></span>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
                                     <% if (permissions.canViewPricing) { %>
                                     <td>
                                         <div class="fw-bold text-info">
@@ -96,7 +121,33 @@
                                     </td>
                                     <% } %>
                                     <td>
-                                        <%= prestation.duration %> min
+                                        <small>
+                                            <span class="text-muted">Min:</span> <%= prestation.minDuration %> min
+                                            <br>
+                                            <span class="text-muted">Max:</span> <%= prestation.maxDuration %> min
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (prestation.createdBy) { %>
+                                                <%= prestation.createdBy.firstname %> <%= prestation.createdBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(prestation.createdAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (prestation.updatedBy) { %>
+                                                <%= prestation.updatedBy.firstname %> <%= prestation.updatedBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(prestation.updatedAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
                                     </td>
                                     <td>
                                         <% if (permissions.canManageData) { %>
@@ -150,13 +201,13 @@ function deletePrestation(id) {
 }
 
 function showImportModal() {
-    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    const modal = new bootstrap.Modal(document.getElementById('importExcelModal'));
     modal.show();
 }
 </script>
 
 <!-- Modal pour importer des prestations -->
-<div class="modal fade material-modal" id="importModal" tabindex="-1">
+<div class="modal fade material-modal" id="importExcelModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-success">
@@ -167,10 +218,26 @@ function showImportModal() {
             </div>
             <form id="importForm" method="POST" action="/prestations/import" enctype="multipart/form-data">
                 <div class="modal-body">
+                    <!-- Download Template Button -->
+                    <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                        <div>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Besoin d'un modèle ?</strong> Téléchargez le fichier Excel pré-formaté avec des exemples.
+                        </div>
+                        <div>
+                            <button type="button" id="downloadTemplate" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="bi bi-download me-1"></i>Télécharger (Navigateur)
+                            </button>
+                            <a href="/prestations/template" class="btn btn-sm btn-outline-secondary" download>
+                                <i class="bi bi-cloud-download me-1"></i>Télécharger (Serveur)
+                            </a>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <label for="excelFile" class="form-label required-field">Fichier Excel</label>
+                        <label for="excelFileInput" class="form-label required-field">Fichier Excel</label>
                         <div class="input-group">
-                            <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                            <input type="file" class="form-control" id="excelFileInput" name="excelFile" accept=".xlsx,.xls" required>
                             <span class="input-group-text">
                                 <i class="bi bi-file-earmark-spreadsheet"></i>
                             </span>
@@ -181,24 +248,36 @@ function showImportModal() {
                     </div>
 
                     <div class="alert alert-warning" role="alert">
-                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Colonnes requises:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li><strong>Désignation</strong> - Nom de la prestation</li>
-                            <li><strong>Spécialité</strong> - Nom de la spécialité (doit exister)</li>
-                            <li><strong>Prix HT (DA)</strong> - Prix hors taxe</li>
-                            <li><strong>Durée (minutes)</strong> - Durée en minutes</li>
-                            <li><strong>TVA (%)</strong> - Taux TVA (ex: 9, 19)</li>
-                        </ul>
+                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Format du fichier Excel:</strong>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Colonnes requises:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Désignation</strong> - Nom de la prestation</li>
+                                    <li><strong>Spécialité</strong> - Nom exact de la spécialité</li>
+                                    <li><strong>Prix HT (DA)</strong> - Prix hors taxe</li>
+                                    <li><strong>Durée (minutes)</strong> - Durée estimée</li>
+                                    <li><strong>TVA (%)</strong> - Taux TVA (ex: 9 ou 19)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Colonnes optionnelles:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li>Famille - Groupe au sein de la spécialité</li>
+                                    <li>Unité Dépassement (min) - Défaut: 15</li>
+                                    <li>Frais Dépassement (DA) - Défaut: 0</li>
+                                    <li>Frais Urgents (%) - Défaut: 0</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="small text-muted">
-                        <strong>Colonnes optionnelles:</strong>
-                        <ul class="mb-0">
-                            <li>Code - Code unique (auto-généré si vide)</li>
-                            <li>Unité Dépassement (min) - Par défaut: 15</li>
-                            <li>Frais Dépassement (DA) - Par défaut: 0</li>
-                            <li>Frais Urgents (%) - Par défaut: 0</li>
-                        </ul>
+                    <div class="alert alert-light border" role="alert">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            <strong>Important:</strong> Les noms de spécialités doivent correspondre exactement aux spécialités existantes dans le système.
+                            Les montants doivent être en Dinars Algériens (DA) et les pourcentages sans le symbole %.
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">

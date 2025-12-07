@@ -1,0 +1,154 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/asaPricing/edit.ejs -->
+<div class="container-fluid fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <h1><i class="bi bi-pencil-fill me-3"></i>Modifier Tarif ASA <%= pricing.class %></h1>
+            <p>Ajuster les frais forfaitaires pour la classification ASA <%= pricing.class %></p>
+        </div>
+        <div class="page-actions">
+            <a href="/asa-pricing" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Info Card -->
+            <div class="alert alert-info mb-4" role="alert">
+                <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Classification ASA <%= pricing.class %></h5>
+                <p class="mb-0"><%= pricing.description %></p>
+            </div>
+
+            <!-- Edit Form -->
+            <div class="surgery-form-container">
+                <form method="POST" action="/asa-pricing/<%= pricing.class %>?_method=PUT" class="surgery-form">
+                    <div class="form-section">
+                        <h3><i class="bi bi-cash-stack me-2"></i>Frais Forfaitaire</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Frais ASA (DA) <span class="text-danger">*</span></label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-cash-coin"></i>
+                                    <input type="number" class="form-control-modern" id="fee" name="fee"
+                                           value="<%= pricing.fee %>" min="0" step="100" required>
+                                </div>
+                                <div class="form-help-text">
+                                    Montant forfaitaire payé par les chirurgiens en location à la clinique
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <div class="input-wrapper-modern">
+                                    <i class="input-icon-wrapper bi bi-text-left"></i>
+                                    <input type="text" class="form-control-modern" id="description" name="description"
+                                           value="<%= pricing.description %>" maxlength="200">
+                                </div>
+                                <div class="form-help-text">
+                                    Description courte de la classification (optionnel)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Important:</strong> Ce frais s'applique uniquement aux chirurgiens avec contrat de <strong>location</strong>. 
+                            Les chirurgiens en <strong>pourcentage</strong> ne paient pas de frais ASA.
+                        </div>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div class="form-section">
+                        <h3><i class="bi bi-eye me-2"></i>Aperçu du Tarif</h3>
+                        
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">Frais ASA <%= pricing.class %></h5>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div class="mb-2">
+                                            <span class="text-muted">Montant à payer (Contrat Location):</span>
+                                        </div>
+                                        <div>
+                                            <strong id="previewFee" class="text-success display-4">
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(pricing.fee) %>
+                                            </strong>
+                                        </div>
+                                        <hr>
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Ce montant est payé par le chirurgien (location) à la clinique
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions-section">
+                        <div class="form-actions-content">
+                            <div class="action-buttons-group">
+                                <a href="/asa-pricing" class="action-btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i>Annuler
+                                </a>
+                                <button type="submit" class="action-btn btn-success">
+                                    <i class="bi bi-save me-1"></i>Enregistrer les Modifications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Sidebar -->
+        <div class="col-lg-4">
+            <div class="help-card">
+                <div class="help-header">
+                    <i class="help-icon bi bi-info-circle-fill"></i>
+                    <h5 class="help-title">Comment ajuster les tarifs</h5>
+                </div>
+                <div class="help-content">
+                    <ul class="help-surgery-info">
+                        <li><strong>Frais forfaitaire:</strong> Montant fixe payé par chirurgien en location</li>
+                        <li><strong>Contrat Location:</strong> Le chirurgien paie ce montant à la clinique</li>
+                        <li><strong>Contrat Pourcentage:</strong> Aucun frais ASA applicable</li>
+                        <li><strong>Mise à jour:</strong> Les nouveaux tarifs s'appliquent aux calculs futurs</li>
+                        <li><strong>Recalcul:</strong> Les chirurgies existantes peuvent être recalculées si nécessaire</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="alert alert-warning mt-3" role="alert">
+                <h6><i class="bi bi-exclamation-triangle me-2"></i>Important</h6>
+                <p class="small mb-0">
+                    Les modifications affectent uniquement les <strong>nouveaux calculs</strong>. 
+                    Les chirurgies déjà enregistrées conservent leurs montants sauf recalcul manuel.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    const feeInput = document.getElementById('fee');
+    
+    function updatePreview() {
+        const fee = parseFloat(feeInput.value) || 0;
+        const formatter = new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' });
+        
+        document.getElementById('previewFee').textContent = formatter.format(fee);
+    }
+    
+    feeInput.addEventListener('input', updatePreview);
+});
+</script>

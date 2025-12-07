@@ -1,0 +1,310 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/surgeries/planning.ejs -->
+<div class="material-page-header">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Planification des Salles Opératoires</h1>
+                <p class="page-subtitle">Calendrier et réservations</p>
+            </div>
+            <% if (permissions.canCreateReservations) { %>
+            <a href="/surgeries/new" class="action-button">
+                <i class="bi bi-plus-circle"></i>Nouvelle Chirurgie
+            </a>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select name="type" class="form-select">
+                    <option value="all" <%= filters.type === 'all' ? 'selected' : '' %>>Tous</option>
+                    <option value="surgery" <%= filters.type === 'surgery' ? 'selected' : '' %>>Chirurgies</option>
+                    <option value="reservation" <%= filters.type === 'reservation' ? 'selected' : '' %>>Réservations</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Salle</label>
+                <select name="room" class="form-select">
+                    <option value="">Toutes les salles</option>
+                    <% rooms.forEach(room => { %>
+                        <option value="<%= room._id %>" <%= filters.room === room._id.toString() ? 'selected' : '' %>>
+                            <%= room.code %> - <%= room.name %>
+                        </option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Chirurgien</label>
+                <select name="surgeon" class="form-select">
+                    <option value="">Tous les chirurgiens</option>
+                    <% surgeons.forEach(surgeon => { %>
+                        <option value="<%= surgeon._id %>" <%= filters.surgeon === surgeon._id.toString() ? 'selected' : '' %>>
+                            Dr. <%= surgeon.lastName %> <%= surgeon.firstName %>
+                        </option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Date de début</label>
+                <input type="date" name="date" class="form-control" value="<%= filters.date %>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i> Filtrer
+                    </button>
+                    <a href="/surgeries/planning/view" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Planning Grid -->
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+                <i class="bi bi-calendar3 me-2"></i>
+                Période: <%= typeof moment !== 'undefined' ? moment(startDate).format('DD/MM/YYYY') : new Date(startDate).toLocaleDateString('fr-FR') %>
+                au
+                <%= typeof moment !== 'undefined' ? moment(endDate).format('DD/MM/YYYY') : new Date(endDate).toLocaleDateString('fr-FR') %>
+            </h6>
+        </div>
+        <div class="card-body">
+            <% if (events.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Heure</th>
+                                <th>Salle</th>
+                                <th>Chirurgien</th>
+                                <th>Patient</th>
+                                <th>Prestation</th>
+                                <th>Durée</th>
+                                <th>Statut</th>
+                                <th>Code</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% events.forEach(event => { %>
+                                <tr>
+                                    <td>
+                                        <% if (event.type === 'reservation') { %>
+                                            <span class="badge bg-info text-white">
+                                                <i class="bi bi-calendar-check"></i> Réservation
+                                            </span>
+                                        <% } else { %>
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-scissors"></i> Chirurgie
+                                            </span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <%
+                                            const displayDate = event.scheduledStartTime || event.entreeSalle;
+                                            if (displayDate) {
+                                        %>
+                                            <%= typeof moment !== 'undefined' ? moment(displayDate).format('DD/MM/YYYY') : new Date(displayDate).toLocaleDateString('fr-FR') %>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <%
+                                            const displayStartTime = event.scheduledStartTime || event.entreeSalle;
+                                            const displayEndTime = event.scheduledEndTime || event.sortieSalle;
+                                            if (displayStartTime && displayEndTime) {
+                                        %>
+                                            <strong>
+                                                <%= typeof moment !== 'undefined' ? moment(displayStartTime).format('HH:mm') : new Date(displayStartTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
+                                            </strong>
+                                            -
+                                            <%= typeof moment !== 'undefined' ? moment(displayEndTime).format('HH:mm') : new Date(displayEndTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (event.operatingRoom) { %>
+                                            <span class="badge bg-light text-dark">
+                                                <%= event.operatingRoom.code %>
+                                            </span>
+                                            <br>
+                                            <small class="text-muted"><%= event.operatingRoom.name %></small>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (event.surgeon) { %>
+                                            Dr. <%= event.surgeon.lastName %> <%= event.surgeon.firstName %>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (event.patient) { %>
+                                            <%= event.patient.firstName %> <%= event.patient.lastName %>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (event.prestation) { %>
+                                            <small><%= event.prestation.designation %></small>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <%
+                                            const startTime = new Date(event.scheduledStartTime || event.entreeSalle);
+                                            const endTime = new Date(event.scheduledEndTime || event.sortieSalle);
+                                            const duration = (endTime - startTime) / (1000 * 60);
+                                            const hours = Math.floor(duration / 60);
+                                            const minutes = duration % 60;
+                                        %>
+                                        <small class="text-muted">
+                                            <% if (hours > 0) { %><%= hours %>h<% } %>
+                                            <% if (minutes > 0) { %><%= minutes %>min<% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <% if (event.type === 'reservation') { %>
+                                            <% if (event.reservationStatus === 'confirmed') { %>
+                                                <span class="badge bg-success">Confirmé</span>
+                                            <% } else if (event.reservationStatus === 'pending') { %>
+                                                <span class="badge bg-warning text-dark">En attente</span>
+                                            <% } else if (event.reservationStatus === 'cancelled') { %>
+                                                <span class="badge bg-danger">Annulé</span>
+                                            <% } %>
+                                        <% } else { %>
+                                            <% if (event.status === 'urgent') { %>
+                                                <span class="badge bg-danger">Urgente</span>
+                                            <% } else if (event.status === 'planned') { %>
+                                                <span class="badge bg-primary">Planifiée</span>
+                                            <% } %>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (event.type === 'surgery') { %>
+                                            <a href="/surgeries/<%= event._id %>" class="btn btn-sm btn-outline-primary">
+                                                <%= event.code %>
+                                            </a>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">
+                                                <%= event.code %>
+                                            </span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (event.type === 'reservation' && (event.reservationStatus === 'pending' || event.reservationStatus === 'confirmed')) { %>
+                                            <a href="/surgeries/new/from-reservation/<%= event._id %>" class="btn btn-sm btn-success" title="Convertir en chirurgie">
+                                                <i class="bi bi-arrow-right-circle"></i> Convertir
+                                            </a>
+                                        <% } else if (event.type === 'surgery') { %>
+                                            <a href="/surgeries/<%= event._id %>/edit" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-calendar-x"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune planification trouvée</h5>
+                    <p class="empty-description">
+                        Aucune chirurgie ou réservation pour cette période
+                        <% if (filters.room || filters.surgeon || filters.type !== 'all') { %>
+                            avec les filtres sélectionnés
+                        <% } %>
+                    </p>
+                    <% if (permissions.canCreateReservations) { %>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="/surgeries/new" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Créer une chirurgie
+                        </a>
+                        <a href="/surgeries/planning/slots" class="btn btn-info text-white">
+                            <i class="bi bi-calendar-check"></i> Faire une réservation
+                        </a>
+                    </div>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card mt-3">
+        <div class="card-body">
+            <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Légende</h6>
+            <div class="d-flex flex-wrap gap-3">
+                <div>
+                    <span class="badge bg-info text-white"><i class="bi bi-calendar-check"></i> Réservation</span>
+                    <small class="text-muted ms-2">Slot réservé (pas encore confirmé comme chirurgie)</small>
+                </div>
+                <div>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-scissors"></i> Chirurgie</span>
+                    <small class="text-muted ms-2">Chirurgie confirmée avec tous les détails</small>
+                </div>
+                <div>
+                    <span class="badge bg-success">Confirmé</span>
+                    <small class="text-muted ms-2">Réservation confirmée</small>
+                </div>
+                <div>
+                    <span class="badge bg-warning text-dark">En attente</span>
+                    <small class="text-muted ms-2">Réservation en attente de confirmation</small>
+                </div>
+                <div>
+                    <span class="badge bg-primary">Planifiée</span>
+                    <small class="text-muted ms-2">Chirurgie planifiée</small>
+                </div>
+                <div>
+                    <span class="badge bg-danger">Urgente</span>
+                    <small class="text-muted ms-2">Chirurgie urgente</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.material-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+.material-empty-state .empty-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+.material-empty-state .empty-title {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+.material-empty-state .empty-description {
+    color: #adb5bd;
+    margin-bottom: 1.5rem;
+}
+</style>

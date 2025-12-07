@@ -10,6 +10,14 @@
                 </h5>
             </div>
             <div class="card-body">
+                <% if (error) { %>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <strong>Erreur:</strong> <%= error %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <% } %>
+                
                 <form method="POST" action="/patients/<%= patient._id %>?_method=PUT" class="patient-form">
                     <div class="row">
                         <div class="col-md-6">
@@ -41,19 +49,49 @@
                         </div>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6">
+                    <!-- Birthdate Toggle Section -->
+                    <div class="card mb-3 border-info">
+                        <div class="card-body">
                             <div class="mb-3">
-                                <label for="dateOfBirth" class="form-label"><i class="bi bi-calendar me-1"></i>Date de naissance</label>
-                                <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
-                                       value="<%= patient.dateOfBirth ? moment(patient.dateOfBirth).format('YYYY-MM-DD') : '' %>">
+                                <label class="form-label fw-bold"><i class="bi bi-calendar-event me-1"></i>Date de naissance</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="birthdateKnownToggle" <%= patient.dateOfBirth ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="birthdateKnownToggle">
+                                        Date de naissance complète connue
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="presumedAge" class="form-label"><i class="bi bi-question-circle me-1"></i>Âge présumé</label>
-                                <input type="number" class="form-control" id="presumedAge" name="presumedAge" 
-                                       value="<%= patient.presumedAge || '' %>" min="0" max="120">
+                            
+                            <!-- Full Birthdate Input -->
+                            <div id="fullBirthdateSection" style="<%= patient.dateOfBirth ? '' : 'display:none;' %>">
+                                <div class="mb-3">
+                                    <label for="dateOfBirth" class="form-label"><i class="bi bi-calendar me-1"></i>Date de naissance complète</label>
+                                    <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
+                                           value="<%= patient.dateOfBirth ? moment(patient.dateOfBirth).format('YYYY-MM-DD') : '' %>">
+                                </div>
+                            </div>
+                            
+                            <!-- Presumed Age/Year Section -->
+                            <div id="presumedSection" style="<%= patient.dateOfBirth ? 'display:none;' : '' %>">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="presumedAge" class="form-label"><i class="bi bi-question-circle me-1"></i>Âge présumé</label>
+                                            <input type="number" class="form-control" id="presumedAge" name="presumedAge" 
+                                                   value="<%= patient.presumedAge || '' %>" min="0" max="120" placeholder="Ex: 45">
+                                            <small class="form-text text-muted">L'année sera calculée automatiquement</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="presumedYear" class="form-label"><i class="bi bi-calendar-year me-1"></i>Année présumée</label>
+                                            <input type="number" class="form-control" id="presumedYear" name="presumedYear" 
+                                                   value="<%= patient.birthdatePresumed ? moment(patient.birthdatePresumed).format('YYYY') : '' %>" 
+                                                   min="1900" max="<%= new Date().getFullYear() %>" placeholder="Ex: 1979">
+                                            <small class="form-text text-muted">L'âge sera calculé automatiquement</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -76,3 +114,5 @@
         </div>
     </div>
 </div>
+
+<script src="/js/patient.js"></script>

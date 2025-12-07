@@ -1,0 +1,180 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/operatingRooms/new.ejs -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-hospital me-2"></i>Nouvelle Salle Opératoire
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <a href="/operating-rooms" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Retour
+                    </a>
+                </div>
+                <form method="POST" action="/operating-rooms">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="code" class="form-label">Code *</label>
+                                <input type="text" class="form-control" id="code" name="code" 
+                                       value="<%= operatingRoom.code || '' %>" required 
+                                       placeholder="BLOC01">
+                                <small class="form-text text-muted">Code unique de la salle (sera converti en majuscules)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nom *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="<%= operatingRoom.name || '' %>" required 
+                                       placeholder="Salle d'opération principale">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Localisation</label>
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       value="<%= operatingRoom.location || '' %>" 
+                                       placeholder="Aile sud">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="floor" class="form-label">Étage</label>
+                                <input type="text" class="form-control" id="floor" name="floor" 
+                                       value="<%= operatingRoom.floor || '' %>" 
+                                       placeholder="2ème étage">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="capacity" class="form-label">Capacité</label>
+                                <input type="number" class="form-control" id="capacity" name="capacity" 
+                                       value="<%= operatingRoom.capacity || 1 %>" min="1" 
+                                       placeholder="1">
+                                <small class="form-text text-muted">Nombre d'interventions simultanées possibles</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="isActive" class="form-label">Statut</label>
+                                <select class="form-select" id="isActive" name="isActive">
+                                    <option value="true" <%= !operatingRoom.isActive || operatingRoom.isActive ? 'selected' : '' %>>Active</option>
+                                    <option value="false" <%= operatingRoom.isActive === false ? 'selected' : '' %>>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="equipment" class="form-label">Équipements disponibles</label>
+                        <textarea class="form-control" id="equipment" name="equipment" rows="3" 
+                                  placeholder="Scanner, Microscope, Anesthésie générale... (séparés par des virgules)"><%= operatingRoom.equipment && operatingRoom.equipment.length > 0 ? operatingRoom.equipment.join(', ') : '' %></textarea>
+                        <small class="form-text text-muted">Listez les équipements disponibles, séparés par des virgules</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Informations complémentaires..."><%= operatingRoom.description || '' %></textarea>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="mb-3"><i class="bi bi-hourglass-split"></i> Configuration des créneaux</h6>
+                    
+                    <div class="mb-3">
+                        <label for="slotDuration" class="form-label">Durée des créneaux de réservation</label>
+                        <select class="form-select" id="slotDuration" name="slotDuration">
+                            <option value="15" <%= operatingRoom.slotDuration === 15 ? 'selected' : '' %>>15 minutes</option>
+                            <option value="30" <%= operatingRoom.slotDuration === 30 ? 'selected' : '' %>>30 minutes</option>
+                            <option value="45" <%= operatingRoom.slotDuration === 45 ? 'selected' : '' %>>45 minutes</option>
+                            <option value="60" <%= operatingRoom.slotDuration === 60 || !operatingRoom.slotDuration ? 'selected' : '' %>>1 heure (par défaut)</option>
+                            <option value="90" <%= operatingRoom.slotDuration === 90 ? 'selected' : '' %>>1h30</option>
+                            <option value="120" <%= operatingRoom.slotDuration === 120 ? 'selected' : '' %>>2 heures</option>
+                            <option value="180" <%= operatingRoom.slotDuration === 180 ? 'selected' : '' %>>3 heures</option>
+                            <option value="240" <%= operatingRoom.slotDuration === 240 ? 'selected' : '' %>>4 heures</option>
+                            <option value="480" <%= operatingRoom.slotDuration === 480 ? 'selected' : '' %>>8 heures</option>
+                        </select>
+                        <small class="form-text text-muted">Choisissez la durée de chaque créneau de réservation</small>
+                    </div>
+
+                    <hr class="my-4">
+                    <h6 class="mb-3"><i class="bi bi-clock"></i> Heures d'ouverture</h6>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="enableActiveHours" name="activeHours[enabled]" 
+                                   value="true" <%= operatingRoom.activeHours && operatingRoom.activeHours.enabled ? 'checked' : '' %>
+                                   onchange="toggleActiveHoursFields()">
+                            <label class="form-check-label" for="enableActiveHours">
+                                Activer les heures d'ouverture personnalisées
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="activeHoursFields" style="display: <%= operatingRoom.activeHours && operatingRoom.activeHours.enabled ? 'block' : 'none' %>;background-color: #f8f9fa;" class="border rounded p-3">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="is24_7" name="activeHours[is24_7]" 
+                                       value="true" <%= operatingRoom.activeHours && operatingRoom.activeHours.is24_7 ? 'checked' : '' %>
+                                       onchange="toggle24_7()">
+                                <label class="form-check-label" for="is24_7">
+                                    Disponible 24h/24 7j/7
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="timeFields" style="display: <%= operatingRoom.activeHours && operatingRoom.activeHours.is24_7 ? 'none' : 'block' %>;padding-top: 10px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="startTime" class="form-label">Heure d'ouverture</label>
+                                        <input type="time" class="form-control" id="startTime" name="activeHours[startTime]" 
+                                               value="<%= operatingRoom.activeHours && operatingRoom.activeHours.startTime ? operatingRoom.activeHours.startTime : '08:00' %>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="endTime" class="form-label">Heure de fermeture</label>
+                                        <input type="time" class="form-control" id="endTime" name="activeHours[endTime]" 
+                                               value="<%= operatingRoom.activeHours && operatingRoom.activeHours.endTime ? operatingRoom.activeHours.endTime : '20:00' %>">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="/operating-rooms" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleActiveHoursFields() {
+        const enableCheckbox = document.getElementById('enableActiveHours');
+        const activeHoursFields = document.getElementById('activeHoursFields');
+        activeHoursFields.style.display = enableCheckbox.checked ? 'block' : 'none';
+    }
+
+    function toggle24_7() {
+        const is24_7Checkbox = document.getElementById('is24_7');
+        const timeFields = document.getElementById('timeFields');
+        timeFields.style.display = is24_7Checkbox.checked ? 'none' : 'block';
+    }
+</script>

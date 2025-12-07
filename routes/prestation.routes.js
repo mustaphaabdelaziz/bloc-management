@@ -13,7 +13,8 @@ const {
   renderPrestationForm,
   updatePrestation,
   showPrestation,
-  importPrestations
+  importPrestations,
+  downloadTemplate
 } = require("../controller/prestation.controller");
 
 // Multer config for Excel file upload
@@ -42,6 +43,7 @@ router
   .post(isLoggedIn, ensureAdminOrDirection, catchAsync(createPrestation));
 
 router.post("/import", isLoggedIn, ensureAdminOrDirection, upload.single('excelFile'), catchAsync(importPrestations));
+router.get("/template", isLoggedIn, ensureViewPrestations, catchAsync(downloadTemplate));
 
 router.get("/new", isLoggedIn, ensureAdminOrDirection, renderPrestationForm);
 router.get("/:id/edit", isLoggedIn, ensureAdminOrDirection, catchAsync(renderEditPrestationForm));

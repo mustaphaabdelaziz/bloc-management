@@ -1,0 +1,224 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/operatingRooms/show.ejs -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-hospital me-2"></i><%= operatingRoom.displayName %>
+                        </h5>
+                        <% if (operatingRoom.isActive) { %>
+                            <span class="badge bg-success">Active</span>
+                        <% } else { %>
+                            <span class="badge bg-secondary">Inactive</span>
+                        <% } %>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <a href="/operating-rooms" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+                        </a>
+                        <% if (permissions.canManageRooms) { %>
+                            <a href="/operating-rooms/<%= operatingRoom._id %>/edit" class="btn btn-warning">
+                                <i class="bi bi-pencil me-2"></i>Modifier
+                            </a>
+                            <form method="POST" action="/operating-rooms/<%= operatingRoom._id %>/toggle-status" class="d-inline">
+                                <button type="submit" class="btn btn-<%= operatingRoom.isActive ? 'secondary' : 'success' %>">
+                                    <i class="bi bi-<%= operatingRoom.isActive ? 'pause' : 'play' %>-circle me-2"></i>
+                                    <%= operatingRoom.isActive ? 'Désactiver' : 'Activer' %>
+                                </button>
+                            </form>
+                        <% } %>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Informations générales</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Code:</th>
+                                    <td><span class="badge bg-light text-dark"><%= operatingRoom.code %></span></td>
+                                </tr>
+                                <tr>
+                                    <th>Nom:</th>
+                                    <td><%= operatingRoom.name %></td>
+                                </tr>
+                                <tr>
+                                    <th>Capacité:</th>
+                                    <td><span class="badge bg-info"><%= operatingRoom.capacity %></span></td>
+                                </tr>
+                                <tr>
+                                    <th>Statut:</th>
+                                    <td>
+                                        <% if (operatingRoom.isActive) { %>
+                                            <span class="badge bg-success">Active</span>
+                                        <% } else { %>
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Localisation</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Emplacement:</th>
+                                    <td><%= operatingRoom.location || '-' %></td>
+                                </tr>
+                                <tr>
+                                    <th>Étage:</th>
+                                    <td><%= operatingRoom.floor || '-' %></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <% if (operatingRoom.equipment && operatingRoom.equipment.length > 0) { %>
+                        <div class="mt-3">
+                            <h6 class="text-muted">Équipements disponibles</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <% operatingRoom.equipment.forEach(item => { %>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-wrench me-1"></i><%= item %>
+                                    </span>
+                                <% }); %>
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <div class="mt-3">
+                        <h6 class="text-muted">
+                            <i class="bi bi-hourglass-split"></i> Configuration des créneaux
+                        </h6>
+                        <div class="alert alert-info">
+                            <strong>Durée des créneaux:</strong>
+                            <%
+                                const duration = operatingRoom.slotDuration || 60;
+                                let durationText = '';
+                                if (duration === 15) durationText = '15 minutes';
+                                else if (duration === 30) durationText = '30 minutes';
+                                else if (duration === 45) durationText = '45 minutes';
+                                else if (duration === 60) durationText = '1 heure';
+                                else if (duration === 90) durationText = '1h30';
+                                else if (duration === 120) durationText = '2 heures';
+                                else if (duration === 180) durationText = '3 heures';
+                                else if (duration === 240) durationText = '4 heures';
+                                else if (duration === 480) durationText = '8 heures';
+                                else durationText = duration + ' minutes';
+                            %>
+                            <%= durationText %>
+                        </div>
+                    </div>
+
+                    <% if (operatingRoom.description) { %>
+                        <div class="mt-3">
+                            <h6 class="text-muted">Description</h6>
+                            <p class="text-muted"><%= operatingRoom.description %></p>
+                        </div>
+                    <% } %>
+
+                    <% if (operatingRoom.activeHours && operatingRoom.activeHours.enabled) { %>
+                        <div class="mt-3">
+                            <h6 class="text-muted">
+                                <i class="bi bi-clock"></i> Heures d'ouverture
+                            </h6>
+                            <div class="alert alert-info">
+                                <% if (operatingRoom.activeHours.is24_7) { %>
+                                    <strong><i class="bi bi-check-circle"></i> Disponible 24h/24 7j/7</strong>
+                                <% } else { %>
+                                    <strong><%= operatingRoom.activeHours.startTime %></strong> à 
+                                    <strong><%= operatingRoom.activeHours.endTime %></strong>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Créé le <%= typeof moment !== 'undefined' ? moment(operatingRoom.createdAt).format('DD/MM/YYYY à HH:mm') : new Date(operatingRoom.createdAt).toLocaleString('fr-FR') %>
+                            <% if (operatingRoom.updatedAt && operatingRoom.updatedAt !== operatingRoom.createdAt) { %>
+                                | Modifié le <%= typeof moment !== 'undefined' ? moment(operatingRoom.updatedAt).format('DD/MM/YYYY à HH:mm') : new Date(operatingRoom.updatedAt).toLocaleString('fr-FR') %>
+                            <% } %>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Reservations -->
+            <% if (upcomingReservations && upcomingReservations.length > 0) { %>
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-calendar-check me-2"></i>Réservations à venir
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Heure</th>
+                                        <th>Chirurgien</th>
+                                        <th>Patient</th>
+                                        <th>Prestation</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% upcomingReservations.forEach(reservation => { %>
+                                        <tr>
+                                            <td><%= typeof moment !== 'undefined' ? moment(reservation.scheduledStartTime).format('DD/MM/YYYY') : new Date(reservation.scheduledStartTime).toLocaleDateString('fr-FR') %></td>
+                                            <td>
+                                                <%= typeof moment !== 'undefined' ? moment(reservation.scheduledStartTime).format('HH:mm') : new Date(reservation.scheduledStartTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
+                                                -
+                                                <%= typeof moment !== 'undefined' ? moment(reservation.scheduledEndTime).format('HH:mm') : new Date(reservation.scheduledEndTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
+                                            </td>
+                                            <td>Dr. <%= reservation.surgeon.lastName %> <%= reservation.surgeon.firstName %></td>
+                                            <td><%= reservation.patient.firstName %> <%= reservation.patient.lastName %></td>
+                                            <td><small><%= reservation.prestation.designation %></small></td>
+                                            <td>
+                                                <% if (reservation.reservationStatus === 'confirmed') { %>
+                                                    <span class="badge bg-success">Confirmé</span>
+                                                <% } else if (reservation.reservationStatus === 'reserved') { %>
+                                                    <span class="badge bg-primary">Réservé</span>
+                                                <% } %>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- Delete Form -->
+            <% if (permissions.canManageRooms) { %>
+                <div class="card mt-4 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Zone dangereuse
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            La suppression d'une salle opératoire est définitive et ne peut être annulée.
+                            Les salles avec des réservations actives ne peuvent pas être supprimées.
+                        </p>
+                        <form method="POST" action="/operating-rooms/<%= operatingRoom._id %>?_method=DELETE" 
+                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette salle opératoire ? Cette action est irréversible.');">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Supprimer cette salle
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>

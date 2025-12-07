@@ -183,9 +183,9 @@
               <% surgeries.slice(0, 5).forEach(surgery => { %>
               <tr>
                 <td>
-                  <%= moment(surgery.beginDateTime).format('DD/MM/YY') %>
+                  <%= moment(surgery.incisionTime).format('DD/MM/YY') %>
                   <small class="text-muted d-block">
-                    <%= moment(surgery.beginDateTime).format('HH:mm') %>
+                    <%= moment(surgery.incisionTime).format('HH:mm') %>
                   </small>
                 </td>
                 <td>
@@ -197,7 +197,7 @@
                 </td>
                 <td>
                   <% if (surgery.surgeon) { %>
-                    Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                    Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %>
                   <% } else { %>
                     <span class="text-muted">Non spécifié</span>
                   <% } %>

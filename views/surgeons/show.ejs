@@ -13,7 +13,7 @@
                     <div class="surgeon-avatar">
                         <i class="bi bi-person-badge"></i>
                     </div>
-                    <h4>Dr. <%= surgeon.firstName %> <%= surgeon.lastName %></h4>
+                    <h4>Dr. <%= surgeon.lastName %> <%= surgeon.firstName %></h4>
                     <p class="text-muted">Code: <strong><%= surgeon.code %></strong></p>
                     <span class="badge bg-info fs-6"><%= surgeon.specialty.name %></span>
                 </div>
@@ -33,11 +33,12 @@
                         <td><i class="bi bi-telephone me-2"></i><%= surgeon.phone %></td>
                     </tr>
                     <% } %>
+                    <% if (permissions.canSeeContractInfo) { %>
                     <tr>
                         <td><strong>Type contrat:</strong></td>
                         <td>
-                            <% if (surgeon.contractType === 'allocation') { %>
-                                <span class="badge bg-primary">Allocation</span>
+                            <% if (surgeon.contractType === 'location') { %>
+                                <span class="badge bg-primary">location</span>
                             <% } else { %>
                                 <span class="badge bg-warning">Pourcentage</span>
                             <% } %>
@@ -46,13 +47,14 @@
                     <tr>
                         <td><strong>Taux:</strong></td>
                         <td>
-                            <% if (surgeon.contractType === 'allocation') { %>
-                                <strong class="text-primary"><%= surgeon.allocationRate || 0 %> DA/heure</strong>
+                            <% if (surgeon.contractType === 'location') { %>
+                                <strong class="text-primary"><%= surgeon.locationRate || 0 %> DA/heure</strong>
                             <% } else { %>
                                 <strong class="text-warning"><%= surgeon.percentageRate || 0 %>%</strong>
                             <% } %>
                         </td>
                     </tr>
+                    <% } %>
                     <tr>
                         <td><strong>Créé le:</strong></td>
                         <td><%= moment(surgeon.createdAt).format('DD/MM/YYYY HH:mm') %></td>
@@ -60,9 +62,11 @@
                 </table>
                 
                 <div class="d-grid gap-2">
+                    <% if (permissions.canManageData) { %>
                     <a href="/surgeons/<%= surgeon._id %>/edit" class="btn btn-warning">
                         <i class="bi bi-pencil me-2"></i>Modifier
                     </a>
+                    <% } %>
                     <a href="/surgeries/new?surgeon=<%= surgeon._id %>" class="btn btn-success">
                         <i class="bi bi-plus-circle me-2"></i>Nouvelle Chirurgie
                     </a>
@@ -88,7 +92,9 @@
                                     <th>Date</th>
                                     <th>Patient</th>
                                     <th>Prestation</th>
+                                    <% if (permissions.canViewPricing) { %>
                                     <th>Honoraires</th>
+                                    <% } %>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -97,9 +103,9 @@
                                     <tr>
                                         <td>
                                             <div>
-                                                <strong><%= moment(surgery.beginDateTime).format('DD/MM/YYYY') %></strong>
-                                            </div>
-                                            <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
+                                                <strong><%= moment(surgery.incisionTime).format('DD/MM/YYYY') %></strong>
+                                            </p>
+                                            <small class="text-muted"><%= moment(surgery.incisionTime).format('HH:mm') %></small>
                                         </td>
                                         <td>
                                             <%= surgery.patient.firstName %> <%= surgery.patient.lastName %>
@@ -107,14 +113,15 @@
                                         <td>
                                             <span class="badge bg-secondary"><%= surgery.prestation.designation %></span>
                                         </td>
+                                        <% if (permissions.canViewPricing) { %>
                                         <td>
                                             <% 
                                             let surgeonFee = 0;
                                             if (surgery.surgeon && surgery.prestation) {
-                                                if (surgery.surgeon.contractType === 'allocation') {
-                                                    const allocationRate = surgery.surgeon.allocationRate || 0;
+                                                if (surgery.surgeon.contractType === 'location') {
+                                                    const locationRate = surgery.surgeon.locationRate || 0;
                                                     const durationH = (surgery.actualDuration || 0) / 60;
-                                                    surgeonFee = allocationRate * durationH;
+                                                    surgeonFee = locationRate * durationH;
                                                 } else {
                                                     // Percentage contract
                                                     const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT;
@@ -127,8 +134,8 @@
                                                     const surgeonBase = (effectivePrice - patientMaterials) * surgeonRate;
                                                     // Deduct extra fees from surgeon share
                                                     let extraFeeDeduction = 0;
-                                                    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                        const extraDuration = surgery.actualDuration - surgery.prestation.duration;
+                                                    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.maxDuration) {
+                                                        const extraDuration = surgery.actualDuration - surgery.prestation.maxDuration;
                                                         const durationUnit = surgery.prestation.exceededDurationUnit || 15;
                                                         const extraUnits = Math.ceil(extraDuration / durationUnit);
                                                         extraFeeDeduction = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
@@ -145,6 +152,7 @@
                                                 <span class="text-muted">Non calculé</span>
                                             <% } %>
                                         </td>
+                                        <% } %>
                                         <td>
                                             <a href="/surgeries/<%= surgery._id %>" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-eye me-1"></i>Voir
@@ -157,6 +165,7 @@
                     </div>
                     
                     <!-- Statistiques du chirurgien -->
+                    <% if (permissions.canViewPricing) { %>
                     <div class="row mt-4">
                         <div class="col-md-4">
                             <div class="text-center">
@@ -181,14 +190,17 @@
                             </div>
                         </div>
                     </div>
+                    <% } %>
                 <% } else { %>
                     <div class="text-center py-4">
                         <i class="bi bi-scissors fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Aucune chirurgie enregistrée</h5>
                         <p class="text-muted">Ce chirurgien n'a pas encore réalisé de chirurgie</p>
+                        <% if (permissions.canManageData) { %>
                         <a href="/surgeries/new?surgeon=<%= surgeon._id %>" class="btn btn-primary">
                             <i class="bi bi-plus-circle me-2"></i>Programmer une chirurgie
                         </a>
+                        <% } %>
                     </div>
                 <% } %>
             </div>

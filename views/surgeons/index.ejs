@@ -8,9 +8,25 @@
                 <p class="page-subtitle">Configuration complète des profils chirurgiens et contrats d'intervention</p>
             </div>
             <% if (permissions.canManageData) { %>
-            <a href="/surgeons/new" class="action-button">
-                <i class="bi bi-plus-circle"></i>Nouveau Chirurgien
-            </a>
+            <div class="d-flex gap-2">
+                <a href="/surgeons/new" class="action-button">
+                    <i class="bi bi-plus-circle"></i>Nouveau Chirurgien
+                </a>
+                <div class="dropdown">
+                    <button class="action-button dropdown-toggle" type="button" id="excelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>Import Excel
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="excelDropdown">
+                        <li><a class="dropdown-item" href="/surgeons/template" target="_blank">
+                            <i class="bi bi-download me-2"></i>Télécharger Modèle
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showImportModal()">
+                            <i class="bi bi-upload me-2"></i>Importer Fichier
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
             <% } %>
         </div>
     </div>
@@ -55,11 +71,14 @@
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>Code</th>
                                 <th>Nom</th>
                                 <th>Spécialité</th>
                                 <% if (permissions.canSeeContractInfo) { %>
                                 <th>Contrat</th>
                                 <% } %>
+                                <th>Créé par</th>
+                                <th>Modifié par</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -67,12 +86,15 @@
                             <% surgeons.forEach(surgeon => { %>
                                 <tr>
                                     <td>
+                                        <span class="badge bg-secondary"><%= surgeon.code %></span>
+                                    </td>
+                                    <td>
                                         <div class="material-name">
                                             <div class="material-avatar">
                                                 <i class="bi bi-person"></i>
                                             </div>
                                             <div class="material-details">
-                                                <h6>Dr. <%= surgeon.firstName %> <%= surgeon.lastName %></h6>
+                                                <h6>Dr. <%= surgeon.lastName %> <%= surgeon.firstName %></h6>
                                             </div>
                                         </div>
                                     </td>
@@ -81,13 +103,35 @@
                                     </td>
                                     <% if (permissions.canSeeContractInfo) { %>
                                     <td>
-                                        <% if (surgeon.contractType === 'allocation') { %>
-                                            <span class="badge bg-secondary">Allocation</span>
+                                        <% if (surgeon.contractType === 'location') { %>
+                                            <span class="badge bg-secondary">location</span>
                                         <% } else { %>
                                             <span class="badge bg-primary">Pourcentage</span>
                                         <% } %>
                                     </td>
                                     <% } %>
+                                    <td>
+                                        <small>
+                                            <% if (surgeon.createdBy) { %>
+                                                <%= surgeon.createdBy.firstname %> <%= surgeon.createdBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(surgeon.createdAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (surgeon.updatedBy) { %>
+                                                <%= surgeon.updatedBy.firstname %> <%= surgeon.updatedBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(surgeon.updatedAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
                                     <td>
                                         <% if (permissions.canManageData) { %>
                                         <div class="material-actions">
@@ -128,6 +172,91 @@
     </div>
 </div>
 
+<!-- Import Modal -->
+<div class="modal fade surgeon-modal" id="importModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i>Importer Chirurgiens depuis Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" method="POST" action="/surgeons/import" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                        <div>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Besoin d'un modèle ?</strong> Téléchargez le fichier Excel pré-formaté avec des exemples.
+                        </div>
+                        <div>
+                            <a href="/surgeons/template" class="btn btn-sm btn-outline-primary" download>
+                                <i class="bi bi-cloud-download me-1"></i>Télécharger Modèle
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="excelFileInput" class="form-label required-field">Fichier Excel</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="excelFileInput" name="excelFile" accept=".xlsx,.xls" required>
+                            <span class="input-group-text">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                            </span>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">
+                            Formats acceptés: .xlsx, .xls | Taille maximale: 5 MB
+                        </small>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Format du fichier Excel:</strong>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Colonnes requises:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Prénom</strong> - Prénom du chirurgien</li>
+                                    <li><strong>Nom</strong> - Nom du chirurgien</li>
+                                    <li><strong>Spécialité</strong> - Spécialité chirurgicale</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Colonnes optionnelles:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Code</strong> - Identifiant unique (auto-généré si vide)</li>
+                                    <li>Date de Naissance - Format: YYYY-MM-DD</li>
+                                    <li>Téléphone - Numéro de contact</li>
+                                    <li>Type de Contrat - location ou percentage</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border" role="alert">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            <strong>Gestion du Code:</strong>
+                            <ul class="mb-0 ms-3 mt-2">
+                                <li>Si vous spécifiez un code → il sera utilisé (ex: CH-001, MED-2024, etc.)</li>
+                                <li>Si la colonne Code est vide → sera auto-généré au format SR-XXXXX (SR-00001, SR-00002, etc.)</li>
+                                <li>Les codes doivent être uniques dans le système</li>
+                            </ul>
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="importBtn">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function deleteSurgeon(id) {
     if (confirmDelete('Êtes-vous sûr de vouloir supprimer ce chirurgien ?')) {
@@ -137,5 +266,10 @@ function deleteSurgeon(id) {
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+function showImportModal() {
+    const modal = new bootstrap.Modal(document.getElementById('importModal'));
+    modal.show();
 }
 </script>

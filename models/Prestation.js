@@ -16,6 +16,11 @@ const prestationSchema = new mongoose.Schema({
         ref: 'Specialty',
         required: true
     },
+    family: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Family',
+        required: false
+    },
     priceHT: {
         type: Number,
         required: true
@@ -26,7 +31,16 @@ const prestationSchema = new mongoose.Schema({
         default: 0.09
     },
     duration: {
-        type: Number, // en minutes
+        type: Number, // en minutes (deprecated - use minDuration and maxDuration instead)
+        required: false,
+        default: function() { return this.maxDuration; }
+    },
+    minDuration: {
+        type: Number, // en minutes - minimum duration
+        required: true
+    },
+    maxDuration: {
+        type: Number, // en minutes - maximum duration (used in fee calculations)
         required: true
     },
     exceededDurationUnit: {
@@ -37,11 +51,26 @@ const prestationSchema = new mongoose.Schema({
         type: Number, // frais par unité de dépassement
         default: 0
     },
+    exceededDurationTolerance: {
+        type: Number, // marge de tolérance en minutes avant application des frais de dépassement
+        default: 15,
+        min: 0
+    },
     urgentFeePercentage: {
         type: Number, // pourcentage des frais urgents (ex: 0.10 pour 10%)
         default: 0,
         min: 0,
         max: 1
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
     },
 }, { timestamps: true });
 

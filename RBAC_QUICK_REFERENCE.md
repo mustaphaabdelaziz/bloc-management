@@ -113,7 +113,7 @@ permissions.canManageData
 - `priceHT`, `tva`, `exceededDurationFee`, `urgentFeePercentage`
 
 ### Surgeons
-- `contractType`, `allocationRate`, `percentageRate`
+- `contractType`, `locationRate`, `percentageRate`
 
 ### Materials
 - `priceHT`, `weightedPrice`

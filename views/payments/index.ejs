@@ -61,6 +61,7 @@
                         </thead>
                         <tbody>
                             <% payments.forEach(payment => { %>
+                                <% if (payment.surgery && payment.surgeon) { %>
                                 <tr>
                                     <td>
                                         <a href="/surgeries/<%= payment.surgery._id %>"><%= payment.surgery.code %></a>
@@ -69,7 +70,11 @@
                                         Dr. <%= payment.surgeon.lastName %> <%= payment.surgeon.firstName %>
                                     </td>
                                     <td>
-                                        <%= payment.surgery.patient.lastName %> <%= payment.surgery.patient.firstName %>
+                                        <% if (payment.surgery.patient) { %>
+                                            <%= payment.surgery.patient.lastName %> <%= payment.surgery.patient.firstName %>
+                                        <% } else { %>
+                                            <span class="text-muted">Patient supprimé</span>
+                                        <% } %>
                                     </td>
                                     <td>
                                         <% if(payment.paymentType === 'outgoing') { %>
@@ -109,6 +114,13 @@
                                         </div>
                                     </td>
                                 </tr>
+                                <% } else { %>
+                                <tr class="table-secondary">
+                                    <td colspan="7" class="text-center text-muted">
+                                        <small>Enregistrement orphelin - Chirurgie ou Chirurgien supprimé</small>
+                                    </td>
+                                </tr>
+                                <% } %>
                             <% }); %>
                         </tbody>
                     </table>

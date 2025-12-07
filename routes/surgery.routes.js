@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const catchAsync = require("../utils/catchAsync");
 const { isLoggedIn } = require("../middleware/auth");
-const { ensureManagementAccess, ensureViewSurgeries, ensureOwnerOrRole } = require('../middleware/rbac');
+const { ensureManagementAccess, ensureHeadDepartManagement, ensureViewSurgeries, ensureOwnerOrRole } = require('../middleware/rbac');
 const Surgery = require('../models/Surgery');
 const {
   deleteSurgery,
@@ -14,6 +14,18 @@ const {
   renderCreateSurgeryForm,
   calculateFees,
   updateSurgeryStatus,
+  closeSurgery,
+  reopenSurgery,
+  addMaterialsToSurgery,
+  showPlanning,
+  createOrUpdateReservation,
+  cancelReservation,
+  checkAvailability,
+  getSlots,
+  showSlotBooking,
+  createReservationFromSlots,
+  renderCreateSurgeryFromReservation,
+  createSurgeryFromReservation,
 } = require("../controller/surgery.controller");
 
 // Debug: ensure handlers are defined
@@ -25,19 +37,35 @@ for (const [k, v] of Object.entries(handlers)) {
 // Surgery list - all logged users with viewing permissions can see
 router.route("/")
   .get(isLoggedIn, ensureViewSurgeries, catchAsync(surgeryList))
-  .post(isLoggedIn, ensureManagementAccess, catchAsync(createSurgery));
+  .post(isLoggedIn, ensureHeadDepartManagement, catchAsync(createSurgery));
 
-// New surgery form - only management roles
-router.get("/new", isLoggedIn, ensureManagementAccess, renderCreateSurgeryForm);
+// New surgery form - admin/direction/headDepart can create
+router.get("/new", isLoggedIn, ensureHeadDepartManagement, renderCreateSurgeryForm);
+
+// Convert reservation to surgery
+router.get("/new/from-reservation/:id", isLoggedIn, ensureHeadDepartManagement, catchAsync(renderCreateSurgeryFromReservation));
+router.post("/new/from-reservation/:id", isLoggedIn, ensureHeadDepartManagement, catchAsync(createSurgeryFromReservation));
 
 router
   .route("/:id")
   .get(isLoggedIn, ensureViewSurgeries, catchAsync(viewSurgery))
-  .put(isLoggedIn, ensureManagementAccess, catchAsync(updateSurgery))
-  .delete(isLoggedIn, ensureManagementAccess, catchAsync(deleteSurgery));
+  .put(isLoggedIn, ensureHeadDepartManagement, catchAsync(updateSurgery))
+  .delete(isLoggedIn, ensureHeadDepartManagement, catchAsync(deleteSurgery));
 
 router.post("/:id/calculate-fees", isLoggedIn, ensureManagementAccess, catchAsync(calculateFees));
-router.post("/:id/update-status", isLoggedIn, ensureManagementAccess, catchAsync(updateSurgeryStatus));
-router.get("/:id/edit", isLoggedIn, ensureManagementAccess, renderEditSurgeryForm);
+router.post("/:id/update-status", isLoggedIn, ensureHeadDepartManagement, catchAsync(updateSurgeryStatus));
+router.post("/:id/close", isLoggedIn, ensureManagementAccess, catchAsync(closeSurgery));
+router.post("/:id/reopen", isLoggedIn, ensureManagementAccess, catchAsync(reopenSurgery));
+router.post("/:id/add-materials", isLoggedIn, ensureHeadDepartManagement, catchAsync(addMaterialsToSurgery));
+router.get("/:id/edit", isLoggedIn, ensureHeadDepartManagement, renderEditSurgeryForm);
+
+// Operating Room Reservation Routes
+router.get("/planning/view", isLoggedIn, ensureViewSurgeries, catchAsync(showPlanning));
+router.get("/planning/book-slots", isLoggedIn, catchAsync(showSlotBooking));
+router.get("/planning/slots", isLoggedIn, catchAsync(getSlots));
+router.get("/planning/check-availability", isLoggedIn, catchAsync(checkAvailability));
+router.post("/new/reservation", isLoggedIn, catchAsync(createReservationFromSlots));
+router.post("/:id/reservation", isLoggedIn, catchAsync(createOrUpdateReservation));
+router.delete("/:id/reservation", isLoggedIn, catchAsync(cancelReservation));
 
 module.exports = router;

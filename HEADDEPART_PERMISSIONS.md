@@ -31,7 +31,7 @@ The **headDepart** (Department Head) role has been configured with view-only acc
 ### 4. **Surgeons** (View Only, No Financial Info)
 - ✅ Can view surgeons list
 - ✅ Can view surgeon details (name, code, specialty, contact)
-- ❌ **Cannot see**: Contract information (contractType, allocationRate, percentageRate)
+- ❌ **Cannot see**: Contract information (contractType, locationRate, percentageRate)
 - ❌ **Cannot see**: Any financial information
 - ❌ **Cannot**: Create, edit, delete surgeons
 - **Buttons hidden**: New, Edit, Delete
@@ -87,7 +87,7 @@ When viewing surgery edit form (if ever accessible):
 ### Controller-Level Filtering
 Data is filtered at the controller level before being sent to views:
 
-1. **Surgeons**: Contract info removed (`contractType`, `allocationRate`, `percentageRate`)
+1. **Surgeons**: Contract info removed (`contractType`, `locationRate`, `percentageRate`)
 2. **Prestations**: Pricing removed (`priceHT`, `tva`, `exceededDurationFee`, `urgentFeePercentage`)
 3. **Materials**: Pricing removed (`priceHT`, `weightedPrice`)
 4. **Surgeries**: Financial info not calculated/displayed (`surgeonAmount`, `clinicAmount`)

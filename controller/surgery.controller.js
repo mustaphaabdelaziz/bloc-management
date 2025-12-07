@@ -5,6 +5,8 @@ const Prestation = require("../models/Prestation");
 const MedicalStaff = require("../models/MedicalStaff");
 const Fonction = require("../models/Fonction");
 const Material = require("../models/Material");
+const Reservation = require("../models/Reservation");
+const AsaPricing = require("../models/AsaPricing");
 
 // Liste des chirurgies
 module.exports.surgeryList = async (req, res) => {
@@ -17,6 +19,7 @@ module.exports.surgeryList = async (req, res) => {
     const dateFilter = req.query.date || "";
     const searchQuery = req.query.search || "";
     const surgeonFilter = req.query.surgeon || "";
+    const asaFilter = req.query.asaClass || "";
 
     let query = {};
     if (statusFilter) query.status = statusFilter;
@@ -24,9 +27,18 @@ module.exports.surgeryList = async (req, res) => {
       const date = new Date(dateFilter);
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
-      query.beginDateTime = { $gte: date, $lt: nextDay };
+      query.incisionTime = { $gte: date, $lt: nextDay };
     }
     if (surgeonFilter) query.surgeon = surgeonFilter;
+    
+    // ASA filtering
+    if (asaFilter) {
+      if (asaFilter === 'none') {
+        query.asaClass = null;
+      } else {
+        query.asaClass = asaFilter;
+      }
+    }
 
     // Add search functionality
     if (searchQuery) {
@@ -48,14 +60,15 @@ module.exports.surgeryList = async (req, res) => {
       .populate("patient", "firstName lastName code")
       .populate("surgeon", "firstName lastName")
       .populate("prestation", "designation duration")
-      .sort({ beginDateTime: -1 })
+      .populate("operatingRoom", "code name")
+      .sort({ incisionTime: -1 })
       .skip(skip)
       .limit(limit);
 
     const totalSurgeries = await Surgery.countDocuments(query);
 
     // Calculate additional statistics for the dashboard
-    const completedSurgeries = await Surgery.countDocuments({ ...query, endDateTime: { $exists: true, $ne: null } });
+    const completedSurgeries = await Surgery.countDocuments({ ...query, closingIncisionTime: { $exists: true, $ne: null } });
     const plannedSurgeries = await Surgery.countDocuments({ ...query, status: 'planned' });
     const urgentSurgeries = await Surgery.countDocuments({ ...query, status: 'urgent' });
 
@@ -79,6 +92,7 @@ module.exports.surgeryList = async (req, res) => {
       dateFilter,
       searchQuery,
       surgeonFilter,
+      asaFilter,
       hasNextPage: page < totalPages,
       hasPrevPage: page > 1,
       totalSurgeries,
@@ -88,7 +102,7 @@ module.exports.surgeryList = async (req, res) => {
     });
   } catch (error) {
     console.error("Erreur liste chirurgies:", error);
-    res.status(500).render("error", { title: "Erreur", error });
+    res.status(500).render("errorHandling/error", { title: "Erreur", statusCode: 500, err: error });
   }
 };
 
@@ -107,6 +121,21 @@ module.exports.createSurgery = async (req, res) => {
     console.log('DEBUG - Surgeon ID:', req.body.surgeon);
     console.log('DEBUG - Patient ID:', req.body.patient);
     console.log('DEBUG - Prestation ID:', req.body.prestation);
+    console.log('DEBUG - Surgery Code:', req.body.code);
+    
+    // Validate and trim surgery code
+    const surgeryCode = String(req.body.code || '').trim();
+    if (!surgeryCode) {
+      req.flash('error', 'Le code de chirurgie est obligatoire');
+      return res.redirect('/surgeries/new');
+    }
+    
+    // Check if code already exists
+    const existingCode = await Surgery.findOne({ code: surgeryCode });
+    if (existingCode) {
+      req.flash('error', `Le code "${surgeryCode}" est déjà utilisé. Veuillez choisir un code unique.`);
+      return res.redirect('/surgeries/new');
+    }
     
     // Trim IDs to remove any whitespace
     const surgeonId = String(req.body.surgeon || '').trim();
@@ -133,26 +162,45 @@ module.exports.createSurgery = async (req, res) => {
     }
 
     const surgeryData = {
+      code: surgeryCode,
       patient: patientId,
       surgeon: surgeonId,
       prestation: prestationId,
-      beginDateTime: req.body.beginDateTime,
-      endDateTime: req.body.endDateTime,
+      entreeBloc: req.body.entreeBloc || null,
+      entreeSalle: req.body.entreeSalle || null,
+      sortieSalle: req.body.sortieSalle || null,
+      incisionTime: req.body.incisionTime,
+      closingIncisionTime: req.body.closingIncisionTime || null,
       status: req.body.status,
       notes: req.body.notes,
       applyExtraFees: req.body.applyExtraFees === 'on',
       // Save the effective price used for this surgery to freeze later changes
       adjustedPrice: req.body.adjustedPrice ? parseFloat(req.body.adjustedPrice) : prestationDoc.priceHT,
+      // ASA classification fields
+      asaClass: req.body.asaClass || null,
+      asaUrgent: req.body.asaUrgent === 'on',
       // Store audit info if schema allows
       createdBy: req.user ? req.user._id : undefined,
+      updatedBy: req.user ? req.user._id : undefined,
     };
 
-    // Validation des dates: beginDateTime doit être avant endDateTime
-    if (req.body.beginDateTime && req.body.endDateTime) {
-      const beginDate = new Date(req.body.beginDateTime);
-      const endDate = new Date(req.body.endDateTime);
-      if (beginDate >= endDate) {
-        return res.redirect('/surgeries/new?error=La date de début doit être antérieure à la date de fin');
+    // Validation des dates: incisionTime doit être avant closingIncisionTime
+    if (req.body.incisionTime && req.body.closingIncisionTime) {
+      const incisionDate = new Date(req.body.incisionTime);
+      const closingDate = new Date(req.body.closingIncisionTime);
+      if (incisionDate >= closingDate) {
+        return res.redirect('/surgeries/new?error=L\'heure d\'incision doit être antérieure à l\'heure de fermeture');
+      }
+    }
+    // Validate chronological order of all dates
+    if (req.body.entreeBloc && req.body.entreeSalle) {
+      if (new Date(req.body.entreeBloc) >= new Date(req.body.entreeSalle)) {
+        return res.redirect('/surgeries/new?error=L\'entrée au bloc doit être antérieure à l\'entrée en salle');
+      }
+    }
+    if (req.body.entreeSalle && req.body.incisionTime) {
+      if (new Date(req.body.entreeSalle) >= new Date(req.body.incisionTime)) {
+        return res.redirect('/surgeries/new?error=L\'entrée en salle doit être antérieure à l\'incision');
       }
     }
 
@@ -178,85 +226,97 @@ module.exports.createSurgery = async (req, res) => {
       }
     }
 
-    // Matériaux consommés
+    // Matériaux consommés - informational only, no stock reduction
     const consumedMaterials = [];
+
+    console.log('DEBUG - Processing consumed materials...');
+    console.log('DEBUG - consumableMaterialId:', req.body.consumableMaterialId);
+    console.log('DEBUG - consumableMaterialQuantity:', req.body.consumableMaterialQuantity);
+    console.log('DEBUG - patientMaterialId:', req.body.patientMaterialId);
+    console.log('DEBUG - patientMaterialQuantity:', req.body.patientMaterialQuantity);
 
     // Traiter les matériaux consommables
     if (req.body.consumableMaterialId && req.body.consumableMaterialQuantity) {
       const consumableArray = Array.isArray(req.body.consumableMaterialId) ? req.body.consumableMaterialId : [req.body.consumableMaterialId];
       const consumableQuantityArray = Array.isArray(req.body.consumableMaterialQuantity) ? req.body.consumableMaterialQuantity : [req.body.consumableMaterialQuantity];
+      console.log(`DEBUG - Processing ${consumableArray.length} consumable materials`);
 
       for (let index = 0; index < consumableArray.length; index++) {
         const materialId = consumableArray[index] ? String(consumableArray[index]).trim() : '';
         const quantity = consumableQuantityArray[index] ? String(consumableQuantityArray[index]).trim() : '';
+        console.log(`DEBUG - [${index}] materialId: "${materialId}", quantity: "${quantity}"`);
         if (materialId && quantity) {
-          // Get current material price to store it permanently
+          // Get current material price to store it permanently (use purchase price for consumables)
           const materialDoc = await Material.findById(materialId);
           if (materialDoc) {
-            consumedMaterials.push({
+            const entry = {
               material: materialId,
               quantity: parseFloat(quantity),
-              priceUsed: materialDoc.weightedPrice || materialDoc.priceHT || 0,
-            });
+              priceUsed: materialDoc.effectivePurchasePrice || materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            };
+            consumedMaterials.push(entry);
+            console.log(`DEBUG - Added consumable: ${materialDoc.designation} x${quantity} @ ${entry.priceUsed}/unit`);
+          } else {
+            console.log(`DEBUG - Material not found: ${materialId}`);
           }
+        } else {
+          console.log(`DEBUG - Skipped consumable [${index}]: missing materialId or quantity`);
         }
       }
     }
 
-    // Traiter les matériaux patient
+    // Traiter les matériaux patient - use selling price for patient billing
     if (req.body.patientMaterialId && req.body.patientMaterialQuantity) {
       const patientArray = Array.isArray(req.body.patientMaterialId) ? req.body.patientMaterialId : [req.body.patientMaterialId];
       const patientQuantityArray = Array.isArray(req.body.patientMaterialQuantity) ? req.body.patientMaterialQuantity : [req.body.patientMaterialQuantity];
+      // Get patient references array (optional field for tracking material reference/serial/lot numbers)
+      const patientReferenceArray = req.body.patientMaterialReference 
+        ? (Array.isArray(req.body.patientMaterialReference) ? req.body.patientMaterialReference : [req.body.patientMaterialReference])
+        : [];
+      console.log(`DEBUG - Processing ${patientArray.length} patient materials`);
 
       for (let index = 0; index < patientArray.length; index++) {
         const material = patientArray[index] ? String(patientArray[index]).trim() : '';
         const qty = patientQuantityArray[index] ? String(patientQuantityArray[index]).trim() : '';
+        const reference = patientReferenceArray[index] ? String(patientReferenceArray[index]).trim() : '';
+        console.log(`DEBUG - [${index}] materialId: "${material}", quantity: "${qty}", reference: "${reference}"`);
         if (material && qty) {
           const materialDoc = await Material.findById(material);
           if (materialDoc) {
-            consumedMaterials.push({
+            // Use selling price for patient materials (includes markup)
+            const entry = {
               material: material,
               quantity: parseFloat(qty),
-              priceUsed: materialDoc.weightedPrice || materialDoc.priceHT || 0,
-            });
+              priceUsed: materialDoc.sellingPriceHT || materialDoc.effectivePurchasePrice || materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            };
+            // Add patientReference if provided
+            if (reference) {
+              entry.patientReference = reference;
+            }
+            consumedMaterials.push(entry);
+            console.log(`DEBUG - Added patient material: ${materialDoc.designation} x${qty} @ ${entry.priceUsed}/unit, ref: ${reference || 'N/A'}`);
+          } else {
+            console.log(`DEBUG - Material not found: ${material}`);
           }
+        } else {
+          console.log(`DEBUG - Skipped patient material [${index}]: missing materialId or quantity`);
         }
       }
     }
 
     if (consumedMaterials.length > 0) {
+      console.log(`DEBUG - Total consumed materials to save: ${consumedMaterials.length}`);
       surgeryData.consumedMaterials = consumedMaterials;
+    } else {
+      console.log('DEBUG - No consumed materials to save');
     }
 
     // Create and save surgery
     const surgery = new Surgery(surgeryData);
     await surgery.save({ validateBeforeSave: false });
 
-    // Update material stock - do this separately, don't fail if it has issues
-    if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) {
-      for (const consumed of surgery.consumedMaterials) {
-        try {
-          // Fetch material to get current weighted price for stockValue adjustment
-          const material = await Material.findById(consumed.material);
-          if (material) {
-            // Decrease stock quantity
-            material.stock = Math.max(0, material.stock - Math.abs(consumed.quantity));
-            
-            // Decrease stock value proportionally using weighted price
-            // This maintains perpetual inventory accuracy
-            const weightedPrice = material.stock > 0 && material.stockValue > 0 
-              ? material.stockValue / material.stock 
-              : material.priceHT;
-            material.stockValue = Math.max(0, material.stockValue - (Math.abs(consumed.quantity) * weightedPrice));
-            
-            await material.save();
-          }
-        } catch (err) {
-          console.error('Erreur mise à jour stock materiel:', err);
-          // Log error but don't fail - surgery has been created
-        }
-      }
-    }
+    // Material consumption is now informational only - no stock reduction
+    // Stock quantities are managed separately through arrivals/purchases
 
     // Post-creation: calculate fees
     try {
@@ -285,18 +345,133 @@ module.exports.renderCreateSurgeryForm = async (req, res) => {
     const medicalStaff = await MedicalStaff.find().populate('fonctions').sort({ lastName: 1 });
     const fonctions = await Fonction.find().sort({ name: 1 });
     const materials = await Material.find().sort({ designation: 1 });
+    const operatingRooms = await OperatingRoom.find({ isActive: true }).sort({ name: 1 });
 
     // Check if user can edit financial fields
     const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
     const canEditSurgeryFinancials = userPrivileges.includes('admin') || userPrivileges.includes('direction');
 
     // Provide default empty surgery object so template can safely reference surgery properties
-    const localsForRender = { title: 'Nouvelle Chirurgie', patients, surgeons, prestations, medicalStaff, fonctions, materials, surgery: {}, canEditSurgeryFinancials };
+    const localsForRender = { title: 'Nouvelle Chirurgie', patients, surgeons, prestations, medicalStaff, fonctions, materials, operatingRooms, surgery: {}, canEditSurgeryFinancials };
     console.log('DEBUG renderCreateSurgeryForm locals keys:', Object.keys(localsForRender));
     res.render('surgeries/new', localsForRender);
   } catch (error) {
     console.error('Erreur formulaire nouvelle chirurgie:', error);
     res.status(500).render('error', { title: 'Erreur', error });
+  }
+};
+
+// Render create surgery form from reservation
+module.exports.renderCreateSurgeryFromReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id)
+      .populate('patient')
+      .populate('surgeon')
+      .populate('prestation')
+      .populate('operatingRoom');
+    
+    if (!reservation) {
+      req.flash('error', 'Réservation introuvable');
+      return res.redirect('/surgeries/planning/view');
+    }
+    
+    if (reservation.reservationStatus === 'converted') {
+      req.flash('error', 'Cette réservation a déjà été convertie en chirurgie');
+      return res.redirect('/surgeries/planning/view');
+    }
+    
+    // Load form data
+    const patients = await Patient.find().sort({ lastName: 1 });
+    const surgeons = await Surgeon.find().populate('specialty').sort({ lastName: 1 });
+    const prestations = await Prestation.find().populate('specialty').sort({ designation: 1 });
+    const medicalStaff = await MedicalStaff.find().populate('fonctions').sort({ lastName: 1 });
+    const fonctions = await Fonction.find().sort({ name: 1 });
+    const materials = await Material.find().sort({ designation: 1 });
+    const operatingRooms = await OperatingRoom.find({ isActive: true }).sort({ name: 1 });
+    
+    const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
+    const canEditSurgeryFinancials = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+    
+    // Build surgery object from reservation for form prefill
+    const surgery = {
+      patient: reservation.patient,
+      surgeon: reservation.surgeon,
+      prestation: reservation.prestation,
+      operatingRoom: reservation.operatingRoom,
+      scheduledStartTime: reservation.scheduledStartTime,
+      scheduledEndTime: reservation.scheduledEndTime,
+      reservationId: reservation._id,
+      reservationCode: reservation.temporaryCode
+    };
+    
+    const localsForRender = {
+      title: 'Convertir Réservation en Chirurgie',
+      patients,
+      surgeons,
+      prestations,
+      medicalStaff,
+      fonctions,
+      materials,
+      operatingRooms,
+      surgery,
+      canEditSurgeryFinancials,
+      fromReservation: true,
+      reservation
+    };
+    
+    res.render('surgeries/new', localsForRender);
+  } catch (error) {
+    console.error('Error rendering conversion form:', error);
+    req.flash('error', 'Erreur lors du chargement du formulaire');
+    res.redirect('/surgeries/planning/view');
+  }
+};
+
+// Create surgery from reservation
+module.exports.createSurgeryFromReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id);
+    
+    if (!reservation) {
+      req.flash('error', 'Réservation introuvable');
+      return res.redirect('/surgeries/planning/view');
+    }
+    
+    if (reservation.reservationStatus === 'converted') {
+      req.flash('error', 'Cette réservation a déjà été convertie');
+      return res.redirect('/surgeries/planning/view');
+    }
+    
+    // Create surgery from form data
+    const surgeryData = { ...req.body };
+    
+    // Create the surgery
+    const surgery = new Surgery(surgeryData);
+    await surgery.save();
+    
+    // Mark reservation as converted
+    reservation.reservationStatus = 'converted';
+    reservation.convertedToSurgery = surgery._id;
+    reservation.convertedAt = new Date();
+    reservation.updatedBy = req.user._id;
+    await reservation.save();
+    
+    // Calculate fees if patient/surgeon/prestation are set
+    if (surgery.patient && surgery.surgeon && surgery.prestation) {
+      try {
+        await calculateSurgeonFees(surgery._id);
+      } catch (feeError) {
+        console.error('Fee calculation warning:', feeError);
+        // Don't block surgery creation if fee calculation fails
+      }
+    }
+    
+    req.flash('success', `Chirurgie ${surgery.code} créée avec succès depuis la réservation ${reservation.temporaryCode}`);
+    res.redirect(`/surgeries/${surgery._id}`);
+  } catch (error) {
+    console.error('Error converting reservation:', error);
+    req.flash('error', error.message || 'Erreur lors de la conversion');
+    res.redirect(`/surgeries/new/from-reservation/${req.params.id}`);
   }
 };
 
@@ -307,6 +482,7 @@ module.exports.viewSurgery = async (req, res) => {
       .populate("patient")
       .populate("surgeon")
       .populate("prestation")
+      .populate("operatingRoom")
       .populate("medicalStaff.staff")
       .populate("medicalStaff.rolePlayedId")
       .populate("consumedMaterials.material");
@@ -315,9 +491,19 @@ module.exports.viewSurgery = async (req, res) => {
       return res.status(404).render("404", { title: "Chirurgie non trouvée" });
     }
 
+    // Fetch ASA pricing if surgery has an ASA class
+    if (surgery.asaClass) {
+      const asaPricing = await AsaPricing.getPricingByClass(surgery.asaClass);
+      surgery.asaPricing = asaPricing;
+    }
+
     // Check if user can view financial information
     const userPrivileges = req.user && req.user.privileges ? req.user.privileges : [];
     const canViewFinancialInfo = userPrivileges.includes('admin') || userPrivileges.includes('direction');
+
+    // Fetch all materials for the add materials modal
+    const Material = require('../models/Material');
+    const materials = await Material.find({}).sort({ designation: 1 });
 
     // Calculer automatiquement les honoraires si non calculés (only for admin/direction)
     if (canViewFinancialInfo && (!surgery.surgeonAmount || surgery.surgeonAmount === 0)) {
@@ -328,13 +514,22 @@ module.exports.viewSurgery = async (req, res) => {
           .populate("patient")
           .populate("surgeon")
           .populate("prestation")
+          .populate("operatingRoom")
           .populate("medicalStaff.staff")
           .populate("medicalStaff.rolePlayedId")
           .populate("consumedMaterials.material");
         
+        // Fetch ASA pricing again for updated surgery
+        if (updatedSurgery.asaClass) {
+          const asaPricing = await AsaPricing.getPricingByClass(updatedSurgery.asaClass);
+          updatedSurgery.asaPricing = asaPricing;
+        }
+        
         res.render("surgeries/show", {
           title: `Chirurgie: ${updatedSurgery.code}`,
           surgery: updatedSurgery,
+          materials,
+          userPrivileges,
           canViewFinancialInfo,
         });
       } catch (calcError) {
@@ -343,6 +538,8 @@ module.exports.viewSurgery = async (req, res) => {
         res.render("surgeries/show", {
           title: `Chirurgie: ${surgery.code}`,
           surgery,
+          materials,
+          userPrivileges,
           canViewFinancialInfo,
         });
       }
@@ -350,12 +547,14 @@ module.exports.viewSurgery = async (req, res) => {
       res.render("surgeries/show", {
         title: `Chirurgie: ${surgery.code}`,
         surgery,
+        materials,
+        userPrivileges,
         canViewFinancialInfo,
       });
     }
   } catch (error) {
     console.error("Erreur affichage chirurgie:", error);
-    res.status(500).render("error", { title: "Erreur", error });
+    res.status(500).render("errorHandling/error", { title: "Erreur", statusCode: 500, err: error });
   }
 };
 
@@ -427,19 +626,35 @@ async function calculateSurgeonFees(surgeryId) {
   // urgentFees will be used where appropriate below (for clinic extra when needed)
   let urgentFees = 0;
 
+  // ASA Classification fees - only for location contracts
+  // For location contracts: ASA fees go to clinic only, surgeon gets 0
+  // For percentage contracts: no ASA fees (not applicable)
+  const AsaPricing = require('../models/AsaPricing');
+  // ASA Fee - flat fee paid by location surgeons to clinic
+  // Percentage contracts do not pay ASA fees
+  let asaFee = 0;
+  
+  if (surgeon.contractType === "location" && surgery.asaClass) {
+    const asaConfig = await AsaPricing.getPricingByClass(surgery.asaClass);
+    if (asaConfig) {
+      asaFee = asaConfig.fee || 0;
+    }
+  }
+  // For percentage contracts: ASA fee is not applicable
+
   // Plus de multiplicateur de statut - utilisation directe des frais urgents
   let surgeonAmount = 0;
   let clinicAmount = 0;
 
-  if (surgeon.contractType === "allocation") {
-    // Méthode 1: Allocation de salle d'opération
-    // Clinic amount = (duration × allocation rate) + materials + hourly personal fees
+  if (surgeon.contractType === "location") {
+    // Méthode 1: Location de salle d'opération
+    // Clinic amount = (duration × location rate) + materials + hourly personal fees
     const duration = surgery.actualDuration || 0; // en minutes
     const durationInHours = duration / 60;
-    const allocationCost = durationInHours * (surgeon.allocationRate || 0);
+    const locationCost = durationInHours * (surgeon.locationRate || 0);
 
-    // For allocation method we don't assign the allocation cost to the surgeon.
-    // The clinic keeps the allocation cost and receives materials, personal fees (with urgent uplift) and any extra duration fees.
+    // For location method we don't assign the location cost to the surgeon.
+    // The clinic keeps the location cost and receives materials, personal fees (with urgent uplift) and any extra duration fees.
     surgeonAmount = 0;
 
     // Personal fees get an urgent uplift when surgery is urgent (user requested)
@@ -448,27 +663,35 @@ async function calculateSurgeonFees(surgeryId) {
     // Handle extra duration fees (go to clinic)
     // Handle extra duration fees (go to clinic)
     let extraFees = 0;
-    if (surgery.applyExtraFees && surgery.actualDuration > prestation.duration) {
-      const extraduration = surgery.actualDuration - prestation.duration;
-      if (extraduration >= (prestation.exceededDurationUnit || 15)) {
-        extraFees = (prestation.exceededDurationFee || 0) * extraduration / (prestation.exceededDurationUnit || 15);
+    if (surgery.applyExtraFees && surgery.actualDuration > prestation.maxDuration) {
+      const extraduration = surgery.actualDuration - prestation.maxDuration;
+      const tolerance = prestation.exceededDurationTolerance || 15;
+      // Apply tolerance: subtract tolerance from exceeded duration before calculating fees
+      const billableExtraDuration = Math.max(0, extraduration - tolerance);
+      if (billableExtraDuration >= (prestation.exceededDurationUnit || 15)) {
+        extraFees = (prestation.exceededDurationFee || 0) * billableExtraDuration / (prestation.exceededDurationUnit || 15);
       }
     }
 
-    // Clinic receives: allocation cost + materials + personal fees (with urgent uplift) + extra duration fees
-    clinicAmount = allocationCost + totalMaterialCost + effectivePersonalFees + extraFees;
+    // Clinic receives: location cost + materials + personal fees (with urgent uplift) + extra duration fees + ASA fee
+    clinicAmount = locationCost + totalMaterialCost + effectivePersonalFees + extraFees + asaFee;
+    
+    // Note: surgeonAmount remains 0 for location contracts; ASA fee goes entirely to clinic
   } else if (surgeon.contractType === "percentage") {
     // Méthode 2: Pourcentage
 
     // 1. Calculate Extra Duration
-    let extraDuration = surgery.actualDuration - prestation.duration;
+    let extraDuration = surgery.actualDuration - prestation.maxDuration;
     let extraUnits = 0;
     let extraFee = 0;
 
     if (surgery.applyExtraFees && extraDuration > 0) {
       const durationUnit = prestation.exceededDurationUnit || 15;
       const exceededFeePerUnit = prestation.exceededDurationFee || 0;
-      extraUnits = Math.ceil(extraDuration / durationUnit);
+      const tolerance = prestation.exceededDurationTolerance || 15;
+      // Apply tolerance: subtract tolerance from exceeded duration before calculating fees
+      const billableExtraDuration = Math.max(0, extraDuration - tolerance);
+      extraUnits = Math.ceil(billableExtraDuration / durationUnit);
       extraFee = exceededFeePerUnit * extraUnits;
     }
 
@@ -483,6 +706,8 @@ async function calculateSurgeonFees(surgeryId) {
     // 3. Clinic's Share
     const nonPatientMaterials = totalMaterialCost - totalPatientMaterialCost;
     clinicAmount = ((prestationPriceHT * (1 + urgentRate) - totalPatientMaterialCost) * clinicRate) + totalPatientMaterialCost + extraFee;
+    
+    // Note: ASA fees are not applicable for percentage contracts
   }
 
   // S'assurer que le montant n'est pas négatif
@@ -544,7 +769,7 @@ module.exports.renderEditSurgeryForm = async (req, res) => {
     });
   } catch (error) {
     console.error("Erreur formulaire édition chirurgie:", error);
-    res.status(500).render("error", { title: "Erreur", error });
+    res.status(500).render("errorHandling/error", { title: "Erreur", statusCode: 500, err: error });
   }
 };
 
@@ -553,6 +778,14 @@ module.exports.updateSurgery = async (req, res) => {
   try {
     // Authorization: only admin or chefBloc can update any surgery; medecin only their own
     const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+    
+    // Check if surgery is closed - only admin can edit closed surgeries
+    const existingSurgery = await Surgery.findById(req.params.id);
+    if (existingSurgery && existingSurgery.statusLifecycle === 'closed' && !userPriv.includes('admin')) {
+      req.flash('error', 'Cette chirurgie est clôturée et ne peut plus être modifiée');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+    
     if (!userPriv.includes('admin') && !userPriv.includes('chefBloc')) {
       if (userPriv.includes('medecin')) {
         const getLinkedSurgeonId = require('../utils/getLinkedSurgeonId');
@@ -570,29 +803,63 @@ module.exports.updateSurgery = async (req, res) => {
     // Récupérer la chirurgie actuelle pour comparer les changements
     const currentSurgery = await Surgery.findById(req.params.id).populate('prestation');
 
+    // Validate and trim surgery code if provided
+    const surgeryCode = req.body.code ? String(req.body.code).trim() : currentSurgery.code;
+    if (!surgeryCode) {
+      req.flash('error', 'Le code de chirurgie est obligatoire');
+      return res.redirect(`/surgeries/${req.params.id}/edit`);
+    }
+    
+    // Check if new code already exists (different from current code)
+    if (surgeryCode !== currentSurgery.code) {
+      const existingCode = await Surgery.findOne({ code: surgeryCode });
+      if (existingCode) {
+        req.flash('error', `Le code "${surgeryCode}" est déjà utilisé. Veuillez choisir un code unique.`);
+        return res.redirect(`/surgeries/${req.params.id}/edit`);
+      }
+    }
+
     // Get the prestation document to know the default price
     const prestationDoc = await Prestation.findById(req.body.prestation);
 
     const surgeryData = {
+      code: surgeryCode,
       patient: req.body.patient,
       surgeon: req.body.surgeon,
       prestation: req.body.prestation,
-      beginDateTime: req.body.beginDateTime,
-      endDateTime: req.body.endDateTime,
+      entreeBloc: req.body.entreeBloc || null,
+      entreeSalle: req.body.entreeSalle || null,
+      sortieSalle: req.body.sortieSalle || null,
+      incisionTime: req.body.incisionTime,
+      closingIncisionTime: req.body.closingIncisionTime || null,
       status: req.body.status,
       notes: req.body.notes,
       applyExtraFees: req.body.applyExtraFees === "on",
       // Always save the effective price used for this surgery in adjustedPrice
       // This ensures surgeries are not affected by future prestation price changes
       adjustedPrice: req.body.adjustedPrice ? parseFloat(req.body.adjustedPrice) : (prestationDoc ? prestationDoc.priceHT : currentSurgery.adjustedPrice),
+      // ASA classification fields
+      asaClass: req.body.asaClass || null,
+      asaUrgent: req.body.asaUrgent === 'on',
     };
 
-    // Validation des dates: beginDateTime doit être avant endDateTime
-    if (req.body.beginDateTime && req.body.endDateTime) {
-      const beginDate = new Date(req.body.beginDateTime);
-      const endDate = new Date(req.body.endDateTime);
-      if (beginDate >= endDate) {
-        return res.redirect(`/surgeries/${req.params.id}/edit?error=La date de début doit être antérieure à la date de fin`);
+    // Validation des dates: incisionTime doit être avant closingIncisionTime
+    if (req.body.incisionTime && req.body.closingIncisionTime) {
+      const incisionDate = new Date(req.body.incisionTime);
+      const closingDate = new Date(req.body.closingIncisionTime);
+      if (incisionDate >= closingDate) {
+        return res.redirect(`/surgeries/${req.params.id}/edit?error=L\'heure d\'incision doit être antérieure à l\'heure de fermeture`);
+      }
+    }
+    // Validate chronological order of all dates
+    if (req.body.entreeBloc && req.body.entreeSalle) {
+      if (new Date(req.body.entreeBloc) >= new Date(req.body.entreeSalle)) {
+        return res.redirect(`/surgeries/${req.params.id}/edit?error=L\'entrée au bloc doit être antérieure à l\'entrée en salle`);
+      }
+    }
+    if (req.body.entreeSalle && req.body.incisionTime) {
+      if (new Date(req.body.entreeSalle) >= new Date(req.body.incisionTime)) {
+        return res.redirect(`/surgeries/${req.params.id}/edit?error=L\'entrée en salle doit être antérieure à l\'incision`);
       }
     }
 
@@ -610,7 +877,7 @@ module.exports.updateSurgery = async (req, res) => {
       surgeryData.applyExtraFees = false; // Retirer les frais urgents pour les chirurgies planifiées
     }
 
-    // Personnel médical
+    // Personnel médical - only add if both staff and role are selected
     if (req.body.medicalStaff && req.body.rolePlayedId) {
       const staffArray = Array.isArray(req.body.medicalStaff)
         ? req.body.medicalStaff
@@ -619,13 +886,24 @@ module.exports.updateSurgery = async (req, res) => {
         ? req.body.rolePlayedId
         : [req.body.rolePlayedId];
 
-      surgeryData.medicalStaff = staffArray.map((staff, index) => ({
-        staff: staff,
-        rolePlayedId: roleArray[index],
-      }));
+      // Filter out empty entries
+      const medicalStaffEntries = [];
+      for (let i = 0; i < staffArray.length; i++) {
+        const staff = staffArray[i];
+        const role = roleArray[i];
+        if (staff && staff.trim() && role && role.trim()) {
+          medicalStaffEntries.push({
+            staff: staff,
+            rolePlayedId: role,
+          });
+        }
+      }
+      if (medicalStaffEntries.length > 0) {
+        surgeryData.medicalStaff = medicalStaffEntries;
+      }
     }
 
-    // Matériaux consommés
+    // Matériaux consommés - informational only, no stock reduction
     const consumedMaterials = [];
 
     // Traiter les matériaux consommables
@@ -638,21 +916,23 @@ module.exports.updateSurgery = async (req, res) => {
         : [req.body.consumableMaterialQuantity];
 
       for (let index = 0; index < consumableArray.length; index++) {
-        const materialId = consumableArray[index];
-        const quantity = consumableQuantityArray[index];
+        const materialId = consumableArray[index] ? String(consumableArray[index]).trim() : '';
+        const quantity = consumableQuantityArray[index] ? String(consumableQuantityArray[index]).trim() : '';
         if (materialId && quantity) {
-          // Get current material price to store it permanently
+          // Get current material price (use purchase price for consumables)
           const materialDoc = await Material.findById(materialId);
-          consumedMaterials.push({
-            material: materialId,
-            quantity: parseFloat(quantity),
-            priceUsed: materialDoc ? (materialDoc.weightedPrice || materialDoc.priceHT || 0) : 0,
-          });
+          if (materialDoc) {
+            consumedMaterials.push({
+              material: materialId,
+              quantity: parseFloat(quantity),
+              priceUsed: materialDoc.effectivePurchasePrice || materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            });
+          }
         }
       }
     }
 
-    // Traiter les matériaux patient
+    // Traiter les matériaux patient - use selling price for patient billing
     if (req.body.patientMaterialId && req.body.patientMaterialQuantity) {
       const patientArray = Array.isArray(req.body.patientMaterialId)
         ? req.body.patientMaterialId
@@ -660,18 +940,30 @@ module.exports.updateSurgery = async (req, res) => {
       const patientQuantityArray = Array.isArray(req.body.patientMaterialQuantity)
         ? req.body.patientMaterialQuantity
         : [req.body.patientMaterialQuantity];
+      // Get patient references array (optional field for tracking material reference/serial/lot numbers)
+      const patientReferenceArray = req.body.patientMaterialReference 
+        ? (Array.isArray(req.body.patientMaterialReference) ? req.body.patientMaterialReference : [req.body.patientMaterialReference])
+        : [];
 
       for (let index = 0; index < patientArray.length; index++) {
-        const materialId = patientArray[index];
-        const quantity = patientQuantityArray[index];
+        const materialId = patientArray[index] ? String(patientArray[index]).trim() : '';
+        const quantity = patientQuantityArray[index] ? String(patientQuantityArray[index]).trim() : '';
+        const reference = patientReferenceArray[index] ? String(patientReferenceArray[index]).trim() : '';
         if (materialId && quantity) {
-          // Get current material price to store it permanently
+          // Use selling price for patient materials (includes markup)
           const materialDoc = await Material.findById(materialId);
-          consumedMaterials.push({
-            material: materialId,
-            quantity: parseFloat(quantity),
-            priceUsed: materialDoc ? (materialDoc.weightedPrice || materialDoc.priceHT || 0) : 0,
-          });
+          if (materialDoc) {
+            const entry = {
+              material: materialId,
+              quantity: parseFloat(quantity),
+              priceUsed: materialDoc.sellingPriceHT || materialDoc.effectivePurchasePrice || materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            };
+            // Add patientReference if provided
+            if (reference) {
+              entry.patientReference = reference;
+            }
+            consumedMaterials.push(entry);
+          }
         }
       }
     }
@@ -680,6 +972,7 @@ module.exports.updateSurgery = async (req, res) => {
       surgeryData.consumedMaterials = consumedMaterials;
     }
 
+    surgeryData.updatedBy = req.user ? req.user._id : undefined;
     await Surgery.findByIdAndUpdate(req.params.id, surgeryData);
 
     // Recalculer les honoraires avec la nouvelle logique de statut
@@ -715,6 +1008,13 @@ module.exports.updateSurgeryStatus = async (req, res) => {
 
     if (!currentSurgery) {
       return res.status(404).render("404", { title: "Chirurgie non trouvée" });
+    }
+    
+    // Check if surgery is closed - only admin can change status of closed surgeries
+    const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+    if (currentSurgery.statusLifecycle === 'closed' && !userPriv.includes('admin')) {
+      req.flash('error', 'Cette chirurgie est clôturée et ne peut plus être modifiée');
+      return res.redirect(`/surgeries/${surgeryId}`);
     }
 
     const oldStatus = currentSurgery.status;
@@ -763,10 +1063,565 @@ module.exports.deleteSurgery = async (req, res) => {
       req.flash('error', 'Accès non autorisé - seuls admin et chef de bloc peuvent supprimer');
       return res.redirect('/surgeries');
     }
+    
+    // Check if surgery is closed - only admin can delete closed surgeries
+    const existingSurgery = await Surgery.findById(req.params.id);
+    if (existingSurgery && existingSurgery.statusLifecycle === 'closed' && !userPriv.includes('admin')) {
+      req.flash('error', 'Cette chirurgie est clôturée et ne peut pas être supprimée');
+      return res.redirect('/surgeries');
+    }
+    
     await Surgery.findByIdAndDelete(req.params.id);
     res.redirect("/surgeries?success=Chirurgie supprimée avec succès");
   } catch (error) {
     console.error("Erreur suppression chirurgie:", error);
     res.redirect("/surgeries?error=Erreur lors de la suppression");
+  }
+};
+
+// Clôturer une chirurgie (admin only)
+module.exports.closeSurgery = async (req, res) => {
+  try {
+    // Only admin can close surgeries
+    const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+    if (!userPriv.includes('admin')) {
+      req.flash('error', 'Seul un administrateur peut clôturer une chirurgie');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+
+    const surgery = await Surgery.findById(req.params.id);
+    if (!surgery) {
+      return res.status(404).render("404", { title: "Chirurgie non trouvée" });
+    }
+
+    if (surgery.statusLifecycle === 'closed') {
+      req.flash('error', 'Cette chirurgie est déjà clôturée');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+
+    // Close the surgery
+    surgery.statusLifecycle = 'closed';
+    surgery.closedAt = new Date();
+    surgery.closedBy = req.user._id;
+    await surgery.save();
+
+    req.flash('success', 'Chirurgie clôturée avec succès - elle ne peut plus être modifiée');
+    res.redirect(`/surgeries/${req.params.id}`);
+  } catch (error) {
+    console.error("Erreur clôture chirurgie:", error);
+    req.flash('error', 'Erreur lors de la clôture de la chirurgie');
+    res.redirect(`/surgeries/${req.params.id}`);
+  }
+};
+
+// Réouvrir une chirurgie clôturée (admin only)
+module.exports.reopenSurgery = async (req, res) => {
+  try {
+    // Only admin can reopen surgeries
+    const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+    if (!userPriv.includes('admin')) {
+      req.flash('error', 'Seul un administrateur peut réouvrir une chirurgie');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+
+    const surgery = await Surgery.findById(req.params.id);
+    if (!surgery) {
+      return res.status(404).render("404", { title: "Chirurgie non trouvée" });
+    }
+
+    if (surgery.statusLifecycle === 'editable') {
+      req.flash('error', 'Cette chirurgie n\'est pas clôturée');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+
+    // Reopen the surgery
+    surgery.statusLifecycle = 'editable';
+    surgery.closedAt = null;
+    surgery.closedBy = null;
+    await surgery.save();
+
+    req.flash('success', 'Chirurgie rÃ©ouverte avec succÃ¨s - elle peut Ãªtre modifiÃ©e Ã  nouveau');
+    res.redirect(`/surgeries/${req.params.id}`);
+  } catch (error) {
+    console.error("Erreur rÃ©ouverture chirurgie:", error);
+    req.flash('error', 'Erreur lors de la rÃ©ouverture de la chirurgie');
+    res.redirect(`/surgeries/${req.params.id}`);
+  }
+};
+
+// Add materials to an existing surgery
+module.exports.addMaterialsToSurgery = async (req, res) => {
+  try {
+    console.log('DEBUG addMaterialsToSurgery - req.body:', JSON.stringify(req.body, null, 2));
+    
+    const surgery = await Surgery.findById(req.params.id);
+    if (!surgery) {
+      req.flash('error', 'Chirurgie non trouvée');
+      return res.redirect('/surgeries');
+    }
+
+    // Check if surgery is still editable
+    if (surgery.statusLifecycle !== 'editable') {
+      req.flash('error', 'Impossible d\'ajouter des matériaux à une chirurgie clôturée');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+
+    const Material = require("../models/Material");
+    const consumedMaterials = [];
+
+    // Process materials from the new form format
+    if (req.body.materials && Array.isArray(req.body.materials)) {
+      console.log(`DEBUG: Processing ${req.body.materials.length} materials`);
+      
+      for (const materialData of req.body.materials) {
+        console.log('DEBUG: Processing material:', materialData);
+        const materialId = materialData.materialId;
+        const quantity = parseFloat(materialData.quantity);
+        
+        if (materialId && quantity > 0) {
+          const materialDoc = await Material.findById(materialId);
+          if (materialDoc) {
+            console.log(`DEBUG: Adding material ${materialDoc.designation}, qty: ${quantity}`);
+            consumedMaterials.push({
+              material: materialId,
+              quantity: quantity,
+              priceUsed: materialDoc.weightedPrice || materialDoc.priceHT || 0,
+            });
+          } else {
+            console.log(`DEBUG: Material ${materialId} not found`);
+          }
+        } else {
+          console.log(`DEBUG: Skipping material - materialId: ${materialId}, quantity: ${quantity}`);
+        }
+      }
+    } else {
+      console.log('DEBUG: No materials array in request body');
+    }
+
+    // Add new materials to existing ones
+    if (consumedMaterials.length > 0) {
+      console.log(`DEBUG: Adding ${consumedMaterials.length} materials to surgery`);
+      if (!surgery.consumedMaterials) {
+        surgery.consumedMaterials = [];
+      }
+      surgery.consumedMaterials.push(...consumedMaterials);
+      await surgery.save();
+
+      // Recalculate fees after adding materials
+      try {
+        await calculateSurgeonFees(surgery._id);
+      } catch (feeErr) {
+        console.error('Erreur calcul honoraires (ajout matériaux):', feeErr);
+      }
+    } else {
+      console.log('DEBUG: No materials to add');
+    }
+
+    req.flash('success', `${consumedMaterials.length} matériau${consumedMaterials.length > 1 ? 'x' : ''} ajouté${consumedMaterials.length > 1 ? 's' : ''} à la chirurgie`);
+    res.redirect(`/surgeries/${req.params.id}`);
+  } catch (error) {
+    console.error("Erreur ajout matériaux à chirurgie:", error);
+    req.flash('error', 'Erreur lors de l\'ajout des matériaux');
+    res.redirect(`/surgeries/${req.params.id}`);
+  }
+};
+
+// ==================== OPERATING ROOM RESERVATION METHODS ====================
+
+const reservationService = require('../services/reservationService');
+const OperatingRoom = require('../models/OperatingRoom');
+
+// Show planning timeline view
+module.exports.showPlanning = async (req, res) => {
+  try {
+    // Get filter params
+    const roomFilter = req.query.room || '';
+    const surgeonFilter = req.query.surgeon || '';
+    const dateFilter = req.query.date || new Date().toISOString().split('T')[0];
+    const typeFilter = req.query.type || 'all'; // 'all', 'surgery', 'reservation'
+    
+    // Calculate date range (show 7 days from selected date)
+    const startDate = new Date(dateFilter);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 7);
+    
+    // Get all active operating rooms
+    const rooms = await OperatingRoom.find({ isActive: true }).sort({ code: 1 });
+    
+    // Get all surgeons for filter dropdown
+    const Surgeon = require('../models/Surgeon');
+    const surgeons = await Surgeon.find().sort({ lastName: 1, firstName: 1 });
+    
+    // Build query for surgeries
+    const surgeryQuery = {
+      $or: [
+        { scheduledStartTime: { $gte: startDate, $lte: endDate } },
+        { entreeSalle: { $gte: startDate, $lte: endDate } }
+      ]
+    };
+    if (roomFilter) surgeryQuery.operatingRoom = roomFilter;
+    if (surgeonFilter) surgeryQuery.surgeon = surgeonFilter;
+    
+    // Build query for reservations
+    const reservationQuery = {
+      scheduledStartTime: { $gte: startDate, $lte: endDate },
+      reservationStatus: { $in: ['pending', 'confirmed'] } // Only show active reservations
+    };
+    if (roomFilter) reservationQuery.operatingRoom = roomFilter;
+    if (surgeonFilter) reservationQuery.surgeon = surgeonFilter;
+    
+    // Fetch both surgeries and reservations
+    let surgeries = [];
+    let reservations = [];
+    
+    if (typeFilter === 'all' || typeFilter === 'surgery') {
+      surgeries = await Surgery.find(surgeryQuery)
+        .populate('surgeon', 'firstName lastName')
+        .populate('patient', 'firstName lastName')
+        .populate('prestation', 'designation')
+        .populate('operatingRoom', 'code name')
+        .sort({ scheduledStartTime: 1, entreeSalle: 1 })
+        .lean();
+      
+      // Filter out surgeries without required fields
+      surgeries = surgeries.filter(s => s.surgeon && s.patient && s.prestation);
+    }
+    
+    if (typeFilter === 'all' || typeFilter === 'reservation') {
+      reservations = await Reservation.find(reservationQuery)
+        .populate('surgeon', 'firstName lastName')
+        .populate('patient', 'firstName lastName code')
+        .populate('prestation', 'designation')
+        .populate('operatingRoom', 'code name')
+        .sort({ scheduledStartTime: 1 })
+        .lean();
+      
+      // Filter out reservations without required fields
+      reservations = reservations.filter(r => r.surgeon && r.patient && r.prestation);
+    }
+    
+    // Merge and tag with type
+    const allEvents = [
+      ...surgeries.map(s => ({ ...s, type: 'surgery', code: s.code || 'N/A' })),
+      ...reservations.map(r => ({ ...r, type: 'reservation', code: r.temporaryCode || r.code || 'N/A' }))
+    ].sort((a, b) => {
+      const aTime = new Date(a.scheduledStartTime || a.entreeSalle);
+      const bTime = new Date(b.scheduledStartTime || b.entreeSalle);
+      return aTime - bTime;
+    });
+    
+    res.render('surgeries/planning', {
+      title: 'Planification des Salles',
+      rooms,
+      surgeons,
+      events: allEvents,
+      startDate,
+      endDate,
+      filters: {
+        room: roomFilter,
+        surgeon: surgeonFilter,
+        date: dateFilter,
+        type: typeFilter
+      }
+    });
+  } catch (error) {
+    console.error('Error showing planning:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
+    req.flash('error', 'Erreur lors de l\'affichage de la planification: ' + error.message);
+    res.redirect('/surgeries');
+  }
+};
+
+// Create or update reservation for a surgery
+module.exports.createOrUpdateReservation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { operatingRoom, scheduledStartTime, scheduledEndTime, reservationStatus, reservationNotes } = req.body;
+    
+    // Find surgery
+    const surgery = await Surgery.findById(id);
+    if (!surgery) {
+      return res.status(404).json({ error: 'Chirurgie non trouvée' });
+    }
+    
+    // Check if user can modify this reservation
+    const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+    const isManagement = userPriv.includes('admin') || userPriv.includes('direction') || userPriv.includes('headDepart');
+    const isSurgeonOwner = String(surgery.surgeon) === String(req.user.surgeon || req.user.surgeonId);
+    
+    if (!isManagement && !isSurgeonOwner) {
+      return res.status(403).json({ error: 'Accès non autorisé' });
+    }
+    
+    // Validate times
+    const timeValidation = reservationService.validateReservationTimes(scheduledStartTime, scheduledEndTime);
+    if (!timeValidation.valid) {
+      return res.status(400).json({ error: timeValidation.error });
+    }
+    
+    // Check room availability
+    const availability = await reservationService.checkRoomAvailability(
+      operatingRoom,
+      scheduledStartTime,
+      scheduledEndTime,
+      id // Exclude current surgery
+    );
+    
+    if (!availability.available) {
+      return res.status(409).json({
+        error: 'Salle non disponible',
+        conflicts: availability.conflicts
+      });
+    }
+    
+    // Update surgery with reservation
+    surgery.operatingRoom = operatingRoom;
+    surgery.scheduledStartTime = scheduledStartTime;
+    surgery.scheduledEndTime = scheduledEndTime;
+    surgery.reservationStatus = reservationStatus || 'reserved';
+    surgery.reservationNotes = reservationNotes || '';
+    surgery.updatedBy = req.user._id;
+    
+    await surgery.save();
+    
+    res.json({
+      success: true,
+      message: 'Réservation enregistrée avec succès',
+      surgery: {
+        id: surgery._id,
+        code: surgery.code,
+        operatingRoom: surgery.operatingRoom,
+        scheduledStartTime: surgery.scheduledStartTime,
+        scheduledEndTime: surgery.scheduledEndTime,
+        reservationStatus: surgery.reservationStatus
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating/updating reservation:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'enregistrement de la réservation' });
+  }
+};
+
+// Cancel reservation
+module.exports.cancelReservation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const surgery = await Surgery.findById(id);
+    if (!surgery) {
+      return res.status(404).json({ error: 'Chirurgie non trouvée' });
+    }
+    
+    // Check permissions
+    const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
+    const isManagement = userPriv.includes('admin') || userPriv.includes('direction') || userPriv.includes('headDepart');
+    const isSurgeonOwner = String(surgery.surgeon) === String(req.user.surgeon || req.user.surgeonId);
+    
+    if (!isManagement && !isSurgeonOwner) {
+      return res.status(403).json({ error: 'Accès non autorisé' });
+    }
+    
+    // Update reservation status
+    surgery.reservationStatus = 'cancelled';
+    surgery.updatedBy = req.user._id;
+    
+    await surgery.save();
+    
+    res.json({
+      success: true,
+      message: 'Réservation annulée avec succès'
+    });
+    
+  } catch (error) {
+    console.error('Error cancelling reservation:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'annulation de la réservation' });
+  }
+};
+
+// Check room availability (AJAX endpoint)
+module.exports.checkAvailability = async (req, res) => {
+  try {
+    const { roomId, startTime, endTime, surgeryId } = req.query;
+    
+    if (!roomId || !startTime || !endTime) {
+      return res.status(400).json({ error: 'Paramètres manquants' });
+    }
+    
+    const availability = await reservationService.checkRoomAvailability(
+      roomId,
+      startTime,
+      endTime,
+      surgeryId
+    );
+    
+    res.json(availability);
+    
+  } catch (error) {
+    console.error('Error checking availability:', error);
+    res.status(500).json({ error: 'Erreur lors de la vérification de disponibilité' });
+  }
+};
+
+// Get available slots for a room on a specific date (AJAX endpoint)
+module.exports.getSlots = async (req, res) => {
+  try {
+    const { roomId, date, slotDuration } = req.query;
+    
+    if (!roomId || !date) {
+      return res.status(400).json({ error: 'Room ID and date are required' });
+    }
+    
+    const duration = slotDuration ? parseInt(slotDuration) : 60;
+    const slots = await reservationService.generateSlotsForDay(roomId, date, duration);
+    
+    res.json({ 
+      success: true,
+      slots,
+      roomId,
+      date
+    });
+    
+  } catch (error) {
+    console.error('Error getting slots:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des créneaux' });
+  }
+};
+
+// Show slot booking interface
+module.exports.showSlotBooking = async (req, res) => {
+  try {
+    const OperatingRoom = require('../models/OperatingRoom');
+    const Surgeon = require('../models/Surgeon');
+    const Patient = require('../models/Patient');
+    const Prestation = require('../models/Prestation');
+    const Specialty = require('../models/Specialty');
+    
+    console.log('Loading slot booking page...');
+    
+    // Get all active operating rooms
+    const rooms = await OperatingRoom.find({ isActive: true }).sort({ code: 1 });
+    console.log('Rooms loaded:', rooms.length);
+    
+    // Get all surgeons with specialty populated
+    const surgeons = await Surgeon.find().populate('specialty', 'name').sort({ lastName: 1, firstName: 1 });
+    console.log('Surgeons loaded:', surgeons.length);
+    
+    // Get all patients
+    const patients = await Patient.find().sort({ lastName: 1, firstName: 1 });
+    console.log('Patients loaded:', patients.length);
+    
+    // Get all prestations with specialty populated
+    const prestations = await Prestation.find().populate('specialty', 'name').sort({ designation: 1 });
+    console.log('Prestations loaded:', prestations.length);
+    
+    // Get all specialties
+    const specialties = await Specialty.find().sort({ name: 1 });
+    console.log('Specialties loaded:', specialties.length);
+    
+    // Default to today
+    const defaultDate = new Date().toISOString().split('T')[0];
+    
+    res.render('surgeries/slotBooking', {
+      title: 'Réservation par créneaux',
+      rooms,
+      surgeons,
+      patients,
+      prestations,
+      specialties,
+      defaultDate
+    });
+  } catch (error) {
+    console.error('Error showing slot booking:', error);
+    console.error('Error message:', error.message);
+    console.error('Stack:', error.stack);
+    req.flash('error', 'Erreur lors de l\'affichage de la réservation: ' + error.message);
+    res.redirect('/surgeries/planning/view');
+  }
+};
+
+// Create surgery reservation from slot selection
+module.exports.createReservationFromSlots = async (req, res) => {
+  try {
+    const Reservation = require('../models/Reservation');
+    const { patient, surgeon, prestation, operatingRoom, scheduledStartTime, scheduledEndTime, reservationNotes } = req.body;
+    
+    // Validate required fields
+    if (!patient || !surgeon || !prestation || !operatingRoom || !scheduledStartTime || !scheduledEndTime) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Tous les champs obligatoires doivent être remplis' 
+      });
+    }
+    
+    // Validate times
+    const timeValidation = reservationService.validateReservationTimes(scheduledStartTime, scheduledEndTime);
+    if (!timeValidation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        message: timeValidation.error 
+      });
+    }
+    
+    // Check room availability (no excludeId since this is a new reservation)
+    const availability = await reservationService.checkRoomAvailability(
+      operatingRoom,
+      scheduledStartTime,
+      scheduledEndTime
+    );
+    
+    if (!availability.available) {
+      return res.status(409).json({
+        success: false,
+        message: 'Un ou plusieurs créneaux sont déjà réservés',
+        conflicts: availability.conflicts
+      });
+    }
+    
+    // Generate unique temporary code for reservation
+    const lastReservation = await Reservation.findOne().sort({ createdAt: -1 });
+    let tempCode = 'RES-001';
+    if (lastReservation && lastReservation.temporaryCode) {
+      const lastNumber = parseInt(lastReservation.temporaryCode.split('-')[1]) || 0;
+      tempCode = `RES-${String(lastNumber + 1).padStart(3, '0')}`;
+    }
+    
+    // Create new reservation (not a surgery yet)
+    const newReservation = new Reservation({
+      temporaryCode: tempCode,
+      patient,
+      surgeon,
+      prestation,
+      operatingRoom,
+      scheduledStartTime,
+      scheduledEndTime,
+      reservationStatus: 'confirmed',
+      reservationNotes: reservationNotes || '',
+      createdBy: req.user._id,
+      updatedBy: req.user._id
+    });
+    
+    await newReservation.save();
+    
+    res.json({
+      success: true,
+      message: 'Réservation créée avec succès',
+      reservationId: newReservation._id,
+      reservation: {
+        id: newReservation._id,
+        code: newReservation.temporaryCode,
+        scheduledStartTime: newReservation.scheduledStartTime,
+        scheduledEndTime: newReservation.scheduledEndTime
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating reservation from slots:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erreur lors de la création de la réservation: ' + error.message 
+    });
   }
 };

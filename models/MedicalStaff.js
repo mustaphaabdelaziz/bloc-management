@@ -17,7 +17,7 @@ const medicalStaffSchema = new mongoose.Schema({
     },
     dateOfBirth: {
         type: Date,
-        required: true
+        required: false
     },
     phone: {
         type: String
@@ -27,8 +27,18 @@ const medicalStaffSchema = new mongoose.Schema({
         ref: 'Fonction'
     }],
     personalFee: {
-        type: Number, // frais personnels pour allocation horaire
+        type: Number, // frais personnels pour location horaire
         default: 0
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
     }
 }, { timestamps: true });
 

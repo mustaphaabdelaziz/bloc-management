@@ -187,8 +187,8 @@ const filteredPrestations = canViewPricing ? prestations : prestations.map(p => 
 
 #### **Surgeons** (`controller/surgeon.controller.js`)
 **Filtered Fields**:
-- `contractType` (allocation/percentage)
-- `allocationRate`
+- `contractType` (location/percentage)
+- `locationRate`
 - `percentageRate`
 
 **Flag**: `canSeeContractInfo` passed to views
@@ -255,7 +255,7 @@ permissions.isAssistanteOnly         // Assistante without admin/direction
 ```ejs
 <% if (canSeeContractInfo && surgeon.contractType) { %>
   <p><strong>Type Contrat:</strong> <%= surgeon.contractType %></p>
-  <p><strong>Taux:</strong> <%= surgeon.contractType === 'allocation' ? surgeon.allocationRate : surgeon.percentageRate %>%</p>
+  <p><strong>Taux:</strong> <%= surgeon.contractType === 'location' ? surgeon.locationRate : surgeon.percentageRate %>%</p>
 <% } %>
 ```
 

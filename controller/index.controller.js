@@ -41,7 +41,7 @@ module.exports.dashboard = async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const todaySurgeries = await Surgery.find({
-      beginDateTime: {
+      incisionTime: {
         $gte: today,
         $lt: tomorrow,
       },

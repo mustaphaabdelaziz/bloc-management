@@ -28,14 +28,23 @@ const surgeonSchema = new mongoose.Schema(
     },
     contractType: {
       type: String,
-      enum: ["allocation", "percentage"],
-      required: true,
+      enum: ["location", "percentage"],
     },
-    allocationRate: {
-      type: Number, // Prix horaire pour méthode allocation
+    locationRate: {
+      type: Number, // Prix horaire pour méthode location
     },
     percentageRate: {
       type: Number, // Pourcentage pour méthode pourcentage
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
     },
   },
   { timestamps: true }

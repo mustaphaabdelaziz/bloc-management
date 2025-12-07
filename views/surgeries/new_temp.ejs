@@ -56,7 +56,7 @@
                                 </div>
                                 <datalist id="surgeonsList">
                                     <% surgeons.forEach(surgeon => { %>
-                                        <option value="Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>"
+                                        <option value="Dr. <%= surgeon.lastName %> <%= surgeon.firstName %> - <%= surgeon.specialty.name %>"
                                                 data-id="<%= surgeon._id %>"
                                                 data-specialty="<%= surgeon.specialty._id %>"
                                                 data-contract="<%= surgeon.contractType %>">

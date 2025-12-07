@@ -69,7 +69,7 @@
                                                name="code"
                                                value="<%= surgeon.code %>"
                                                readonly
-                                               placeholder="SR-00001">
+                                               placeholder="Code du chirurgien">
                                         <div class="input-actions">
                                             <button type="button" class="input-action-btn" id="regenerateBtn" onclick="regenerateCode()" title="Régénérer le code" disabled>
                                                 <i class="bi bi-arrow-repeat"></i>
@@ -85,7 +85,7 @@
                                         </div>
                                     </div>
                                     <div class="form-help-text">
-                                        <i class="bi bi-info-circle me-1"></i>Code unique identifiant le chirurgien (lecture seule)
+                                        <i class="bi bi-info-circle me-1"></i>Code unique identifiant le chirurgien (lecture seule, modifiable avec autorisation)
                                     </div>
                                     <div class="form-check-modern">
                                         <input class="form-check-input-modern" type="checkbox" id="allowRegenerate" name="allowRegenerate" onchange="toggleRegenerate()">
@@ -187,7 +187,7 @@
 
                             <div class="form-row-custom">
                                 <div class="form-group-modern">
-                                    <label for="dateOfBirth" class="form-label-modern required">
+                                    <label for="dateOfBirth" class="form-label-modern">
                                         <i class="bi bi-calendar me-2"></i>Date de Naissance
                                     </label>
                                     <div class="input-wrapper-modern">
@@ -198,8 +198,7 @@
                                                class="form-control-modern"
                                                id="dateOfBirth"
                                                name="dateOfBirth"
-                                               value="<%= moment(surgeon.dateOfBirth).format('YYYY-MM-DD') %>"
-                                               required
+                                               value="<%= surgeon.dateOfBirth ? moment(surgeon.dateOfBirth).format('YYYY-MM-DD') : '' %>"
                                                max="<%= moment().subtract(18, 'years').format('YYYY-MM-DD') %>">
                                         <div class="input-feedback">
                                             <div class="valid-feedback">
@@ -258,7 +257,7 @@
                                     </div>
                                     <div class="preview-details">
                                         <div class="preview-name" id="previewName">
-                                            Dr. <%= surgeon.firstName %> <%= surgeon.lastName %>
+                                            Dr. <%= surgeon.lastName %> <%= surgeon.firstName %>
                                         </div>
                                         <div class="preview-meta">
                                             <span class="preview-badge" id="previewSpecialty">
@@ -288,15 +287,15 @@
                                         <i class="bi bi-cash-stack me-2"></i>Type de Contrat
                                     </label>
                                     <div class="contract-options">
-                                        <div class="contract-option" data-contract="allocation">
-                                            <input type="radio" id="allocation" name="contractType" value="allocation"
-                                                   <%= surgeon.contractType === 'allocation' ? 'checked' : '' %> required>
-                                            <label for="allocation" class="contract-option-label">
+                                        <div class="contract-option" data-contract="location">
+                                            <input type="radio" id="location" name="contractType" value="location"
+                                                   <%= surgeon.contractType === 'location' ? 'checked' : '' %>>
+                                            <label for="location" class="contract-option-label">
                                                 <div class="contract-icon">
                                                     <i class="bi bi-cash-stack"></i>
                                                 </div>
                                                 <div class="contract-info">
-                                                    <h6>Allocation de Salle</h6>
+                                                    <h6>Location de Salle</h6>
                                                     <p>Taux horaire fixe pour l'utilisation de la salle d'opération</p>
                                                 </div>
                                             </label>
@@ -326,9 +325,9 @@
                                 </div>
                             </div>
 
-                            <div id="allocationFields" class="contract-fields" style="display: none;">
+                            <div id="locationFields" class="contract-fields" style="display: none;">
                                 <div class="form-group-modern">
-                                    <label for="allocationRate" class="form-label-modern required">
+                                    <label for="locationRate" class="form-label-modern required">
                                         <i class="bi bi-cash me-2"></i>Taux Horaire (DA/heure)
                                     </label>
                                     <div class="input-wrapper-modern">
@@ -337,9 +336,9 @@
                                         </div>
                                         <input type="number"
                                                class="form-control-modern"
-                                               id="allocationRate"
-                                               name="allocationRate"
-                                               value="<%= surgeon.allocationRate || '' %>"
+                                               id="locationRate"
+                                               name="locationRate"
+                                               value="<%= surgeon.locationRate || '' %>"
                                                min="0"
                                                step="100"
                                                placeholder="Ex: 50000">
@@ -455,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dateOfBirthInput = document.getElementById('dateOfBirth');
     const phoneInput = document.getElementById('phone');
     const contractTypeRadios = document.querySelectorAll('input[name="contractType"]');
-    const allocationRateInput = document.getElementById('allocationRate');
+    const locationRateInput = document.getElementById('locationRate');
     const percentageRateInput = document.getElementById('percentageRate');
     const previewName = document.getElementById('previewName');
     const previewSpecialty = document.getElementById('previewSpecialty');
@@ -473,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dateOfBirth: dateOfBirthInput.value,
         phone: phoneInput.value,
         contractType: document.querySelector('input[name="contractType"]:checked')?.value,
-        allocationRate: allocationRateInput.value,
+        locationRate: locationRateInput.value,
         percentageRate: percentageRateInput.value
     };
 
@@ -497,7 +496,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         switch (input.id) {
             case 'code':
-                isValid = value.length > 0 && /^SR-\d{5}$/.test(value);
+                // Code is only required if allowRegenerate is checked
+                if (!allowRegenerateCheckbox.checked) {
+                    isValid = true;
+                } else {
+                    // Accept any non-empty code
+                    isValid = value.length > 0;
+                }
                 break;
             case 'specialty':
                 isValid = value.length > 0;
@@ -507,24 +512,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 isValid = value.length > 0 && value.length <= 50;
                 break;
             case 'dateOfBirth':
-                const birthDate = new Date(value);
-                const today = new Date();
-                const age = today.getFullYear() - birthDate.getFullYear();
-                isValid = value && age >= 18;
+                // dateOfBirth is optional, but if provided must be valid and >= 18 years old
+                if (!value) {
+                    isValid = true; // Optional field
+                } else {
+                    const birthDate = new Date(value);
+                    const today = new Date();
+                    const age = today.getFullYear() - birthDate.getFullYear();
+                    isValid = age >= 18;
+                }
                 break;
             case 'phone':
                 isValid = !value || /^\d{10}$/.test(value);
                 break;
-            case 'allocationRate':
-                isValid = !input.hasAttribute('required') || (value && parseFloat(value) >= 0);
+            case 'locationRate':
+                isValid = !input.hasAttribute('required') || (value && !isNaN(parseFloat(value)) && parseFloat(value) >= 0);
                 break;
             case 'percentageRate':
-                isValid = !input.hasAttribute('required') || (value && parseFloat(value) >= 0 && parseFloat(value) <= 100);
+                isValid = !input.hasAttribute('required') || (value && !isNaN(parseFloat(value)) && parseFloat(value) >= 0 && parseFloat(value) <= 100);
                 break;
         }
 
-        input.classList.toggle('is-valid', isValid);
-        input.classList.toggle('is-invalid', !isValid && input.value.length > 0);
+        input.classList.toggle('is-valid', isValid && value.length > 0);
+        input.classList.toggle('is-invalid', !isValid && value.length > 0);
 
         return isValid;
     }
@@ -532,27 +542,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Contract type change handler
     function handleContractTypeChange() {
         const selectedContract = document.querySelector('input[name="contractType"]:checked');
-        const allocationFields = document.getElementById('allocationFields');
+        const locationFields = document.getElementById('locationFields');
         const percentageFields = document.getElementById('percentageFields');
 
         if (selectedContract) {
-            if (selectedContract.value === 'allocation') {
-                allocationFields.style.display = 'block';
+            if (selectedContract.value === 'location') {
+                locationFields.style.display = 'block';
                 percentageFields.style.display = 'none';
-                allocationRateInput.setAttribute('required', 'required');
+                locationRateInput.setAttribute('required', 'required');
                 percentageRateInput.removeAttribute('required');
                 percentageRateInput.value = '';
             } else {
-                allocationFields.style.display = 'none';
+                locationFields.style.display = 'none';
                 percentageFields.style.display = 'block';
                 percentageRateInput.setAttribute('required', 'required');
-                allocationRateInput.removeAttribute('required');
-                allocationRateInput.value = '';
+                locationRateInput.removeAttribute('required');
+                locationRateInput.value = '';
             }
         } else {
-            allocationFields.style.display = 'none';
+            locationFields.style.display = 'none';
             percentageFields.style.display = 'none';
-            allocationRateInput.removeAttribute('required');
+            locationRateInput.removeAttribute('required');
             percentageRateInput.removeAttribute('required');
         }
     }
@@ -581,10 +591,14 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/surgeons/next-code')
                 .then(response => response.json())
                 .then(data => {
-                    codeInput.value = data.code;
-                    validateInput(codeInput);
-                    updatePreview();
-                    showNotification('Code régénéré avec succès.', 'success');
+                    if (data.code) {
+                        codeInput.value = data.code;
+                        validateInput(codeInput);
+                        updatePreview();
+                        showNotification('Code régénéré avec succès.', 'success');
+                    } else {
+                        showNotification('Erreur: Impossible de générer un nouveau code.', 'danger');
+                    }
                 })
                 .catch(error => {
                     console.error('Error regenerating code:', error);
@@ -595,38 +609,107 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form submission handler
     function handleSubmit(e) {
-        const requiredInputs = [codeInput, specialtySelect, firstNameInput, lastNameInput, dateOfBirthInput];
-        let isFormValid = true;
-
-        requiredInputs.forEach(input => {
-            if (!validateInput(input)) {
-                isFormValid = false;
-            }
-        });
-
-        // Check contract-specific fields
-        const selectedContract = document.querySelector('input[name="contractType"]:checked');
-        if (selectedContract) {
-            if (selectedContract.value === 'allocation' && !validateInput(allocationRateInput)) {
-                isFormValid = false;
-            } else if (selectedContract.value === 'percentage' && !validateInput(percentageRateInput)) {
-                isFormValid = false;
-            }
-        } else {
-            isFormValid = false;
-        }
-
-        if (!isFormValid) {
-            e.preventDefault();
-            showNotification('Veuillez corriger les erreurs avant de continuer.', 'danger');
+        e.preventDefault();
+        
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        
+        // Validate required fields
+        const firstName = firstNameInput.value.trim();
+        const lastName = lastNameInput.value.trim();
+        const specialty = specialtySelect.value.trim();
+        const dateOfBirth = dateOfBirthInput.value.trim();
+        const phone = phoneInput.value.trim();
+        
+        console.log('Basic fields:', { firstName, lastName, specialty, dateOfBirth, phone });
+        
+        // Validate firstName
+        if (!firstName || firstName.length === 0 || firstName.length > 50) {
+            showNotification('Le prénom est requis et doit contenir entre 1 et 50 caractères.', 'danger');
+            console.log('FirstName validation failed');
             return false;
         }
-
+        
+        // Validate lastName
+        if (!lastName || lastName.length === 0 || lastName.length > 50) {
+            showNotification('Le nom est requis et doit contenir entre 1 et 50 caractères.', 'danger');
+            console.log('LastName validation failed');
+            return false;
+        }
+        
+        // Validate specialty
+        if (!specialty) {
+            showNotification('Veuillez sélectionner une spécialité.', 'danger');
+            console.log('Specialty validation failed');
+            return false;
+        }
+        
+        // Validate dateOfBirth (optional, but if provided must be >= 18 years old)
+        if (dateOfBirth) {
+            const birthDate = new Date(dateOfBirth);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            if (age < 18) {
+                showNotification('Le chirurgien doit avoir au moins 18 ans.', 'danger');
+                console.log('Age validation failed');
+                return false;
+            }
+        }
+        
+        // Validate phone (optional but if provided must be 10 digits)
+        if (phone && !/^\d{10}$/.test(phone)) {
+            showNotification('Le téléphone doit contenir 10 chiffres.', 'danger');
+            console.log('Phone validation failed');
+            return false;
+        }
+        
+        // Validate code if regenerate is allowed
+        if (allowRegenerateCheckbox.checked) {
+            const code = codeInput.value.trim();
+            console.log('Code regenerate checked, code:', code);
+            
+            if (!code) {
+                showNotification('Le code ne peut pas être vide.', 'danger');
+                console.log('Code validation failed');
+                return false;
+            }
+        }
+        
+        // Validate contract type and rates (optional, but if selected must have valid rates)
+        const selectedContract = document.querySelector('input[name="contractType"]:checked');
+        console.log('Selected contract:', selectedContract?.value);
+        
+        if (selectedContract) {
+            if (selectedContract.value === 'location') {
+                const locationRate = locationRateInput.value.trim();
+                console.log('Location rate:', locationRate);
+                
+                if (!locationRate || isNaN(parseFloat(locationRate)) || parseFloat(locationRate) < 0) {
+                    showNotification('Le taux horaire doit être un nombre positif.', 'danger');
+                    console.log('Location rate validation failed');
+                    return false;
+                }
+            } else if (selectedContract.value === 'percentage') {
+                const percentageRate = percentageRateInput.value.trim();
+                console.log('Percentage rate:', percentageRate);
+                
+                if (!percentageRate || isNaN(parseFloat(percentageRate)) || parseFloat(percentageRate) < 0 || parseFloat(percentageRate) > 100) {
+                    showNotification('Le pourcentage doit être entre 0 et 100.', 'danger');
+                    console.log('Percentage rate validation failed');
+                    return false;
+                }
+            }
+        }
+        
+        console.log('=== ALL VALIDATIONS PASSED ===');
+        
         // Show loading state
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Mise à jour en cours...';
 
         showNotification('Mise à jour du chirurgien en cours...', 'info');
+        
+        // Submit the form
+        form.submit();
     }
 
     // Reset form handler
@@ -644,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 contractRadio.checked = true;
             }
 
-            allocationRateInput.value = originalValues.allocationRate;
+            locationRateInput.value = originalValues.locationRate;
             percentageRateInput.value = originalValues.percentageRate;
 
             // Reset validations
@@ -688,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Event listeners
-    [codeInput, specialtySelect, firstNameInput, lastNameInput, dateOfBirthInput, phoneInput, allocationRateInput, percentageRateInput].forEach(input => {
+    [codeInput, specialtySelect, firstNameInput, lastNameInput, dateOfBirthInput, phoneInput, locationRateInput, percentageRateInput].forEach(input => {
         input.addEventListener('input', function() {
             validateInput(this);
             updatePreview();

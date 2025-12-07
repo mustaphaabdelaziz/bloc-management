@@ -1,0 +1,122 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/asaPricing/index.ejs -->
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Tarifs ASA</h1>
+                <p class="page-subtitle">Configuration des frais par classification ASA</p>
+            </div>
+            <% if (pricing.length === 0) { %>
+            <form method="POST" action="/asa-pricing/initialize" style="display: inline;">
+                <button type="submit" class="action-button">
+                    <i class="bi bi-plus-circle"></i>Initialiser Tarifs Par Défaut
+                </button>
+            </form>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Info Alert -->
+    <div class="alert alert-info" role="alert">
+        <strong><i class="bi bi-info-circle me-2"></i>À propos des tarifs ASA:</strong>
+        <p class="mb-0 mt-2">
+            Les tarifs ASA sont des <strong>frais forfaitaires</strong> payés par les chirurgiens en <strong>location</strong> à la clinique selon la classification de l'état de santé du patient.
+            <br><strong>Note:</strong> Les chirurgiens en <strong>pourcentage</strong> ne paient pas de frais ASA.
+        </p>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="row">
+        <% if (pricing.length === 0) { %>
+        <div class="col-12">
+            <div class="alert alert-warning" role="alert">
+                <h5><i class="bi bi-exclamation-triangle me-2"></i>Aucun tarif configuré</h5>
+                <p class="mb-0">Cliquez sur "Initialiser Tarifs Par Défaut" pour créer les tarifs ASA standards.</p>
+            </div>
+        </div>
+        <% } else { %>
+            <% pricing.forEach(item => { %>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-heart-pulse me-2"></i>ASA <%= item.class %>
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">Description:</small>
+                            <p class="text-sm"><%= item.description %></p>
+                        </div>
+                        
+                        <div class="pricing-details">
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2">
+                                <span class="fw-bold text-primary">Frais Clinique (Location uniquement):</span>
+                                <span class="fs-4 fw-bold text-success">
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(item.fee) %>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-light border mb-0">
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i><strong>Application:</strong></small>
+                            <ul class="small mb-0 mt-2">
+                                <li><strong>Contrat Location:</strong> Le chirurgien paie ce montant à la clinique</li>
+                                <li><strong>Contrat Pourcentage:</strong> Aucun frais ASA applicable</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <a href="/asa-pricing/<%= item.class %>/edit" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-pencil me-2"></i>Modifier les Tarifs
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <% }); %>
+        <% } %>
+    </div>
+
+    <!-- Help Section -->
+    <div class="card mt-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-question-circle me-2"></i>Guide des Classifications ASA</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6 class="text-primary"><i class="bi bi-check-circle me-2"></i>ASA I</h6>
+                    <p class="small">
+                        Patient normal et en bonne santé. Aucune maladie organique, physiologique ou psychiatrique.
+                        Exemple: jeune adulte en bonne santé, non-fumeur, consommation minimale d'alcool.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-info"><i class="bi bi-info-circle me-2"></i>ASA II</h6>
+                    <p class="small">
+                        Patient avec maladie systémique légère et bien contrôlée sans limitation fonctionnelle significative.
+                        Exemples: hypertension légère contrôlée, diabète contrôlé par régime, bronchite chronique légère.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-warning"><i class="bi bi-exclamation-triangle me-2"></i>ASA III</h6>
+                    <p class="small">
+                        Patient avec maladie systémique grave qui a un impact sur sa santé globale et peut limiter son activité.
+                        Exemples: angor stable, diabète mal contrôlé, hypertension grave.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.pricing-details {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+</style>

@@ -6,10 +6,8 @@ const path = require("path");
 const ejs = require("ejs");
 const ejsMate = require("ejs-mate");
 const methodOverride = require("method-override");
-
 const session = require("express-session");
 const flash = require("connect-flash");
-
 const LocalStrategy = require("passport-local").Strategy;
 const mongoSanitize = require("express-mongo-sanitize");
 const cookieParser = require("cookie-parser");
@@ -51,11 +49,14 @@ const startApp = async () => {
     const prestationRoutes = require("./routes/prestation.routes");
     const surgeryRoutes = require("./routes/surgery.routes");
     const specialtyRoutes = require("./routes/speciality.routes");
+    const familyRoutes = require("./routes/family.routes");
     const fonctionRoutes = require("./routes/fonction.routes");
     const reportRoutes = require("./routes/report.routes");
     const authRoutes = require("./routes/auth.routes");
     const usersRoutes = require("./routes/users.routes");
     const paymentRoutes = require("./routes/payment.routes");
+    const asaPricingRoutes = require("./routes/asaPricing.routes");
+    const operatingRoomRoutes = require("./routes/operatingRoom.routes");
  
 
     // Utilisation des routes
@@ -67,11 +68,14 @@ const startApp = async () => {
     app.use("/prestations", prestationRoutes);
     app.use("/surgeries", surgeryRoutes);
     app.use("/specialties", specialtyRoutes);
+    app.use("/families", familyRoutes);
     app.use("/fonctions", fonctionRoutes);
     app.use("/reports", reportRoutes);
+    app.use("/operating-rooms", operatingRoomRoutes);
     app.use("/", authRoutes);
     app.use("/users", usersRoutes);
     app.use("/payments", paymentRoutes);
+    app.use("/asa-pricing", asaPricingRoutes);
     // Gestion d'erreurs
 
     // app.use((req, res) => {
@@ -83,7 +87,8 @@ const startApp = async () => {
     //   res.status(500).render("errorHandling/error", { statusCode: "Erreur serveur", error: err });
     // });
 
-    const PORT = process.env.PORT || 3000;
+    // const PORT = process.env.PORT
+    const PORT = 7777
     app.listen(PORT, () => {
       console.log(`Serveur démarré sur le port ${PORT}`);
       console.log(`Application accessible sur http://localhost:${PORT}`);

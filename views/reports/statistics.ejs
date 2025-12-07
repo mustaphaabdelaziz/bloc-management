@@ -1,5 +1,6 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/reports/statistics.ejs -->
+<style>
 /* Modern Statistics Dashboard Styles */
 :root {
     --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -615,6 +616,7 @@ body {
         display: none !important;
     }
 }
+</style>
 
 <!-- Header Section -->
 <div class="stats-header">
@@ -731,32 +733,6 @@ body {
                     <i class="bi bi-bar-chart-line"></i>
                     <h6>Aucune donnée disponible</h6>
                     <p>Les statistiques apparaîtront ici une fois que des chirurgies seront enregistrées.</p>
-                </div>
-            <% } %>
-        </div>
-    </div>
-
-    <!-- Specialty Activity -->
-    <div class="chart-card">
-        <div class="chart-header">
-            <h5><i class="bi bi-graph-up"></i>Activité par Spécialité</h5>
-        </div>
-        <div class="chart-body">
-            <% if (surgeriesBySpecialty.length > 0) { %>
-                <canvas id="specialtyChart" width="400" height="300"></canvas>
-                <div class="chart-legend">
-                    <% surgeriesBySpecialty.slice(0, 5).forEach(specialty => { %>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background-color: #17a2b8"></div>
-                            <span><%= specialty.specialtyName %> (<%= specialty.count %>)</span>
-                        </div>
-                    <% }); %>
-                </div>
-            <% } else { %>
-                <div class="empty-state">
-                    <i class="bi bi-graph-up"></i>
-                    <h6>Aucune donnée disponible</h6>
-                    <p>Les statistiques par spécialité apparaîtront ici une fois que des chirurgies seront enregistrées.</p>
                 </div>
             <% } %>
         </div>
@@ -929,7 +905,7 @@ body {
                             </td>
                             <td>
                                 <% if (surgery.surgeon) { %>
-                                    Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                                    Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %>
                                 <% } else { %>
                                     <span class="text-muted">N/A</span>
                                 <% } %>
@@ -944,7 +920,7 @@ body {
                                     <span class="text-muted">N/A</span>
                                 <% } %>
                             </td>
-                            <td><%= moment(surgery.beginDateTime).format('DD/MM/YYYY HH:mm') %></td>
+                            <td><%= moment(surgery.incisionTime).format('DD/MM/YYYY HH:mm') %></td>
                             <td>
                                 <% let statusLabel = surgery.status; %>
                                 <% let statusClass = 'secondary'; %>
@@ -956,8 +932,8 @@ body {
                                 <span class="status-badge bg-<%= statusClass %>"><%= statusLabel %></span>
                             </td>
                             <td>
-                                <% if (surgery.endDateTime) { %>
-                                    <% const duration = Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000); %>
+                                <% if (surgery.closingIncisionTime) { %>
+                                    <% const duration = Math.round((new Date(surgery.closingIncisionTime) - new Date(surgery.incisionTime)) / 60000); %>
                                     <%= duration %> min
                                 <% } else { %>
                                     <span class="text-muted">-</span>
@@ -996,51 +972,16 @@ body {
 document.addEventListener('DOMContentLoaded', function() {
     // Données depuis le serveur
     const statusData = <%- JSON.stringify(surgeriesByStatus || []) %>;
-    const specialtyData = <%- JSON.stringify(surgeriesBySpecialty || []) %>;
+    const startDateStr = '<%- filters.startDate %>';
+    const endDateStr = '<%- filters.endDate %>';
 
     // Couleurs pour les graphiques
     const colors = ['#ffc107', '#007bff', '#28a745', '#dc3545', '#6c757d', '#17a2b8', '#fd7e14'];
 
-    // Variables pour l'infinite scroll
+    // Variables pour le chargement
     let currentPage = <%- JSON.stringify(currentPage || 1) %>;
     let isLoading = false;
     let hasMore = <%- JSON.stringify(typeof hasMore !== 'undefined' ? hasMore : false) %>;
-
-    // Graphique des spécialités (Bar horizontal)
-    if (specialtyData.length > 0) {
-        const specialtyCtx = document.getElementById('specialtyChart').getContext('2d');
-
-        new Chart(specialtyCtx, {
-            type: 'horizontalBar',
-            data: {
-                labels: specialtyData.map(item => item.specialtyName),
-                datasets: [{
-                    label: 'Nombre de chirurgies',
-                    data: specialtyData.map(item => item.count),
-                    backgroundColor: 'rgba(23, 162, 184, 0.8)',
-                    borderColor: 'rgba(23, 162, 184, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    }
 
     // Graphique temporel (simulation - vous pouvez remplacer par de vraies données)
     const timeCtx = document.getElementById('timeChart').getContext('2d');
@@ -1103,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loadMoreContainer) loadMoreContainer.classList.add('d-none');
 
         try {
-            const response = await fetch(`/reports/statistics?page=${currentPage + 1}&startDate=${'<%- filters.startDate %>'}&endDate=${'<%- filters.endDate %>'}`, {
+            const response = await fetch(`/reports/statistics?page=${currentPage + 1}&startDate=${startDateStr}&endDate=${endDateStr}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -1129,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </td>
                         <td>
                             ${surgery.surgeon ?
-                                `Dr. ${surgery.surgeon.firstName} ${surgery.surgeon.lastName}` :
+                                `Dr. ${surgery.surgeon.lastName} ${surgery.surgeon.firstName}` :
                                 '<span class="text-muted">N/A</span>'
                             }
                         </td>
@@ -1142,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 '<span class="text-muted">N/A</span>'
                             }
                         </td>
-                        <td>${new Date(surgery.beginDateTime).toLocaleDateString('fr-FR')} ${new Date(surgery.beginDateTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</td>
+                        <td>${new Date(surgery.incisionTime).toLocaleDateString('fr-FR')} ${new Date(surgery.incisionTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</td>
                         <td>
                             ${(() => {
                                 let statusLabel = surgery.status;
@@ -1156,8 +1097,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             })()}
                         </td>
                         <td>
-                            ${surgery.endDateTime ?
-                                `${Math.round((new Date(surgery.endDateTime) - new Date(surgery.beginDateTime)) / 60000)} min` :
+                            ${surgery.closingIncisionTime ?
+                                `${Math.round((new Date(surgery.closingIncisionTime) - new Date(surgery.incisionTime)) / 60000)} min` :
                                 '<span class="text-muted">-</span>'
                             }
                         </td>
@@ -1189,27 +1130,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Configuration de l'infinite scroll avec Intersection Observer
+    // Configuration du chargement manuel
     if (hasMore) {
         const loadMoreBtn = document.getElementById('load-more-btn');
         if (loadMoreBtn) {
             loadMoreBtn.addEventListener('click', loadMoreSurgeries);
-        }
-
-        // Infinite scroll automatique
-        const scrollObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !isLoading && hasMore) {
-                    loadMoreSurgeries();
-                }
-            });
-        }, {
-            rootMargin: '100px'
-        });
-
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            scrollObserver.observe(loadingIndicator);
         }
     }
 

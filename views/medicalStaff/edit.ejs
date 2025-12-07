@@ -19,8 +19,8 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="phone" class="form-label">Téléphone</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" value="<%= staff.phone || '' %>">
+                                <label for="firstName" class="form-label">Prénom *</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName" value="<%= staff.firstName %>" required>
                             </div>
                         </div>
                     </div>
@@ -28,38 +28,46 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="firstName" class="form-label">Prénom *</label>
-                                <input type="text" class="form-control" id="firstName" name="firstName" value="<%= staff.firstName %>" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
                                 <label for="lastName" class="form-label">Nom *</label>
                                 <input type="text" class="form-control" id="lastName" name="lastName" value="<%= staff.lastName %>" required>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="dateOfBirth" class="form-label">Date de naissance *</label>
-                        <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
-                               value="<%= moment(staff.dateOfBirth).format('YYYY-MM-DD') %>" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="personalFee" class="form-label">
-                            Frais personnels - Taux horaire (DA/heure)
-                            <i class="bi bi-clock-history text-info ms-1" title="Tarif horaire pour les chirurgies en allocation"></i>
-                        </label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="personalFee" name="personalFee" 
-                                   value="<%= staff.personalFee || 0 %>" min="0" step="0.01" 
-                                   placeholder="0.00">
-                            <span class="input-group-text">DA/h</span>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dateOfBirth" class="form-label">Date de naissance</label>
+                                <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" 
+                                       value="<%= staff.dateOfBirth ? moment(staff.dateOfBirth).format('YYYY-MM-DD') : '' %>">
+                            </div>
                         </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="<%= staff.phone || '' %>">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="personalFee" class="form-label">
+                                    Frais personnels - Taux horaire (DA/heure)
+                                    <i class="bi bi-clock-history text-info ms-1" title="Tarif horaire pour les chirurgies en location"></i>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="personalFee" name="personalFee" 
+                                           value="<%= staff.personalFee || 0 %>" min="0" step="0.01" 
+                                           placeholder="0.00">
+                                    <span class="input-group-text">DA/h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <div class="form-text">
                             <i class="bi bi-info-circle text-primary"></i>
-                            <strong>Tarif horaire</strong> facturé au chirurgien pour les interventions en régime d'allocation.
+                            <strong>Tarif horaire</strong> facturé au chirurgien pour les interventions en régime d'location.
                             <br><small class="text-muted">
                                 Le montant total sera calculé automatiquement : <strong>Taux horaire × Durée effective</strong>
                             </small>

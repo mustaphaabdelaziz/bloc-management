@@ -34,6 +34,9 @@
                             <% if (patient.dateOfBirth) { %>
                                 <%= moment().diff(patient.dateOfBirth, 'years') %> ans
                                 <small class="text-muted">(né le <%= moment(patient.dateOfBirth).format('DD/MM/YYYY') %>)</small>
+                            <% } else if (patient.birthdatePresumed) { %>
+                                ~<%= moment().diff(patient.birthdatePresumed, 'years') %> ans
+                                <small class="text-muted">(année estimée <%= moment(patient.birthdatePresumed).format('YYYY') %>)</small>
                             <% } else if (patient.presumedAge) { %>
                                 ~<%= patient.presumedAge %> ans (âge présumé)
                             <% } else { %>
@@ -91,12 +94,12 @@
                                     <tr>
                                         <td>
                                             <div>
-                                                <strong><%= moment(surgery.beginDateTime).format('DD/MM/YYYY') %></strong>
-                                            </div>
-                                            <small class="text-muted"><%= moment(surgery.beginDateTime).format('HH:mm') %></small>
+                                                <strong><%= moment(surgery.incisionTime).format('DD/MM/YYYY') %></strong>
+                                            </p>
+                                            <small class="text-muted"><%= moment(surgery.incisionTime).format('HH:mm') %></small>
                                         </td>
                                         <td>
-                                            Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                                            Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %>
                                         </td>
                                         <td>
                                             <span class="badge bg-secondary"><%= surgery.prestation.designation %></span>

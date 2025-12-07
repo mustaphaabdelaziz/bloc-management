@@ -130,8 +130,10 @@ async function runTests() {
         patient: patient._id,
         surgeon: surgeon._id,
         prestation: prestation._id,
-        beginDateTime: new Date(),
-        endDateTime: new Date(new Date().getTime() + 60 * 60 * 1000)
+        entreeBloc: new Date(),
+        entreeSalle: new Date(new Date().getTime() + 5 * 60 * 1000),
+        incisionTime: new Date(new Date().getTime() + 10 * 60 * 1000),
+        closingIncisionTime: new Date(new Date().getTime() + 60 * 60 * 1000)
       });
       console.log("Before save - code:", surgery.code || "(not set)");
       

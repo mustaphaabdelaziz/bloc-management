@@ -1,20 +1,5 @@
 <% layout('layouts/boilerplate') %>
 
-<!-- Stock Alert Banner -->
-<% if (material.stock <= material.alertLevel) { %>
-<div class="material-alert alert-danger">
-    <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
-    <strong>Alerte Critique!</strong> Le stock de <strong><%= material.designation %></strong> est critique (<%= material.stock %> <%= material.unitOfMeasure %>). Seuil d'alerte: <%= material.alertLevel %> <%= material.unitOfMeasure %>.
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<% } else if (material.stock <= material.stockMinimum) { %>
-<div class="material-alert alert-warning">
-    <i class="bi bi-exclamation-circle-fill alert-icon"></i>
-    <strong>Stock Bas!</strong> Le stock de <strong><%= material.designation %></strong> est en dessous du minimum (<%= material.stock %> <%= material.unitOfMeasure %>). Stock minimum: <%= material.stockMinimum %> <%= material.unitOfMeasure %>.
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<% } %>
-
 <div class="container">
     <div class="row">
         <div class="col-lg-4">
@@ -45,70 +30,62 @@
                             <td><span class="badge bg-secondary"><%= material.brand %></span></td>
                         </tr>
                         <% } %>
+                        <% if (permissions.canViewPricing) { %>
                         <tr>
-                            <td><strong>Prix Moyen Pondéré:</strong></td>
-                            <td class="fw-bold text-info"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.weightedPrice) %></td>
+                            <td><strong>Mode de prix:</strong></td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    <% if (material.priceMode === 'manual') { %>Manuel<% } else if (material.priceMode === 'last') { %>Dernier achat<% } else { %>Moyenne<% } %>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prix d'achat effectif:</strong></td>
+                            <td class="fw-bold text-primary"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.effectivePurchasePrice || material.weightedPrice) %></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Marge de vente:</strong></td>
+                            <td><%= material.sellingMarkupPercent || 0 %>%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prix de vente HT:</strong></td>
+                            <td class="fw-bold text-success"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.sellingPriceHT || material.weightedPrice) %></td>
                         </tr>
                         <tr>
                             <td><strong>TVA:</strong></td>
                             <td><%= (material.tva * 100) %>%</td>
                         </tr>
                         <tr>
-                            <td><strong>Prix TTC:</strong></td>
+                            <td><strong>Prix de vente TTC:</strong></td>
                             <td>
                                 <strong class="text-success">
-                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.weightedPrice * (1 + material.tva)) %>
+                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.sellingPriceTTC || (material.weightedPrice * (1 + material.tva))) %>
                                 </strong>
                             </td>
                         </tr>
+                        <% } %>
                         <tr>
                             <td><strong>Unité:</strong></td>
                             <td><%= material.unitOfMeasure %></td>
                         </tr>
                         <tr>
-                            <td><strong>Stock actuel:</strong></td>
+                            <td><strong>Spécialité<%= (material.specialty && Array.isArray(material.specialty) && material.specialty.length > 1) ? 's' : '' %>:</strong></td>
                             <td>
-                                <% if (material.stock <= material.alertLevel) { %>
-                                    <span class="stock-badge stock-critical">
-                                        <i class="bi bi-exclamation-triangle"></i>
-                                        <%= material.stock %> <%= material.unitOfMeasure %>
-                                    </span>
-                                <% } else if (material.stock <= material.stockMinimum) { %>
-                                    <span class="stock-badge stock-low">
-                                        <i class="bi bi-exclamation-circle"></i>
-                                        <%= material.stock %> <%= material.unitOfMeasure %>
-                                    </span>
-                                <% } else { %>
-                                    <span class="stock-badge stock-good">
-                                        <%= material.stock %> <%= material.unitOfMeasure %>
-                                    </span>
-                                <% } %>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Stock Minimum:</strong></td>
-                            <td><%= material.stockMinimum %> <%= material.unitOfMeasure %></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Alerte Critique:</strong></td>
-                            <td><span class="text-danger"><%= material.alertLevel %> <%= material.unitOfMeasure %></span></td>
-                        </tr>
-                        <% if (material.specialty && ((Array.isArray(material.specialty) && material.specialty.length > 0) || (!Array.isArray(material.specialty)))) { %>
-                        <tr>
-                            <td><strong>Spécialité<%= Array.isArray(material.specialty) && material.specialty.length > 1 ? 's' : '' %>:</strong></td>
-                            <td>
-                                <% if (Array.isArray(material.specialty)) { %>
+                                <% if (material.appliesToAllSpecialties) { %>
+                                    <span class="badge bg-success"><i class="bi bi-globe"></i> Toutes les spécialités</span>
+                                <% } else if (material.specialty && Array.isArray(material.specialty) && material.specialty.length > 0) { %>
                                     <div class="specialty-badges">
                                         <% material.specialty.forEach(spec => { %>
                                             <span class="badge bg-info"><%= spec.name %></span>
                                         <% }); %>
                                     </div>
-                                <% } else { %>
+                                <% } else if (material.specialty && !Array.isArray(material.specialty) && material.specialty.name) { %>
                                     <span class="badge bg-info"><%= material.specialty.name %></span>
+                                <% } else { %>
+                                    <span class="text-muted">Général (non spécifié)</span>
                                 <% } %>
                             </td>
                         </tr>
-                        <% } %>
                         <tr>
                             <td><strong>Créé le:</strong></td>
                             <td><%= moment(material.createdAt).format('DD/MM/YYYY HH:mm') %></td>
@@ -116,12 +93,14 @@
                     </table>
 
                     <div class="d-grid gap-2">
+                        <% if (permissions.canManageMaterials) { %>
                         <a href="/materials/<%= material._id %>/edit" class="btn btn-warning">
                             <i class="bi bi-pencil"></i>Modifier
                         </a>
                         <button type="button" class="btn btn-success" onclick="showArrivalModal('<%= material._id %>')">
                             <i class="bi bi-plus-square"></i>Ajouter Stock
                         </button>
+                        <% } %>
                     </div>
                 </div>
             </div>
@@ -143,8 +122,10 @@
                                 <tr>
                                     <th>Date Arrivage</th>
                                     <th>Quantité</th>
+                                    <% if (permissions.canViewPricing) { %>
                                     <th>Prix Unitaire</th>
                                     <th>Valeur Totale</th>
+                                    <% } %>
                                     <th>Date Achat</th>
                                     <% if (permissions.canManageMaterials) { %>
                                     <th class="text-center">Actions</th>
@@ -165,8 +146,10 @@
                                         data-delete-call="confirmDeleteArrival('<%= material._id %>', <%= index %>, '<%= arrivalDateDisplay %>')">>
                                         <td><%= moment(arrival.date).format('DD/MM/YYYY') %></td>
                                         <td><strong><%= arrival.quantity %></strong> <%= material.unitOfMeasure %></td>
+                                        <% if (permissions.canViewPricing) { %>
                                         <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(arrival.unitPrice) %></td>
                                         <td><strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(arrivalValue) %></strong></td>
+                                        <% } %>
                                         <td>
                                             <% if (arrival.purchaseDate) { %>
                                                 <small><%= moment(arrival.purchaseDate).format('DD/MM/YYYY') %></small>
@@ -208,12 +191,18 @@
                         </table>
                     </div>
                     
-                    <!-- Prix pondéré -->
+                    <!-- Prix pondéré et prix de vente -->
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Prix moyen pondéré (stock actuel) :</strong>
+                        <strong>Prix d'achat moyen :</strong>
                         <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.weightedPrice) %>
                         par <%= material.unitOfMeasure %>
+                        <% if (material.sellingMarkupPercent > 0) { %>
+                        <br><i class="bi bi-tag"></i>
+                        <strong>Prix de vente (<%= material.sellingMarkupPercent %>% marge) :</strong>
+                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(material.sellingPriceHT || material.weightedPrice) %>
+                        par <%= material.unitOfMeasure %>
+                        <% } %>
                     </div>
                 <% } else { %>
                     <div class="material-empty-state">
@@ -249,42 +238,149 @@
                                 <div class="stat-icon icon-info">
                                     <i class="bi bi-scissors"></i>
                                 </div>
-                                <h6 class="stat-title">Utilisé en Chirurgies</h6>
+                                <h6 class="stat-title">Quantité Totale Utilisée</h6>
                                 <h4 class="stat-value"><%= totalConsumed || 0 %></h4>
                                 <small class="stat-subtitle"><%= material.unitOfMeasure %></small>
                             </div>
                         </div>
+                        <% if (permissions.canViewPricing) { %>
                         <div class="col-md-3">
                             <div class="stat-card">
                                 <div class="stat-icon icon-warning">
                                     <i class="bi bi-cash-coin"></i>
                                 </div>
-                                <h6 class="stat-title">Valeur Consommée</h6>
+                                <h6 class="stat-title">Valeur Totale Consommée</h6>
                                 <h4 class="stat-value"><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalUsageValue || 0) %></h4>
                             </div>
                         </div>
+                        <% } %>
                         <div class="col-md-3">
                             <div class="stat-card">
                                 <div class="stat-icon icon-danger">
-                                    <i class="bi bi-exclamation-circle"></i>
+                                    <i class="bi bi-activity"></i>
                                 </div>
-                                <h6 class="stat-title">Chirurgies</h6>
+                                <h6 class="stat-title">Nombre de Chirurgies</h6>
                                 <h4 class="stat-value"><%= surgeryCount || 0 %></h4>
-                                <small class="stat-subtitle">où utilisé</small>
+                                <small class="stat-subtitle">utilisations</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
                                 <div class="stat-icon icon-secondary">
-                                    <i class="bi bi-clock-history"></i>
+                                    <i class="bi bi-calculator"></i>
                                 </div>
-                                <h6 class="stat-title">Stock Actuel</h6>
-                                <h4 class="stat-value"><%= material.stock %></h4>
+                                <h6 class="stat-title">Moyenne par Chirurgie</h6>
+                                <h4 class="stat-value"><%= (avgUsagePerSurgery || 0).toFixed(1) %></h4>
                                 <small class="stat-subtitle"><%= material.unitOfMeasure %></small>
                             </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Usage by Surgeon -->
+                <% if (surgeonStats && surgeonStats.length > 0) { %>
+                <div class="mt-4">
+                    <h6 class="mb-3">
+                        <i class="bi bi-person-badge"></i> Utilisation par Chirurgien (Top 5)
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Chirurgien</th>
+                                    <th>Chirurgies</th>
+                                    <th>Quantité</th>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <th>Valeur</th>
+                                    <% } %>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% surgeonStats.slice(0, 5).forEach(stat => { %>
+                                <tr>
+                                    <td><%= stat.name %></td>
+                                    <td><%= stat.count %></td>
+                                    <td><strong><%= stat.quantity %></strong> <%= material.unitOfMeasure %></td>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(stat.value) %></td>
+                                    <% } %>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <% } %>
+                
+                <!-- Usage by Prestation -->
+                <% if (prestationStats && prestationStats.length > 0) { %>
+                <div class="mt-4">
+                    <h6 class="mb-3">
+                        <i class="bi bi-clipboard2-pulse"></i> Utilisation par Type d'Intervention (Top 5)
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Prestation</th>
+                                    <th>Chirurgies</th>
+                                    <th>Quantité</th>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <th>Valeur</th>
+                                    <% } %>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% prestationStats.slice(0, 5).forEach(stat => { %>
+                                <tr>
+                                    <td><%= stat.name %></td>
+                                    <td><%= stat.count %></td>
+                                    <td><strong><%= stat.quantity %></strong> <%= material.unitOfMeasure %></td>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(stat.value) %></td>
+                                    <% } %>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <% } %>
+                
+                <!-- Monthly Usage Trend -->
+                <% if (monthlyStats && monthlyStats.length > 0) { %>
+                <div class="mt-4">
+                    <h6 class="mb-3">
+                        <i class="bi bi-calendar3"></i> Tendance Mensuelle (6 derniers mois)
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Mois</th>
+                                    <th>Chirurgies</th>
+                                    <th>Quantité</th>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <th>Valeur</th>
+                                    <% } %>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% monthlyStats.slice(-6).forEach(stat => { %>
+                                <tr>
+                                    <td><%= stat.month %></td>
+                                    <td><%= stat.count %></td>
+                                    <td><strong><%= stat.quantity %></strong> <%= material.unitOfMeasure %></td>
+                                    <% if (permissions.canViewPricing) { %>
+                                    <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(stat.value) %></td>
+                                    <% } %>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <% } %>
                 
                 <!-- Consumption Details -->
                 <div class="mt-4">
@@ -487,16 +583,11 @@
                         <input type="date" class="form-control" id="arrivalDate" name="date" required>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="mb-3">
-                                <label for="arrivalQuantity" class="form-label required-field">Quantité</label>
-                                <input type="number" class="form-control" id="arrivalQuantity" name="quantity" min="1" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="arrivalPrice" class="form-label required-field">Prix unitaire (DA)</label>
+                                <label for="arrivalPrice" class="form-label required-field">Prix d'Achat Unitaire (DA)</label>
                                 <input type="number" class="form-control" id="arrivalPrice" name="unitPrice" min="0" step="0.01" required>
+                                <div class="form-text">Prix d'achat HT par unité</div>
                             </div>
                         </div>
                     </div>

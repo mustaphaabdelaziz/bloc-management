@@ -71,20 +71,20 @@
                                 <i class="bi bi-person-badge me-2"></i>Chirurgien
                             </h6>
                             <div class="ms-4">
-                                <h5>Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %></h5>
+                                <h5>Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %></h5>
                                 <p class="text-muted mb-0">Type contrat: 
-                                    <span class="badge <%= surgery.surgeon && surgery.surgeon.contractType === 'allocation' ? 'bg-info' : 'bg-warning' %>">
-                                        <%= surgery.surgeon && surgery.surgeon.contractType === 'allocation' ? 'Allocation' : 'Pourcentage' %>
+                                    <span class="badge <%= surgery.surgeon && surgery.surgeon.contractType === 'location' ? 'bg-info' : 'bg-warning' %>">
+                                        <%= surgery.surgeon && surgery.surgeon.contractType === 'location' ? 'location' : 'Pourcentage' %>
                                     </span>
                                 </p>
-                                <% if (surgery.surgeon.contractType === 'allocation') { %>
-                                    <p class="text-muted mb-0">Taux: <%= surgery.surgeon ? (surgery.surgeon.allocationRate || 0) : 0 %> DA/heure</p>
+                                <% if (surgery.surgeon.contractType === 'location') { %>
+                                    <p class="text-muted mb-0">Taux: <%= surgery.surgeon ? (surgery.surgeon.locationRate || 0) : 0 %> DA/heure</p>
                                     <div class="mt-2 p-2 bg-info bg-opacity-10 rounded">
                                         <small class="text-info fw-bold">
-                                            <i class="bi bi-cash me-1"></i>Méthode Allocation:
+                                            <i class="bi bi-cash me-1"></i>Méthode location:
                                         </small>
                                         <br><small class="text-info">
-                                            • Coût allocation: Durée × Taux horaire
+                                            • Coût location: Durée × Taux horaire
                                         </small>
                                         <br><small class="text-info">
                                             • + Coût matériaux consommés
@@ -93,7 +93,7 @@
                                             • + Frais personnels horaires
                                         </small>
                                         <br><small class="text-info fw-bold">
-                                            • Total payé par chirurgien = Allocation + Matériaux + Personnel
+                                            • Total payé par chirurgien = location + Matériaux + Personnel
                                         </small>
                                     </div>
                                     <div class="mt-2 p-2 bg-info bg-opacity-10 rounded">
@@ -102,7 +102,7 @@
                                         </small>
                                         <% if (surgery.actualDuration) { %>
                                             <% const durationHours = surgery.actualDuration / 60; %>
-                                            <% const allocationCost = durationHours * (surgery.surgeon.allocationRate || 0); %>
+                                            <% const locationCost = durationHours * (surgery.surgeon.locationRate || 0); %>
                                             <% 
                                             let materialsCost = 0;
                                             if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) {
@@ -115,10 +115,10 @@
                                                 personalFees = surgery.medicalStaff.reduce((sum, staff) => sum + (staff.staff?.personalFee * durationHours || 0), 0);
                                             }
                                             %>
-                                            <% const surgeonPays = allocationCost + materialsCost + personalFees; %>
+                                            <% const surgeonPays = locationCost + materialsCost + personalFees; %>
                                             <br><small class="text-info">
-                                                • Allocation: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(allocationCost) %>
-                                                (<%= durationHours.toFixed(2) %>h × <%= surgery.surgeon.allocationRate || 0 %> DA/h)
+                                                • location: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(locationCost) %>
+                                                (<%= durationHours.toFixed(2) %>h × <%= surgery.surgeon.locationRate || 0 %> DA/h)
                                             </small>
                                             <br><small class="text-info">
                                                 • Matériaux: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(materialsCost) %>
@@ -246,7 +246,7 @@
             <div class="card-header bg-success text-white">
                 <h6 class="mb-0">
                     <i class="bi bi-calculator me-2"></i>
-                    <%= surgery.surgeon.contractType === 'allocation' ? 'Revenus Clinique (Allocation)' : 'Honoraires et Revenus' %>
+                    <%= surgery.surgeon.contractType === 'location' ? 'Revenus Clinique (location)' : 'Honoraires et Revenus' %>
                 </h6>
             </div>
             <div class="card-body">
@@ -267,37 +267,37 @@
                     </div>
                 <% } %>
 
-                <!-- Clinic Amount (always displayed for allocation, after surgeon for percentage) -->
+                <!-- Clinic Amount (always displayed for location, after surgeon for percentage) -->
                 <% if (surgery.clinicAmount && !isNaN(surgery.clinicAmount) && surgery.clinicAmount > 0) { %>
                     <div class="text-center <%= surgery.surgeon.contractType === 'percentage' ? 'mt-4 pt-3 border-top' : '' %>">
-                        <h<%= surgery.surgeon.contractType === 'allocation' ? '2' : '3' %> class="<%= surgery.surgeon.contractType === 'allocation' ? 'text-success' : 'text-primary' %>">
+                        <h<%= surgery.surgeon.contractType === 'location' ? '2' : '3' %> class="<%= surgery.surgeon.contractType === 'location' ? 'text-success' : 'text-primary' %>">
                             <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.clinicAmount) %>
-                        </h<%= surgery.surgeon.contractType === 'allocation' ? '2' : '3' %>>
+                        </h<%= surgery.surgeon.contractType === 'location' ? '2' : '3' %>>
                         <p class="text-muted mb-0">
-                            <%= surgery.surgeon.contractType === 'allocation' ? 'Revenus Clinique (Allocation)' : 'Montant Total Clinique' %>
+                            <%= surgery.surgeon.contractType === 'location' ? 'Revenus Clinique (location)' : 'Montant Total Clinique' %>
                         </p>
                         <small class="text-muted">
-                            Méthode: <%= surgery.surgeon.contractType === 'allocation' ? 'Allocation salle' : 'Pourcentage' %>
+                            Méthode: <%= surgery.surgeon.contractType === 'location' ? 'location salle' : 'Pourcentage' %>
                             <% if (surgery.surgeon.contractType === 'percentage' && surgery.status === 'urgent') { %>
                                 <br><span class="text-danger">• Chirurgie urgente</span>
                             <% } %>
-                            <% if (surgery.surgeon.contractType === 'allocation') { %>
-                                <br><span class="text-info">• Calcul: Allocation durée + Matériaux + Personnel</span>
+                            <% if (surgery.surgeon.contractType === 'location') { %>
+                                <br><span class="text-info">• Calcul: location durée + Matériaux + Personnel</span>
                             <% } %>
                         </small>
                         </small>
                     </div>
                 <% } %>
                 
-                <!-- Fallback for allocation when clinic amount not calculated -->
-                <% if (surgery.surgeon.contractType === 'allocation' && (!surgery.clinicAmount || isNaN(surgery.clinicAmount) || surgery.clinicAmount <= 0)) { %>
+                <!-- Fallback for location when clinic amount not calculated -->
+                <% if (surgery.surgeon.contractType === 'location' && (!surgery.clinicAmount || isNaN(surgery.clinicAmount) || surgery.clinicAmount <= 0)) { %>
                     <div class="text-center">
                         <h2 class="text-muted">
                             <i class="bi bi-cash fa-2x mb-2"></i>
                         </h2>
                         <p class="text-muted mb-0">Revenus clinique non calculés</p>
                         <small class="text-muted">
-                            Calcul automatique: Allocation durée + Matériaux + Personnel horaires
+                            Calcul automatique: location durée + Matériaux + Personnel horaires
                         </small>
                     </div>
                 <% } %>
@@ -449,15 +449,15 @@
                                 
                                 <!-- Clinic amount now displayed prominently above -->
                                 
-                                <% if (surgery.surgeon.contractType === 'allocation') { %>
-                                    <!-- Allocation Method Details -->
+                                <% if (surgery.surgeon.contractType === 'location') { %>
+                                    <!-- location Method Details -->
                                     <div class="mt-2 p-2 bg-info bg-opacity-10 rounded border-start border-info border-3">
                                         <h6 class="text-info mb-2">
                                             <i class="bi bi-cash me-1"></i>Détail du paiement du chirurgien à la clinique
                                         </h6>
                                         <% if (surgery.actualDuration) { %>
                                             <% const durationHours = surgery.actualDuration / 60; %>
-                                            <% const allocationCost = durationHours * (surgery.surgeon.allocationRate || 0); %>
+                                            <% const locationCost = durationHours * (surgery.surgeon.locationRate || 0); %>
                                             <% 
                                             let materialsCost = 0;
                                             if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) {
@@ -470,12 +470,12 @@
                                                 personalFees = surgery.medicalStaff.reduce((sum, staff) => sum + (staff.staff?.personalFee * durationHours || 0), 0);
                                             }
                                             %>
-                                            <% const surgeonPays = allocationCost + materialsCost + personalFees; %>
+                                            <% const surgeonPays = locationCost + materialsCost + personalFees; %>
                                             
                                             <div class="mb-2">
                                                 <small class="text-muted d-block">
-                                                    <i class="bi bi-clock me-1"></i>Allocation salle: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(allocationCost) %>
-                                                    (<%= durationHours.toFixed(2) %>h × <%= surgery.surgeon.allocationRate || 0 %> DA/h)
+                                                    <i class="bi bi-clock me-1"></i>location salle: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(locationCost) %>
+                                                    (<%= durationHours.toFixed(2) %>h × <%= surgery.surgeon.locationRate || 0 %> DA/h)
                                                 </small>
                                                 <small class="text-muted d-block">
                                                     <i class="bi bi-box me-1"></i>Matériaux: <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(materialsCost) %>

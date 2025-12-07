@@ -1,0 +1,1152 @@
+<% layout('/layouts/boilerplate')-%>
+
+<style>
+  /* Modern Color Palette & Design System - Clean Black on White */
+  :root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-bg: #f8f9fa;
+    --white-bg: #ffffff;
+    --dark-text: #212529;
+    --muted-text: #6c757d;
+    --border-color: #dee2e6;
+    --shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-dark: 0 8px 16px rgba(0,0,0,0.15);
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+  }
+
+  /* Global Typography & Layout */
+  body {
+    font-family: var(--font-primary);
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    line-height: 1.6;
+    font-size: var(--font-size-base);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--dark-text);
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .container-fluid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+  }
+
+  /* Page Header Enhancement */
+  .page-header {
+    background-color: var(--white-bg);
+    color: var(--dark-text);
+    padding: var(--spacing-xl) 0 var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    border: 1px solid var(--border-color);
+  }
+
+  .page-header h2 {
+    font-weight: 700;
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--spacing-sm);
+    color: var(--dark-text);
+  }
+
+  .breadcrumb {
+    background-color: var(--light-bg);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: 1px solid var(--border-color);
+  }
+
+  .breadcrumb-item a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+  }
+
+  .breadcrumb-item a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+  }
+
+  .breadcrumb-item.active {
+    color: var(--muted-text);
+    font-weight: 600;
+  }
+
+  /* Enhanced Filter Section */
+  .filter-section {
+    background-color: var(--white-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-light);
+  }
+
+  .filter-section .form-label {
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+  }
+
+  .filter-section .form-control,
+  .filter-section .form-select {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+    transition: var(--transition);
+    background-color: var(--white-bg);
+    color: var(--dark-text);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  .filter-section .form-control:focus,
+  .filter-section .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1), 0 0 0 0 2px var(--border-color);
+    background-color: var(--white-bg);
+    outline: none;
+  }
+
+  .filter-section .btn-primary {
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-weight: 600;
+    font-size: var(--font-size-lg);
+    transition: var(--transition);
+    box-shadow: var(--shadow-light);
+    color: white;
+  }
+
+  .filter-section .btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* Enhanced Slot Grid - Clean Card Design */
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin: var(--spacing-xl) 0;
+  }
+
+  .slot-item {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+    background-color: var(--white-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  .slot-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .slot-time-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    padding: var(--spacing-lg);
+    background-color: var(--primary-color);
+    color: white;
+    font-size: var(--font-size-lg);
+    text-align: center;
+  }
+
+  .slot-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    transition: var(--transition);
+    border: 2px solid transparent;
+    position: relative;
+    min-height: 140px;
+    text-align: center;
+    background-color: var(--white-bg);
+    flex: 1;
+  }
+
+  .slot-cell:hover {
+    border-color: var(--primary-color);
+  }
+
+  /* Free Slot Styling */
+  .slot-cell.free {
+    background-color: #d4edda;
+    border-color: var(--success-color);
+  }
+
+  .slot-cell.free:hover {
+    background-color: #c3e6cb;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .slot-cell.free .slot-icon {
+    color: #155724;
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+  }
+
+  /* Taken Slot Styling */
+  .slot-cell.taken {
+    background-color: #f8d7da;
+    border-color: var(--danger-color);
+    cursor: not-allowed;
+  }
+
+  .slot-cell.taken .slot-icon {
+    color: #721c24;
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+  }
+
+  /* Selected Slot Styling */
+  .slot-cell.selected {
+    background-color: #cce5ff;
+    border-color: var(--primary-color);
+    color: var(--dark-text);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .slot-cell.selected .slot-info,
+  .slot-cell.selected .surgery-info {
+    color: var(--dark-text);
+  }
+
+  .slot-cell.selected .slot-icon {
+    color: var(--primary-color);
+  }
+
+  /* Slot Content */
+  .slot-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+    transition: var(--transition);
+  }
+
+  .slot-info {
+    flex: 1;
+    width: 100%;
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    color: var(--dark-text);
+    line-height: 1.5;
+    margin: var(--spacing-sm) 0;
+  }
+
+  .slot-status-badge {
+    margin-top: var(--spacing-md);
+    font-size: 0.875rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: var(--shadow-light);
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .surgery-info {
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+    color: #4a5568;
+    line-height: 1.5;
+    font-weight: 600;
+    background: rgba(255,255,255,0.8);
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  /* Selection Summary */
+  .selection-summary {
+    background-color: #e7f3ff;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    margin: var(--spacing-xl) 0;
+    display: none;
+    box-shadow: var(--shadow-light);
+  }
+
+  .selection-summary.active {
+    display: block;
+    animation: slideInUp 0.5s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .selection-summary h5 {
+    color: var(--dark-text);
+    font-weight: 700;
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-xl);
+  }
+
+  /* Reservation Form */
+  #reservationForm .card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    overflow: hidden;
+    background-color: var(--white-bg);
+  }
+
+  #reservationForm .card-header {
+    background-color: var(--primary-color);
+    border: none;
+    padding: var(--spacing-xl);
+    color: white;
+  }
+
+  #reservationForm .card-header h5 {
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-xl);
+  }
+
+  #reservationForm .card-body {
+    padding: var(--spacing-xl);
+    background-color: var(--light-bg);
+  }
+
+  #reservationForm .form-label {
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+  }
+
+  #reservationForm .form-select,
+  #reservationForm .form-control {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-lg);
+    transition: var(--transition);
+    background-color: var(--white-bg);
+    color: var(--dark-text);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  #reservationForm .form-select:focus,
+  #reservationForm .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    background-color: var(--white-bg);
+    outline: none;
+  }
+
+  #reservationForm .card-footer {
+    background-color: var(--white-bg);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-xl);
+  }
+
+  #reservationForm .btn {
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-weight: 600;
+    transition: var(--transition);
+    font-size: var(--font-size-lg);
+  }
+
+  #reservationForm .btn-success {
+    background-color: var(--success-color);
+    border: none;
+    box-shadow: var(--shadow-light);
+    color: white;
+  }
+
+  #reservationForm .btn-success:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  #reservationForm .btn-secondary {
+    background-color: var(--secondary-color);
+    border: none;
+    box-shadow: var(--shadow-light);
+    color: white;
+  }
+
+  #reservationForm .btn-secondary:hover {
+    background-color: #545b62;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* Loading Overlay */
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    border-radius: var(--border-radius);
+    flex-direction: column;
+  }
+
+  .loading-overlay.active {
+    display: flex;
+  }
+
+  .loading-overlay .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .loading-overlay .loading-text {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: var(--font-size-lg);
+  }
+
+  /* Error Message */
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-radius: var(--border-radius);
+    margin: var(--spacing-md) 0;
+    display: none;
+    border: 1px solid #f5c6cb;
+    box-shadow: var(--shadow-light);
+  }
+
+  .error-message .error-text {
+    margin-left: var(--spacing-xl);
+    font-weight: 600;
+  }
+
+  /* Status Legend */
+  .status-legend {
+    background-color: var(--white-bg);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-light);
+    border: 1px solid var(--border-color);
+  }
+
+  .status-legend h4 {
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-xl);
+  }
+
+  .status-legend .badge {
+    font-size: 0.9rem;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: 20px;
+    font-weight: 600;
+    margin-right: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    box-shadow: var(--shadow-light);
+    border: 1px solid rgba(0,0,0,0.1);
+    transition: var(--transition);
+  }
+
+  .status-legend .badge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .slot-grid {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-lg);
+    }
+
+    .filter-section {
+      padding: var(--spacing-lg);
+    }
+
+    .page-header {
+      padding: var(--spacing-xl) 0 var(--spacing-lg);
+    }
+
+    .page-header h2 {
+      font-size: var(--font-size-xl);
+    }
+
+    #reservationForm .card-body {
+      padding: var(--spacing-lg);
+    }
+
+    .slot-cell {
+      min-height: 120px;
+      padding: var(--spacing-md);
+    }
+
+    .slot-time-label {
+      padding: var(--spacing-md);
+      font-size: var(--font-size-base);
+    }
+  }
+
+  @media (max-width: 576px) {
+    .filter-section .row > div {
+      margin-bottom: var(--spacing-md);
+    }
+
+    .status-legend .badge {
+      display: block;
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: var(--spacing-sm);
+      text-align: center;
+    }
+  }
+
+  /* Checkbox Styling for Free Slots */
+  .slot-cell.free input[type="checkbox"] {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid var(--success-color);
+    background-color: var(--white-bg);
+    cursor: pointer;
+    transition: var(--transition);
+    appearance: none;
+    outline: none;
+  }
+
+  .slot-cell.free input[type="checkbox"]:checked {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+  }
+
+  .slot-cell.free input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .slot-cell.free input[type="checkbox"]:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-light);
+  }
+</style>
+
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h2><i class="bi bi-calendar-plus"></i> Réservation de Bloc par Créneaux</h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/surgeries">Chirurgies</a></li>
+          <li class="breadcrumb-item"><a href="/surgeries/planning/view">Planning</a></li>
+          <li class="breadcrumb-item active">Réservation par Créneaux</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <%= success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <%= error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <div class="error-message" id="errorMessage"></div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="selectDate" class="form-label"><i class="bi bi-calendar-event"></i> Date</label>
+        <input type="date" class="form-control" id="selectDate" 
+               min="<%= new Date().toISOString().split('T')[0] %>" required>
+      </div>
+      <div class="col-md-6">
+        <label for="selectRoom" class="form-label"><i class="bi bi-hospital"></i> Bloc Opératoire</label>
+        <select class="form-select" id="selectRoom" required>
+          <option value="">-- Sélectionner un bloc --</option>
+          <% rooms.forEach(room => { %>
+            <option value="<%= room._id %>"><%= room.code %> - <%= room.name %></option>
+          <% }); %>
+        </select>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary mt-3" id="loadSlotsBtn">
+      <i class="bi bi-search"></i> Afficher les Créneaux Disponibles
+    </button>
+  </div>
+
+  <!-- Slot Grid Container -->
+  <div id="slotGridContainer" style="display: none; position: relative;">
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4><i class="bi bi-grid-3x3-gap"></i> Créneaux Horaires Disponibles</h4>
+      <div class="status-legend">
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge bg-success"><i class="bi bi-check-circle-fill"></i> Disponible</span>
+          <span class="badge bg-danger"><i class="bi bi-x-circle-fill"></i> Occupé</span>
+          <span class="badge" style="background: var(--primary-gradient);"><i class="bi bi-check2-circle"></i> Sélectionné</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="slot-grid" id="slotGrid"></div>
+
+    <!-- Selection Summary -->
+    <div class="selection-summary" id="selectionSummary">
+      <h5><i class="bi bi-info-circle"></i> Créneaux Sélectionnés</h5>
+      <p class="mb-2">
+        <strong>Nombre de créneaux:</strong> <span id="selectedCount">0</span><br>
+        <strong>Durée totale:</strong> <span id="totalDuration">0</span> heures<br>
+        <strong>Horaire:</strong> <span id="timeRange">-</span>
+      </p>
+    </div>
+
+    <!-- Reservation Form -->
+    <form id="reservationForm" style="display: none;">
+      <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-clipboard-plus"></i> Détails de la Réservation</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="patientInput" class="form-label">Patient <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="patientInput" list="patientList" placeholder="Tapez pour rechercher..." autocomplete="off">
+              <datalist id="patientList">
+                <% patients.forEach(patient => { %>
+                  <option value="<%= patient.code %> - <%= patient.firstName %> <%= patient.lastName %>" data-id="<%= patient._id %>">
+                <% }); %>
+              </datalist>
+              <input type="hidden" id="patientSelect" name="patient" required>
+            </div>
+            
+            <div class="col-md-4">
+              <label for="surgeonInput" class="form-label">Chirurgien <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="surgeonInput" list="surgeonList" placeholder="Tapez pour rechercher..." autocomplete="off">
+              <datalist id="surgeonList">
+                <% surgeons.forEach(surgeon => { %>
+                  <option value="Dr. <%= surgeon.lastName %> <%= surgeon.firstName %><% if (surgeon.specialty) { %> - <%= surgeon.specialty.name %><% } %>" data-id="<%= surgeon._id %>" data-specialty="<%= surgeon.specialty ? surgeon.specialty._id : '' %>">
+                <% }); %>
+              </datalist>
+              <input type="hidden" id="surgeonSelect" name="surgeon" required>
+              <input type="hidden" id="surgeonSpecialty">
+            </div>
+            
+            <div class="col-md-4">
+              <label for="prestationInput" class="form-label">Prestation <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="prestationInput" list="prestationList" placeholder="Tapez pour rechercher..." autocomplete="off">
+              <datalist id="prestationList">
+                <% prestations.forEach(prestation => { %>
+                  <option value="<%= prestation.designation %> (<%= prestation.duration %> min)" data-id="<%= prestation._id %>" data-specialty="<%= prestation.specialty ? prestation.specialty._id : '' %>">
+                <% }); %>
+              </datalist>
+              <input type="hidden" id="prestationSelect" name="prestation" required>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-2">
+            <div class="col-md-12">
+              <label for="reservationNotes" class="form-label">Notes</label>
+              <textarea class="form-control" id="reservationNotes" name="reservationNotes" 
+                        rows="3" placeholder="Notes optionnelles pour cette réservation..."></textarea>
+            </div>
+          </div>
+
+          <input type="hidden" id="selectedSlots" name="selectedSlots">
+          <input type="hidden" id="selectedRoomId" name="operatingRoom">
+          <input type="hidden" id="selectedDate" name="selectedDate">
+          <input type="hidden" id="scheduledStartTime" name="scheduledStartTime">
+          <input type="hidden" id="scheduledEndTime" name="scheduledEndTime">
+        </div>
+        <div class="card-footer text-end">
+          <button type="button" class="btn btn-secondary me-2" id="cancelBtn">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Créer la Réservation
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // State management
+  let selectedSlots = [];
+  let slotsData = [];
+  let currentRoomId = null;
+  let currentDate = null;
+
+  // DOM Elements
+  const loadSlotsBtn = document.getElementById('loadSlotsBtn');
+  const selectDate = document.getElementById('selectDate');
+  const selectRoom = document.getElementById('selectRoom');
+  const slotGridContainer = document.getElementById('slotGridContainer');
+  const slotGrid = document.getElementById('slotGrid');
+  const selectionSummary = document.getElementById('selectionSummary');
+  const reservationForm = document.getElementById('reservationForm');
+  const errorMessage = document.getElementById('errorMessage');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+
+  // Load slots
+  loadSlotsBtn.addEventListener('click', async () => {
+    const date = selectDate.value;
+    const roomId = selectRoom.value;
+
+    if (!date || !roomId) {
+      showError('Veuillez sélectionner une date et un bloc opératoire.');
+      return;
+    }
+
+    currentDate = date;
+    currentRoomId = roomId;
+    
+    loadingOverlay.classList.add('active');
+    hideError();
+
+    try {
+      const response = await fetch(`/surgeries/planning/slots?roomId=${roomId}&date=${date}`);
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Erreur lors du chargement des créneaux');
+      }
+
+      slotsData = data.slots;
+      renderSlotGrid(slotsData);
+      slotGridContainer.style.display = 'block';
+      selectedSlots = [];
+      updateSelectionSummary();
+      reservationForm.style.display = 'none';
+    } catch (error) {
+      showError('Erreur: ' + error.message);
+      console.error('Error loading slots:', error);
+    } finally {
+      loadingOverlay.classList.remove('active');
+    }
+  });
+
+  // Render slot grid
+  function renderSlotGrid(slots) {
+    slotGrid.innerHTML = '';
+
+    slots.forEach((slot, index) => {
+      // Create slot item container
+      const slotItem = document.createElement('div');
+      slotItem.className = 'slot-item';
+      
+      // Time label
+      const timeLabel = document.createElement('div');
+      timeLabel.className = 'slot-time-label';
+      timeLabel.textContent = slot.label;
+      slotItem.appendChild(timeLabel);
+
+      // Slot cell
+      const cell = document.createElement('div');
+      cell.className = `slot-cell ${slot.status}`;
+      cell.dataset.index = index;
+
+      if (slot.status === 'free') {
+        const icon = document.createElement('div');
+        icon.className = 'slot-icon';
+        icon.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+        cell.appendChild(icon);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `slot-${index}`;
+        checkbox.dataset.index = index;
+        checkbox.addEventListener('change', handleSlotSelection);
+        cell.appendChild(checkbox);
+
+        const info = document.createElement('div');
+        info.className = 'slot-info';
+        info.innerHTML = `<strong>Disponible</strong><br><small>Créneau libre</small>`;
+        cell.appendChild(info);
+
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-success slot-status-badge';
+        badge.innerHTML = '<i class="bi bi-check-circle"></i> Libre';
+        cell.appendChild(badge);
+
+        cell.addEventListener('click', (e) => {
+          if (e.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+          }
+        });
+      } else {
+        const icon = document.createElement('div');
+        icon.className = 'slot-icon';
+        icon.innerHTML = '<i class="bi bi-x-circle-fill"></i>';
+        cell.appendChild(icon);
+
+        const info = document.createElement('div');
+        info.className = 'slot-info';
+        const bookingInfo = slot.booking || slot.surgery; // Support both old and new format
+        info.innerHTML = `
+          <strong>Occupé</strong>
+          <div class="surgery-info">
+            ${bookingInfo ? `
+              <i class="bi bi-file-medical"></i> ${bookingInfo.code}<br>
+              <i class="bi bi-person"></i> ${bookingInfo.surgeon}<br>
+              <i class="bi bi-person-badge"></i> ${bookingInfo.patient}
+              ${bookingInfo.type === 'reservation' ? '<br><span class="badge bg-info mt-1"><i class="bi bi-calendar-check"></i> Réservation</span>' : '<br><span class="badge bg-warning mt-1"><i class="bi bi-scissors"></i> Chirurgie</span>'}
+            ` : '<small>Réservé</small>'}
+          </div>
+        `;
+        cell.appendChild(info);
+
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-danger slot-status-badge';
+        badge.innerHTML = '<i class="bi bi-x-circle"></i> Occupé';
+        cell.appendChild(badge);
+      }
+
+      slotItem.appendChild(cell);
+      slotGrid.appendChild(slotItem);
+    });
+  }
+
+  // Handle slot selection
+  function handleSlotSelection(e) {
+    const index = parseInt(e.target.dataset.index);
+    const isChecked = e.target.checked;
+
+    if (isChecked) {
+      selectedSlots.push(index);
+      selectedSlots.sort((a, b) => a - b);
+    } else {
+      selectedSlots = selectedSlots.filter(i => i !== index);
+    }
+
+    // Update visual state
+    document.querySelectorAll('.slot-cell').forEach(cell => {
+      const cellIndex = parseInt(cell.dataset.index);
+      if (selectedSlots.includes(cellIndex)) {
+        cell.classList.add('selected');
+      } else {
+        cell.classList.remove('selected');
+      }
+    });
+
+    updateSelectionSummary();
+  }
+
+  // Update selection summary
+  function updateSelectionSummary() {
+    const count = selectedSlots.length;
+    
+    if (count === 0) {
+      selectionSummary.classList.remove('active');
+      reservationForm.style.display = 'none';
+      return;
+    }
+
+    // Validate contiguous slots
+    const isContiguous = validateContiguous(selectedSlots);
+    
+    if (!isContiguous) {
+      showError('Les créneaux sélectionnés doivent être consécutifs. Veuillez sélectionner des créneaux adjacents.');
+      reservationForm.style.display = 'none';
+      return;
+    }
+
+    hideError();
+    selectionSummary.classList.add('active');
+    reservationForm.style.display = 'block';
+
+    // Calculate total duration in minutes
+    const firstSlot = slotsData[selectedSlots[0]];
+    const lastSlot = slotsData[selectedSlots[selectedSlots.length - 1]];
+    
+    // Parse start and end times
+    const startTime = new Date(firstSlot.start);
+    const endTime = new Date(lastSlot.end);
+    const durationMinutes = Math.round((endTime - startTime) / (1000 * 60));
+    
+    // Format duration as hours and minutes
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    let durationText = '';
+    if (hours > 0 && minutes > 0) {
+      durationText = `${hours}h ${minutes}min`;
+    } else if (hours > 0) {
+      durationText = `${hours}h`;
+    } else {
+      durationText = `${minutes}min`;
+    }
+
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('totalDuration').textContent = durationText;
+
+    // Format time range: HH:MM - HH:MM
+    const startTimeStr = new Date(firstSlot.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const endTimeStr = new Date(lastSlot.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('timeRange').textContent = `${startTimeStr} - ${endTimeStr}`;
+
+    // Update hidden form fields
+    document.getElementById('selectedSlots').value = JSON.stringify(selectedSlots);
+    document.getElementById('selectedRoomId').value = currentRoomId;
+    document.getElementById('selectedDate').value = currentDate;
+    document.getElementById('scheduledStartTime').value = firstSlot.start;
+    document.getElementById('scheduledEndTime').value = lastSlot.end;
+  }
+
+  // Validate contiguous slots
+  function validateContiguous(slots) {
+    if (slots.length <= 1) return true;
+    
+    for (let i = 1; i < slots.length; i++) {
+      if (slots[i] !== slots[i - 1] + 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Error handling
+  function showError(message) {
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function hideError() {
+    errorMessage.style.display = 'none';
+  }
+
+  // Set default date to today
+  selectDate.valueAsDate = new Date();
+
+  // Patient Datalist Search
+  const patientInput = document.getElementById('patientInput');
+  const patientSelectHidden = document.getElementById('patientSelect');
+
+  patientInput.addEventListener('change', function() {
+    // Find the option in the datalist that matches the input value
+    const datalist = document.getElementById('patientList');
+    const option = Array.from(datalist.options).find(opt => opt.value === this.value);
+    if (option && option.dataset.id) {
+      patientSelectHidden.value = option.dataset.id;
+    } else {
+      patientSelectHidden.value = '';
+      patientInput.value = '';
+    }
+  });
+
+  // Surgeon Datalist Search
+  const surgeonInput = document.getElementById('surgeonInput');
+  const surgeonSelectHidden = document.getElementById('surgeonSelect');
+  const surgeonSpecialtyInput = document.getElementById('surgeonSpecialty');
+
+  surgeonInput.addEventListener('change', function() {
+    const datalist = document.getElementById('surgeonList');
+    const option = Array.from(datalist.options).find(opt => opt.value === this.value);
+    if (option && option.dataset.id) {
+      surgeonSelectHidden.value = option.dataset.id;
+      surgeonSpecialtyInput.value = option.dataset.specialty || '';
+      updatePrestationList(); // Re-filter prestations based on specialty
+    } else {
+      surgeonSelectHidden.value = '';
+      surgeonSpecialtyInput.value = '';
+      prestationInput.value = '';
+      document.getElementById('prestationSelect').value = '';
+    }
+  });
+
+  // Prestation Datalist Search
+  const prestationInput = document.getElementById('prestationInput');
+
+  function updatePrestationList() {
+    const surgeonSpecialty = surgeonSpecialtyInput.value;
+    const datalist = document.getElementById('prestationList');
+    const allOptions = datalist.querySelectorAll('option');
+
+    allOptions.forEach(option => {
+      const prestationSpecialty = option.dataset.specialty;
+      
+      // If no surgeon selected or surgeon has no specialty, show all prestations
+      if (!surgeonSpecialty || surgeonSpecialty === '') {
+        option.style.display = '';
+      }
+      // If prestation has no specialty, show it (unclassified)
+      else if (!prestationSpecialty || prestationSpecialty === '') {
+        option.style.display = '';
+      }
+      // Show only matching specialties
+      else if (prestationSpecialty === surgeonSpecialty) {
+        option.style.display = '';
+      }
+      // Hide non-matching specialties
+      else {
+        option.style.display = 'none';
+      }
+    });
+  }
+
+  const prestationSelectHidden = document.getElementById('prestationSelect');
+
+  prestationInput.addEventListener('change', function() {
+    const datalist = document.getElementById('prestationList');
+    const option = Array.from(datalist.options).find(opt => opt.value === this.value);
+    if (option && option.dataset.id) {
+      prestationSelectHidden.value = option.dataset.id;
+    } else {
+      prestationSelectHidden.value = '';
+      prestationInput.value = '';
+    }
+  });
+
+  // Initialize datalist visibility
+  updatePrestationList();
+
+  // Override form submission to use hidden fields
+  const originalReservationForm = document.getElementById('reservationForm');
+  originalReservationForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (selectedSlots.length === 0) {
+      showError('Veuillez sélectionner au moins un créneau.');
+      return;
+    }
+
+    if (!validateContiguous(selectedSlots)) {
+      showError('Les créneaux sélectionnés doivent être consécutifs.');
+      return;
+    }
+
+    const formData = {
+      patient: patientSelectHidden.value,
+      surgeon: surgeonSelectHidden.value,
+      prestation: prestationSelectHidden.value,
+      operatingRoom: document.getElementById('selectedRoomId').value,
+      scheduledStartTime: document.getElementById('scheduledStartTime').value,
+      scheduledEndTime: document.getElementById('scheduledEndTime').value,
+      reservationNotes: document.getElementById('reservationNotes').value,
+      reservationStatus: 'confirmed'
+    };
+
+    if (!formData.patient || !formData.surgeon || !formData.prestation) {
+      showError('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    loadingOverlay.classList.add('active');
+
+    try {
+      const response = await fetch('/surgeries/new/reservation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        window.location.href = `/surgeries/planning/view?success=${encodeURIComponent('Réservation ' + result.reservation.code + ' créée avec succès!')}`;
+      } else {
+        showError(result.message || 'Erreur lors de la création de la réservation');
+      }
+    } catch (error) {
+      showError('Erreur: ' + error.message);
+      console.error('Error creating reservation:', error);
+    } finally {
+      loadingOverlay.classList.remove('active');
+    }
+  });
+</script>

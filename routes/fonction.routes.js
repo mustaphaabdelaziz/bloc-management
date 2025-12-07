@@ -2,8 +2,9 @@
 const express = require("express");
 const router = express.Router();
 const { isLoggedIn } = require("../middleware/auth");
-const { ensureAdminOrDirection } = require('../middleware/rbac');
+const { ensureAdminOrDirection, ensureHeadDepartManagement } = require('../middleware/rbac');
 const catchAsync = require("../utils/catchAsync");
+const multer = require('multer');
 const {
   RenderfonctionForm,
   createfonction,
@@ -11,20 +12,43 @@ const {
   deletefonction,
   fonctionlist,
   renderEditfonctionForm,
+  importFonctions,
+  downloadFonctionTemplate
 } = require("../controller/fonction.controller");
 
-// All logged users can view, only admin/direction can manage
+// Multer config for Excel file upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (!allowedMimes.includes(file.mimetype)) {
+      return cb(new Error("Seuls les fichiers Excel (.xlsx, .xls) sont autorisés"));
+    }
+    cb(null, true);
+  }
+});
+
+// All logged users can view, admin/direction/headDepart can manage
 router
   .route("/")
   .get(isLoggedIn, catchAsync(fonctionlist))
-  .post(isLoggedIn, ensureAdminOrDirection, catchAsync(createfonction));
+  .post(isLoggedIn, ensureHeadDepartManagement, catchAsync(createfonction));
 
-router.get("/new", isLoggedIn, ensureAdminOrDirection, RenderfonctionForm);
-router.get("/:id/edit", isLoggedIn, ensureAdminOrDirection, catchAsync(renderEditfonctionForm));
+router.post("/import", isLoggedIn, ensureHeadDepartManagement, upload.single('excelFile'), catchAsync(importFonctions));
+router.get("/template", isLoggedIn, ensureHeadDepartManagement, catchAsync(downloadFonctionTemplate));
+
+router.get("/new", isLoggedIn, ensureHeadDepartManagement, RenderfonctionForm);
+router.get("/:id/edit", isLoggedIn, ensureHeadDepartManagement, catchAsync(renderEditfonctionForm));
 
 router
   .route("/:id")
-  .put(isLoggedIn, ensureAdminOrDirection, catchAsync(updatefonction))
-  .delete(isLoggedIn, ensureAdminOrDirection, catchAsync(deletefonction));
+  .put(isLoggedIn, ensureHeadDepartManagement, catchAsync(updatefonction))
+  .delete(isLoggedIn, ensureHeadDepartManagement, catchAsync(deletefonction));
 
 module.exports = router;

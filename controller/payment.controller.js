@@ -9,13 +9,31 @@ module.exports.paymentList = catchAsync(async (req, res) => {
   const limit = 20;
   const skip = (page - 1) * limit;
   
-  const { status, paymentType, surgeonId, dateFrom, dateTo } = req.query;
+  const { status, paymentType, surgeonId, dateFrom, dateTo, search } = req.query;
   
   // Build query
   let query = {};
   if (status) query.status = status;
   if (paymentType) query.paymentType = paymentType;
   if (surgeonId) query.surgeon = surgeonId;
+  
+  // Search filter - handle search by code, surgeon name, or patient name
+  if (search) {
+    const searchRegex = new RegExp(search, 'i');
+    // Get payment IDs matching search criteria
+    const surgeries = await Surgery.find({ code: searchRegex });
+    const surgeons = await Surgeon.find({
+      $or: [
+        { lastname: searchRegex },
+        { firstname: searchRegex }
+      ]
+    });
+    
+    query.$or = [
+      { surgery: { $in: surgeries.map(s => s._id) } },
+      { surgeon: { $in: surgeons.map(s => s._id) } }
+    ];
+  }
   
   // Date range filter
   if (dateFrom || dateTo) {
@@ -71,7 +89,7 @@ module.exports.paymentList = catchAsync(async (req, res) => {
     title: "Suivi des Paiements",
     payments,
     surgeons,
-    filters: { status, paymentType, surgeonId, dateFrom, dateTo },
+    filters: { status, paymentType, surgeonId, dateFrom, dateTo, search },
     currentPage: page,
     totalPages,
     summary
@@ -94,6 +112,12 @@ module.exports.viewPayment = catchAsync(async (req, res) => {
   
   if (!payment) {
     req.flash("error", "Paiement non trouvé");
+    return res.redirect("/payments");
+  }
+  
+  // Handle orphaned payment (deleted surgery)
+  if (!payment.surgery) {
+    req.flash("error", "La chirurgie associée a été supprimée");
     return res.redirect("/payments");
   }
   
@@ -232,7 +256,7 @@ module.exports.surgeonPaymentSummary = catchAsync(async (req, res) => {
   };
   
   res.render("payments/surgeon-summary", {
-    title: `Paiements - ${surgeon.lastname} ${surgeon.firstname}`,
+    title: `Paiements - Dr. ${surgeon.lastName} ${surgeon.firstName}`,
     surgeon,
     payments,
     summary,
@@ -255,7 +279,7 @@ module.exports.createOrUpdatePaymentRecord = async function(surgeryId) {
     // Determine payment type and amount based on contract type
     let paymentType, totalAmount;
     
-    if (surgery.surgeon.contractType === 'allocation') {
+    if (surgery.surgeon.contractType === 'location') {
       // Surgeon pays clinic (incoming payment)
       paymentType = 'incoming';
       totalAmount = surgery.clinicAmount;
@@ -300,7 +324,9 @@ module.exports.createOrUpdatePaymentRecord = async function(surgeryId) {
         totalAmount,
         amountPaid: 0,
         amountRemaining: totalAmount,
-        status: 'pending'
+        status: 'pending',
+        createdBy: undefined,  // Will be set by middleware if needed
+        updatedBy: undefined
       });
       
       await payment.save();

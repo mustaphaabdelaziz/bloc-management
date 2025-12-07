@@ -12,13 +12,21 @@ const fonctionSchema = new mongoose.Schema(
       required: true,
     },
     description: {
-      type: String,
+        type: String,
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
     }
   },
   { timestamps: true }
-);
-
-// Auto-generate code if not provided (pattern: FCT0001)
+);// Auto-generate code if not provided (pattern: FCT0001)
 fonctionSchema.pre("save", async function (next) {
   if (!this.code) {
     try {

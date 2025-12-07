@@ -7,7 +7,7 @@ Une application web complète pour la gestion des activités de bloc opératoire
 ### Gestion des Entités
 
 - **Patients** : Dossiers complets avec NIN, informations personnelles et historique
-- **Chirurgiens** : Gestion des spécialités et types de contrats (allocation/pourcentage)
+- **Chirurgiens** : Gestion des spécialités et types de contrats (location/pourcentage)
 - **Personnel médical** : Suivi des rôles et participations aux chirurgies
 - **Matériaux** : Gestion des stocks (consommables et matériels patients)
 - **Prestations** : Catalogue des interventions avec tarifs et durées
@@ -21,7 +21,7 @@ Une application web complète pour la gestion des activités de bloc opératoire
 
 ### Calcul des Honoraires
 
-#### Méthode 1 : Allocation de salle d'opération
+#### Méthode 1 : location de salle d'opération
 
 ```
 Honoraires = Prix prestation HT - TVA - Matériaux totaux - (Durée × Taux horaire) + Frais dépassement
@@ -518,7 +518,7 @@ app.use((err, req, res, next) => {
 
    - Ajoutez quelques spécialités et fonctions
    - Créez 2-3 patients
-   - Enregistrez 2 chirurgiens (un en allocation, un en pourcentage)
+   - Enregistrez 2 chirurgiens (un en location, un en pourcentage)
    - Ajoutez du personnel médical
    - Créez quelques matériaux
 

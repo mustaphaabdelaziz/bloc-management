@@ -1,0 +1,237 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/materials/import-results.ejs -->
+
+<div class="material-card mb-4">
+  <div class="material-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="material-title">
+          <i class="bi bi-file-earmark-spreadsheet me-2"></i>Résultats de l'Import des Matériaux
+        </h3>
+        <p class="material-subtitle">Résumé de l'importation des matériaux médicaux</p>
+      </div>
+      <a href="/materials" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-2"></i>Retour aux Matériaux
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="material-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Total des lignes</h5>
+            <h2 class="text-primary mb-0"><%= totalRows %></h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="material-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Importées avec succès</h5>
+            <h2 class="text-success mb-0">
+              <i class="bi bi-check-circle me-1"></i><%= results.imported %>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="material-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Ignorées (doublons)</h5>
+            <h2 class="text-warning mb-0">
+              <i class="bi bi-skip-forward me-1"></i><%= results.skipped || 0 %>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="material-card text-center">
+          <div class="card-body">
+            <h5 class="card-title text-muted">Erreurs</h5>
+            <h2 class="text-danger mb-0">
+              <i class="bi bi-exclamation-circle me-1"></i><%= results.failed %>
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Success Alert -->
+  <% if (results.imported > 0) { %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">
+      <i class="bi bi-check-circle me-2"></i>Importation réussie
+    </h4>
+    <p class="mb-0">
+      <strong><%= results.imported %> matériau<%= results.imported > 1 ? 'x' : '' %></strong> 
+      <%= results.imported > 1 ? 'ont été importés' : 'a été importé' %> avec succès.
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+  </div>
+  <% } %>
+
+  <!-- Skipped Alert -->
+  <% if (results.skipped > 0) { %>
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <h4 class="alert-heading">
+      <i class="bi bi-skip-forward me-2"></i>Lignes ignorées
+    </h4>
+    <p class="mb-0">
+      <strong><%= results.skipped %> ligne<%= results.skipped > 1 ? 's' : '' %></strong> 
+      <%= results.skipped > 1 ? 'ont été ignorées' : 'a été ignorée' %> car le code existe déjà ou est dupliqué dans le fichier.
+    </p>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+  </div>
+  <% } %>
+
+  <!-- Error Details Section -->
+  <% if (results.errors && results.errors.length > 0) { %>
+  <div class="material-card mt-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="mb-0">
+        <i class="bi bi-exclamation-triangle me-2"></i>Erreurs et Lignes Ignorées
+        <span class="badge bg-light text-danger float-end"><%= results.errors.length %></span>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="material-table table">
+          <thead>
+            <tr>
+              <th>Ligne</th>
+              <th>Désignation</th>
+              <th>Messages</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.errors.forEach((error, index) => { %>
+            <tr class="align-middle">
+              <td>
+                <strong><%= error.row %></strong>
+              </td>
+              <td>
+                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<%= error.designation %>">
+                  <%= error.designation %>
+                </span>
+              </td>
+              <td>
+                <div class="error-messages">
+                  <% error.messages.forEach((msg, idx) => { %>
+                  <div class="error-item mb-2">
+                    <% if (msg.includes('ignorée') || msg.includes('dupliqué')) { %>
+                    <span class="badge bg-warning text-dark">
+                      <i class="bi bi-skip-forward me-1"></i><%= msg %>
+                    </span>
+                    <% } else { %>
+                    <span class="badge bg-danger">
+                      <i class="bi bi-x-circle me-1"></i><%= msg %>
+                    </span>
+                    <% } %>
+                  </div>
+                  <% }); %>
+                </div>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Information Section -->
+  <div class="material-card mt-4 bg-light">
+    <div class="card-header">
+      <h5 class="mb-0">
+        <i class="bi bi-info-circle me-2"></i>Conseils pour corriger les erreurs
+      </h5>
+    </div>
+    <div class="card-body">
+      <ul class="mb-0">
+        <li><strong>Désignation manquante:</strong> La désignation est obligatoire pour chaque matériau</li>
+        <li><strong>Prix invalide:</strong> Vérifiez que les prix sont des nombres positifs</li>
+        <li><strong>TVA invalide:</strong> Utilisez 0.0 (exonéré), 0.09 (9%), ou 0.19 (19%)</li>
+        <li><strong>Catégorie invalide:</strong> Utilisez "consumable" ou "consommable" pour les consommables, "patient" pour les matériaux patients</li>
+        <li><strong>Spécialité non trouvée:</strong> Vérifiez que le nom de la spécialité existe dans le système</li>
+        <li><strong>Code auto-généré:</strong> Le code est généré automatiquement au format MAT-{SPECIALITE}-XXX - ne pas inclure de colonne "Code" dans votre fichier</li>
+        <li>
+          <strong>Télécharger le modèle:</strong>
+          <a href="/materials" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-download me-1"></i>Retour pour télécharger le modèle
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="material-actions mt-4">
+    <a href="/materials" class="btn btn-primary">
+      <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+    </a>
+    <% if (results.failed > 0) { %>
+    <a href="/materials/new" class="btn btn-secondary">
+      <i class="bi bi-plus-circle me-2"></i>Ajouter manuellement
+    </a>
+    <% } %>
+  </div>
+</div>
+
+<style>
+  .error-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .error-item .badge {
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .card-danger {
+    border-top: 3px solid #dc3545;
+  }
+
+  .table-hover tbody tr:hover {
+    background-color: rgba(220, 53, 69, 0.05);
+  }
+
+  .text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .material-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+  }
+
+  .material-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+  }
+
+  .material-title {
+    margin: 0;
+    color: #2c3e50;
+  }
+
+  .material-subtitle {
+    margin: 0.5rem 0 0 0;
+    color: #7f8c8d;
+  }
+
+  .material-actions {
+    display: flex;
+    gap: 1rem;
+  }
+</style>

@@ -1375,7 +1375,7 @@ html, body {
   }
 }
 
-.allocation-summary {
+.location-summary {
   &::before {
     background: linear-gradient(90deg, $success, lighten($success, 15%));
   }

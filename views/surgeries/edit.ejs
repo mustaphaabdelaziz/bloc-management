@@ -1,46 +1,58 @@
 <% layout('layouts/boilerplate') %>
-<!-- views/surgeries/edit.ejs -->
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="surgery-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="bi bi-pencil"></i>Modifier Chirurgie
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="/surgeries/<%= surgery._id %>?_method=PUT" id="surgeryForm">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="code" class="form-label">Code (Auto-généré)</label>
-                                    <input type="text" class="form-control" id="code" name="code" value="<%= surgery.code %>" readonly disabled>
-                                    <div class="form-text">Le code ne peut pas être modifié</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="status" class="form-label required-field">Statut</label>
-                                    <select name="status" id="status" class="form-select" required>
-                                        <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
-                                        <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label for="patient" class="form-label required-field">Patient</label>
-                            <select name="patient" id="patient" class="form-select" required>
-                                <option value="">Sélectionner un patient</option>
-                                <% patients.forEach(patient => { %>
-                                    <option value="<%= patient._id %>" <%= surgery.patient._id.toString() === patient._id.toString() ? 'selected' : '' %>>
-                                        <%= patient.firstName %> <%= patient.lastName %> - <%= patient.code %>
-                                    </option>
-                                <% }); %>
-                            </select>
-                        </div>
+<!-- Modern Surgery Edit Page -->
+<div class="container-fluid fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <h1><i class="bi bi-pencil-fill me-3"></i>Modifier Chirurgie</h1>
+            <p>Modifier les détails de l'intervention chirurgicale</p>
+        </div>
+        <div class="page-actions">
+            <a href="/surgeries/<%= surgery._id %>" class="btn btn-light">
+                <i class="bi bi-eye me-2"></i>Voir détails
+            </a>
+            <a href="/surgeries" class="btn btn-light">
+                <i class="bi bi-arrow-left me-2"></i>Retour à la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <% if (surgery.statusLifecycle === 'closed' && !permissions.canEditClosedSurgeries) { %>
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-lock-fill me-2"></i>
+                    <strong>Attention:</strong> Cette chirurgie est clôturée et ne peut plus être modifiée.
+                    Seul un administrateur peut modifier une chirurgie clôturée.
+                </div>
+            <% } %>
+            <% if (surgery.statusLifecycle === 'closed' && permissions.canEditClosedSurgeries) { %>
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Cette chirurgie est clôturée, mais vous avez les droits d'administrateur pour la modifier.
+                </div>
+            <% } %>
+
+            <div class="surgery-form-container">
+                <form method="POST" action="/surgeries/<%= surgery._id %>?_method=PUT" id="surgeryForm" class="surgery-form">
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <h3><i class="bi bi-info-circle me-2"></i>Informations de Base</h3>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Code Chirurgie <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-barcode"></i>
+                                        <input type="text" class="form-control-modern" id="code" name="code" value="<%= surgery.code %>" required autocomplete="off">
+                                    </div>
+                                    <div class="form-help-text">
+                                        Entrer un code unique pour cette chirurgie
+                                    </div>
+                                </div>
+                            </div>
 
                         <div class="row">
                             <div class="col-md-6">
@@ -52,7 +64,7 @@
                                             <option value="<%= surgeon._id %>"
                                                     data-contract="<%= surgeon.contractType %>"
                                                     <%= surgery.surgeon._id.toString() === surgeon._id.toString() ? 'selected' : '' %>>
-                                                Dr. <%= surgeon.firstName %> <%= surgeon.lastName %> - <%= surgeon.specialty.name %>
+                                                Dr. <%= surgeon.lastName %> <%= surgeon.firstName %> - <%= surgeon.specialty.name %>
                                             </option>
                                         <% }); %>
                                     </select>
@@ -76,67 +88,496 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="beginDateTime" class="form-label required-field">Date et heure de début</label>
-                                    <input type="datetime-local" class="form-control" id="beginDateTime" name="beginDateTime"
-                                           value="<%= surgery.beginDateTime ? moment(surgery.beginDateTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="endDateTime" class="form-label">Date et heure de fin</label>
-                                    <input type="datetime-local" class="form-control" id="endDateTime" name="endDateTime"
-                                           value="<%= surgery.endDateTime ? moment(surgery.endDateTime).format('YYYY-MM-DDTHH:mm') : '' %>">
-                                    <div class="form-text">Optionnel - permet le calcul automatique de la durée</div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Scheduling Section -->
+                        <div class="form-section">
+                            <h3><i class="bi bi-calendar-event me-2"></i>Planification</h3>
 
-                        <% if (canEditSurgeryFinancials) { %>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="adjustedPrice" class="form-label">Prix ajusté (DA)</label>
-                                    <input type="number" class="form-control" id="adjustedPrice" name="adjustedPrice"
-                                           value="<%= surgery.adjustedPrice || '' %>" min="0" step="0.01" placeholder="Prix spécifique (optionnel)">
-                                    <div class="form-text">Prix de base: <span id="basePrice">
-                                        <% if (surgery.prestation && surgery.prestation.priceHT && !isNaN(parseFloat(surgery.prestation.priceHT))) {%>
-                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(parseFloat(surgery.prestation.priceHT)) %>
-                                        <% } else { %>
-                                            Prix non disponible
-                                        <% } %>
-                                    </span></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label required-field">Statut</label>
+                                    <div class="custom-status-select">
+                                        <select name="status" id="status" class="form-select-modern" required>
+                                            <option value="planned" <%= surgery.status === 'planned' ? 'selected' : '' %>>Planifiée</option>
+                                            <option value="urgent" <%= surgery.status === 'urgent' ? 'selected' : '' %>>Urgente</option>
+                                        </select>
+                                        <div class="status-select-trigger">
+                                            <div class="status-select-content">
+                                                <div class="status-select-icon">
+                                                    <i class="bi bi-flag-fill"></i>
+                                                </div>
+                                                <div class="status-select-text" id="statusText"><%= surgery.status === 'planned' ? 'PLANIFIÉE' : 'URGENTE' %></div>
+                                            </div>
+                                            <div class="status-select-arrow">
+                                                <i class="bi bi-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                        <div class="status-select-dropdown">
+                                            <div class="status-select-option" data-value="planned">
+                                                <div class="status-option-icon">
+                                                    <i class="bi bi-calendar-check"></i>
+                                                </div>
+                                                <div class="status-option-text">Planifiée</div>
+                                                <div class="status-option-badge">Normal</div>
+                                            </div>
+                                            <div class="status-select-option" data-value="urgent">
+                                                <div class="status-option-icon">
+                                                    <i class="bi bi-exclamation-triangle"></i>
+                                                </div>
+                                                <div class="status-option-text">Urgente</div>
+                                                <div class="status-option-badge">Priorité</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label required-field">Entrée au Bloc</label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-door-open"></i>
+                                        <input type="datetime-local" class="form-control-modern" id="entreeBloc" name="entreeBloc"
+                                               value="<%= surgery.entreeBloc ? moment(surgery.entreeBloc).format('YYYY-MM-DDTHH:mm') : '' %>" required>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
-                                        <label class="form-check-label" for="applyExtraFees">
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label required-field">Entrée en Salle d'Opération</label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-door-open"></i>
+                                        <input type="datetime-local" class="form-control-modern" id="entreeSalle" name="entreeSalle"
+                                               value="<%= surgery.entreeSalle ? moment(surgery.entreeSalle).format('YYYY-MM-DDTHH:mm') : '' %>" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label required-field">Heure d'Incision</label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-scissors"></i>
+                                        <input type="datetime-local" class="form-control-modern" id="incisionTime" name="incisionTime"
+                                               value="<%= surgery.incisionTime ? moment(surgery.incisionTime).format('YYYY-MM-DDTHH:mm') : '' %>" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Heure de Fermeture d'Incision</label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-scissors"></i>
+                                        <input type="datetime-local" class="form-control-modern" id="closingIncisionTime" name="closingIncisionTime"
+                                               value="<%= surgery.closingIncisionTime ? moment(surgery.closingIncisionTime).format('YYYY-MM-DDTHH:mm') : '' %>">
+                                    </div>
+                                    <div class="form-help-text">
+                                        Optionnel - permet le calcul automatique de la durée
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Sortie de Salle d'Opération</label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-door-closed"></i>
+                                        <input type="datetime-local" class="form-control-modern" id="sortieSalle" name="sortieSalle"
+                                               value="<%= surgery.sortieSalle ? moment(surgery.sortieSalle).format('YYYY-MM-DDTHH:mm') : '' %>">
+                                    </div>
+                                    <div class="form-help-text">
+                                        Optionnel - enregistré après la fin de l'opération
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Frais supplémentaires</label>
+                                    <div class="form-check-modern">
+                                        <input class="form-check-input-modern" type="checkbox" id="applyExtraFees" name="applyExtraFees" <%= surgery.applyExtraFees ? 'checked' : '' %>>
+                                        <label class="form-check-label-modern" for="applyExtraFees">
                                             Appliquer des frais supplémentaires
                                         </label>
                                     </div>
-                                    <div class="form-text">Si activé, des frais additionnels seront appliqués en cas de dépassement</div>
+                                    <div class="form-help-text text-warning">
+                                        Si activé, des frais additionnels seront appliqués en cas de dépassement
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <% } %>
 
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes et Observations</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3"
+                        <!-- ASA Classification Section -->
+                        <div class="form-section">
+                            <h3><i class="bi bi-heart-pulse me-2"></i>Classification ASA (American Society of Anesthesiologists)</h3>
+                            
+                            <div class="alert alert-info" role="alert">
+                                <strong><i class="bi bi-info-circle me-2"></i>À propos de la classification ASA:</strong>
+                                <div class="mt-2">
+                                    <ul class="mb-0 small">
+                                        <li><strong>ASA I:</strong> Patient normal et en bonne santé (aucune maladie organique, physiologique ou psychiatrique)</li>
+                                        <li><strong>ASA II:</strong> Patient avec maladie systémique légère et bien contrôlée (ex: hypertension légère, diabète contrôlé)</li>
+                                        <li><strong>ASA III:</strong> Patient avec maladie systémique grave (impact sur la santé, limite l'activité, ex: angor stable, diabète mal contrôlé)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Classe ASA</label>
+                                    <div class="input-wrapper-modern">
+                                        <i class="input-icon-wrapper bi bi-heart-pulse"></i>
+                                        <select class="form-select-modern" id="asaClass" name="asaClass">
+                                            <option value="" <%= !surgery.asaClass ? 'selected' : '' %>>Non spécifiée</option>
+                                            <option value="I" <%= surgery.asaClass === 'I' ? 'selected' : '' %>>ASA I - Patient en bonne santé</option>
+                                            <option value="II" <%= surgery.asaClass === 'II' ? 'selected' : '' %>>ASA II - Maladie systémique légère</option>
+                                            <option value="III" <%= surgery.asaClass === 'III' ? 'selected' : '' %>>ASA III - Maladie systémique grave</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-help-text">
+                                        Évaluation de l'état de santé physique du patient avant l'intervention
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Urgence ASA</label>
+                                    <div class="form-check-modern">
+                                        <input class="form-check-input-modern" type="checkbox" id="asaUrgent" name="asaUrgent" <%= surgery.asaUrgent ? 'checked' : '' %>>
+                                        <label class="form-check-label-modern" for="asaUrgent">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Marquer comme ASA Urgent (U)
+                                        </label>
+                                    </div>
+                                    <div class="form-help-text text-warning">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Si activé, la classe ASA sera complétée par "U" (ex: ASA III U)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Medical Staff Section -->
+                        <div class="medical-staff-section">
+                            <div class="medical-staff-header">
+                                <h4><i class="bi bi-people-fill me-2"></i>Personnel Médical</h4>
+                                <button type="button" class="add-staff-btn" onclick="addStaffRow()">
+                                    <i class="bi bi-plus-circle me-1"></i>Ajouter
+                                </button>
+                            </div>
+
+                            <datalist id="medicalStaffList">
+                                <% medicalStaff.forEach(ms => { %>
+                                    <option value="<%= ms.firstName %> <%= ms.lastName %>"
+                                            data-id="<%= ms._id %>"
+                                            data-fonctions="<%= ms.fonctions ? ms.fonctions.map(f => f._id).join(',') : '' %>">
+                                <% }); %>
+                            </datalist>
+
+                            <div id="medicalStaffContainer">
+                                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+                                    <% surgery.medicalStaff.forEach((staff, index) => { %>
+                                        <div class="row mb-3 staff-row">
+                                            <div class="col-md-5">
+                                                <div class="input-wrapper-modern">
+                                                    <i class="input-icon-wrapper bi bi-person"></i>
+                                                    <input type="text" class="form-control-modern" name="medicalStaffName" list="medicalStaffList" 
+                                                           placeholder="Rechercher personnel..."
+                                                           value="<%= staff.staff.firstName %> <%= staff.staff.lastName %>"
+                                                           onchange="updateRolesForStaff(this)">
+                                                    <input type="hidden" name="medicalStaff" value="<%= staff.staff._id %>">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <div class="custom-role-select">
+                                                    <select name="rolePlayedId" class="form-select-modern" style="display: none;">
+                                                        <option value="">Sélectionner rôle</option>
+                                                        <% fonctions.forEach(fonction => { %>
+                                                            <option value="<%= fonction._id %>" 
+                                                                    <%= staff.rolePlayedId._id.toString() === fonction._id.toString() ? 'selected' : '' %>>
+                                                                <%= fonction.name %>
+                                                            </option>
+                                                        <% }); %>
+                                                    </select>
+                                                    <div class="role-select-trigger">
+                                                        <div class="role-select-content">
+                                                            <div class="role-select-icon">
+                                                                <i class="bi bi-person-badge"></i>
+                                                            </div>
+                                                            <div class="role-select-text" id="roleText_<%= index %>"><%= staff.rolePlayedId.name %></div>
+                                                        </div>
+                                                        <div class="role-select-arrow">
+                                                            <i class="bi bi-chevron-down"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="role-select-dropdown">
+                                                        <div class="role-select-option" data-value="">
+                                                            <div class="role-option-icon">
+                                                                <i class="bi bi-dash-circle"></i>
+                                                            </div>
+                                                            <div class="role-option-text">Sélectionner rôle</div>
+                                                        </div>
+                                                        <% fonctions.forEach(fonction => { %>
+                                                            <div class="role-select-option" data-value="<%= fonction._id %>">
+                                                                <div class="role-option-icon">
+                                                                    <% 
+                                                                    const roleName = fonction.name.toLowerCase();
+                                                                    let iconClass = 'bi-person-fill';
+                                                                    if (roleName.includes('anesthésie')) iconClass = 'bi-heart-pulse';
+                                                                    else if (roleName.includes('instrumentistes')) iconClass = 'bi-tools';
+                                                                    else if (roleName.includes('hygiene')) iconClass = 'bi-shield-check';
+                                                                    else if (roleName.includes('médecin') || roleName.includes('anesthésiste')) iconClass = 'bi-stethoscope';
+                                                                    else if (roleName.includes('panseuse')) iconClass = 'bi-bandage';
+                                                                    %>
+                                                                    <i class="bi <%= iconClass %>"></i>
+                                                                </div>
+                                                                <div class="role-option-text"><%= fonction.name %></div>
+                                                            </div>
+                                                        <% }); %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStaffRow(this)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% }); %>
+                                <% } else { %>
+                                    <div class="row mb-3 staff-row">
+                                        <div class="col-md-5">
+                                            <div class="input-wrapper-modern">
+                                                <i class="input-icon-wrapper bi bi-person"></i>
+                                                <input type="text" class="form-control-modern" name="medicalStaffName" list="medicalStaffList" 
+                                                       placeholder="Rechercher personnel..." onchange="updateRolesForStaff(this)">
+                                                <input type="hidden" name="medicalStaff" id="medicalStaffId_0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div class="custom-role-select">
+                                                <select name="rolePlayedId" class="form-select-modern" style="display: none;">
+                                                    <option value="">Sélectionner rôle</option>
+                                                    <% fonctions.forEach(fonction => { %>
+                                                        <option value="<%= fonction._id %>"><%= fonction.name %></option>
+                                                    <% }); %>
+                                                </select>
+                                                <div class="role-select-trigger">
+                                                    <div class="role-select-content">
+                                                        <div class="role-select-icon">
+                                                            <i class="bi bi-person-badge"></i>
+                                                        </div>
+                                                        <div class="role-select-text" id="roleText_0">Sélectionner rôle</div>
+                                                    </div>
+                                                    <div class="role-select-arrow">
+                                                        <i class="bi bi-chevron-down"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="role-select-dropdown">
+                                                    <div class="role-select-option" data-value="">
+                                                        <div class="role-option-icon">
+                                                            <i class="bi bi-dash-circle"></i>
+                                                        </div>
+                                                        <div class="role-option-text">Sélectionner rôle</div>
+                                                    </div>
+                                                    <% fonctions.forEach(fonction => { %>
+                                                        <div class="role-select-option" data-value="<%= fonction._id %>">
+                                                            <div class="role-option-icon">
+                                                                <% 
+                                                                const roleName = fonction.name.toLowerCase();
+                                                                let iconClass = 'bi-person-fill';
+                                                                if (roleName.includes('anesthésie')) iconClass = 'bi-heart-pulse';
+                                                                else if (roleName.includes('instrumentistes')) iconClass = 'bi-tools';
+                                                                else if (roleName.includes('hygiene')) iconClass = 'bi-shield-check';
+                                                                else if (roleName.includes('médecin') || roleName.includes('anesthésiste')) iconClass = 'bi-stethoscope';
+                                                                else if (roleName.includes('panseusa')) iconClass = 'bi-bandage';
+                                                                %>
+                                                                <i class="bi <%= iconClass %>"></i>
+                                                            </div>
+                                                            <div class="role-option-text"><%= fonction.name %></div>
+                                                        </div>
+                                                    <% }); %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStaffRow(this)" disabled>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Materials Section -->
+                        <div class="form-section">
+                            <h3><i class="bi bi-box-seam me-2"></i>Matériaux et Consommables</h3>
+
+                            <datalist id="consumableMaterialsList">
+                                <% materials.filter(mat => mat.category === 'consumable').forEach(mat => { %>
+                                    <option value="<%= mat._id %>"
+                                            data-id="<%= mat._id %>"
+                                            data-designation="<%= mat.designation %>"
+                                            data-category="<%= mat.category %>"
+                                            data-price="<%= mat.priceHT %>"
+                                            data-unit="<%= mat.unitOfMeasure %>">
+                                        <%= mat.designation %>
+                                    </option>
+                                <% }); %>
+                            </datalist>
+
+                            <datalist id="patientMaterialsList">
+                                <% materials.filter(mat => mat.category === 'patient').forEach(mat => { %>
+                                    <option value="<%= mat._id %>"
+                                            data-id="<%= mat._id %>"
+                                            data-designation="<%= mat.designation %>"
+                                            data-category="<%= mat.category %>"
+                                            data-price="<%= mat.priceHT %>"
+                                            data-unit="<%= mat.unitOfMeasure %>">
+                                        <%= mat.designation %>
+                                    </option>
+                                <% }); %>
+                            </datalist>
+
+                            <!-- Consumable Materials -->
+                            <div class="mb-4">
+                                <h6 class="text-primary mb-3"><i class="bi bi-tools me-2"></i>Matériaux Consommables</h6>
+                                <div id="consumableMaterialsContainer">
+                                    <% if (surgery.consumedMaterials && surgery.consumedMaterials.filter(m => m.material && m.material.category === 'consumable').length > 0) { %>
+                                        <% surgery.consumedMaterials.filter(m => m.material && m.material.category === 'consumable').forEach((consumed, index) => { %>
+                                            <div class="row mb-3 consumable-material-row">
+                                                <div class="col-md-6">
+                                                    <div class="input-wrapper-modern">
+                                                        <i class="input-icon-wrapper bi bi-tools"></i>
+                                                        <input type="text" class="form-control-modern" name="consumableMaterialName" list="consumableMaterialsList" 
+                                                               placeholder="Rechercher matériau consommable..."
+                                                               value="<%= consumed.material.designation %>">
+                                                        <input type="hidden" name="consumableMaterialId" value="<%= consumed.material._id %>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="number" name="consumableMaterialQuantity" class="form-control"
+                                                           min="1" step="0.01" placeholder="Quantité" value="<%= consumed.quantity %>">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <div class="row mb-3 consumable-material-row">
+                                            <div class="col-md-6">
+                                                <div class="input-wrapper-modern">
+                                                    <i class="input-icon-wrapper bi bi-tools"></i>
+                                                    <input type="text" class="form-control-modern" name="consumableMaterialName" list="consumableMaterialsList" 
+                                                           placeholder="Rechercher matériau consommable...">
+                                                    <input type="hidden" name="consumableMaterialId" id="consumableMaterialId_0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" name="consumableMaterialQuantity" class="form-control"
+                                                       min="1" step="0.01" placeholder="Quantité">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeConsumableMaterialRow(this)" disabled>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addConsumableMaterialRow()">
+                                    <i class="bi bi-plus-circle me-2"></i>Ajouter matériau consommable
+                                </button>
+                            </div>
+
+                            <!-- Patient Materials -->
+                            <div>
+                                <h6 class="text-info mb-3"><i class="bi bi-person me-2"></i>Matériaux Patient</h6>
+                                <div id="patientMaterialsContainer">
+                                    <% if (surgery.consumedMaterials && surgery.consumedMaterials.filter(m => m.material && m.material.category === 'patient').length > 0) { %>
+                                        <% surgery.consumedMaterials.filter(m => m.material && m.material.category === 'patient').forEach((consumed, index) => { %>
+                                            <div class="row mb-3 patient-material-row">
+                                                <div class="col-md-5">
+                                                    <div class="input-wrapper-modern">
+                                                        <i class="input-icon-wrapper bi bi-person"></i>
+                                                        <input type="text" class="form-control-modern" name="patientMaterialName" list="patientMaterialsList" 
+                                                               placeholder="Rechercher matériau patient..."
+                                                               value="<%= consumed.material.designation %>">
+                                                        <input type="hidden" name="patientMaterialId" value="<%= consumed.material._id %>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <input type="number" name="patientMaterialQuantity" class="form-control"
+                                                           min="1" step="0.01" placeholder="Qté" value="<%= consumed.quantity %>">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <input type="text" name="patientMaterialReference" class="form-control"
+                                                           placeholder="Référence/N° série" value="<%= consumed.patientReference || '' %>" title="Référence ou numéro de série du matériau">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePatientMaterialRow(this)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <div class="row mb-3 patient-material-row">
+                                            <div class="col-md-5">
+                                                <div class="input-wrapper-modern">
+                                                    <i class="input-icon-wrapper bi bi-person"></i>
+                                                    <input type="text" class="form-control-modern" name="patientMaterialName" list="patientMaterialsList" 
+                                                           placeholder="Rechercher matériau patient...">
+                                                    <input type="hidden" name="patientMaterialId" id="patientMaterialId_0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <input type="number" name="patientMaterialQuantity" class="form-control"
+                                                       min="1" step="0.01" placeholder="Qté">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <input type="text" name="patientMaterialReference" class="form-control"
+                                                       placeholder="Référence/N° série" title="Référence ou numéro de série du matériau">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePatientMaterialRow(this)" disabled>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                </div>
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="addPatientMaterialRow()">
+                                    <i class="bi bi-plus-circle me-2"></i>Ajouter matériau patient
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="form-section">
+                            <h3><i class="bi bi-sticky me-2"></i>Notes et Observations</h3>
+                            <textarea class="form-control-modern" id="notes" name="notes" rows="4"
                                       placeholder="Ajouter des notes spécifiques à cette chirurgie..."><%= surgery.notes || '' %></textarea>
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            <a href="/surgeries/<%= surgery._id %>" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i>Annuler
-                            </a>
-                            <button type="submit" class="btn btn-warning">
-                                <i class="bi bi-save"></i>Sauvegarder
-                            </button>
+                        <!-- Form Actions -->
+                        <div class="form-actions-section">
+                            <div class="form-actions-content">
+                                <div class="action-buttons-group">
+                                    <a href="/surgeries/<%= surgery._id %>" class="action-btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>Annuler
+                                    </a>
+                                    <% if (surgery.statusLifecycle === 'closed' && !permissions.canEditClosedSurgeries) { %>
+                                        <button type="button" class="action-btn btn-outline-secondary" disabled>
+                                            <i class="bi bi-lock-fill me-2"></i>Chirurgie Clôturée - Modification Impossible
+                                        </button>
+                                        <a href="/surgeries/<%= surgery._id %>" class="action-btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-left me-2"></i>Retour
+                                        </a>
+                                    <% } else { %>
+                                        <button type="submit" class="action-btn btn-success">
+                                            <i class="bi bi-save me-2"></i>Sauvegarder
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -146,6 +587,419 @@
 </div>
 
 <script>
+
+// Store functions options for dynamic role selection
+window.fonctionsOptions = [
+  <% fonctions.forEach((fonction, idx) => { %>
+    { id: '<%= fonction._id %>', name: '<%= fonction.name %>' }<% if (idx < fonctions.length - 1) { %>,<% } %>
+  <% }); %>
+];
+
+// ===== FUNCTION DEFINITIONS (must be before DOMContentLoaded) =====
+
+// Helper function to initialize role select dropdown
+function initializeRoleSelect(customSelect, index) {
+    const selectTrigger = customSelect.querySelector('.role-select-trigger');
+    const selectDropdown = customSelect.querySelector('.role-select-dropdown');
+    const selectOptions = customSelect.querySelectorAll('.role-select-option');
+    const hiddenSelect = customSelect.querySelector('select');
+    const roleText = customSelect.querySelector(`#roleText_${index}`);
+
+    let isOpen = false;
+
+    if (!selectTrigger) return;
+
+    selectTrigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        if (isOpen) {
+            selectDropdown.classList.add('open');
+            selectTrigger.classList.add('active');
+        } else {
+            selectDropdown.classList.remove('open');
+            selectTrigger.classList.remove('active');
+        }
+    });
+
+    selectOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const text = this.querySelector('.role-option-text').textContent;
+
+            hiddenSelect.value = value;
+            if (roleText) roleText.textContent = text || 'Sélectionner rôle';
+
+            selectOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+
+            isOpen = false;
+            selectDropdown.classList.remove('open');
+            selectTrigger.classList.remove('active');
+
+            hiddenSelect.dispatchEvent(new Event('change'));
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!customSelect.contains(e.target)) {
+            isOpen = false;
+            selectDropdown.classList.remove('open');
+            selectTrigger.classList.remove('active');
+        }
+    });
+}
+
+// Update roles for staff (based on their available functions)
+function updateRolesForStaff(input) {
+    const row = input.closest('.staff-row');
+    if (!row) return;
+    
+    const hiddenInput = row.querySelector('input[type="hidden"][name="medicalStaff"]');
+    const roleSelect = row.querySelector('select[name="rolePlayedId"]');
+    const roleDropdown = row.querySelector('.role-select-dropdown');
+    const roleText = row.querySelector('.role-select-text');
+    
+    // First, update the hidden staff ID from datalist
+    const datalist = document.getElementById('medicalStaffList');
+    let allowedFunctions = [];
+    
+    if (datalist) {
+        const options = datalist.querySelectorAll('option');
+        options.forEach(option => {
+            if (option.value === input.value) {
+                if (hiddenInput) {
+                    hiddenInput.value = option.getAttribute('data-id');
+                }
+                // Get the staff's fonctions
+                const fonctionsAttr = option.getAttribute('data-fonctions');
+                if (fonctionsAttr) {
+                    allowedFunctions = fonctionsAttr.split(',').filter(f => f.trim());
+                }
+            }
+        });
+    }
+    
+    if (!roleSelect) return;
+    
+    // Clear current options except the placeholder
+    roleSelect.innerHTML = '<option value="">Sélectionner rôle</option>';
+    
+    const staffName = input.value.trim();
+    
+    if (!staffName) {
+        roleSelect.disabled = true;
+        if (roleText) roleText.textContent = 'Sélectionner rôle';
+        updateRoleDropdownOptionsEdit(roleDropdown, [], window.fonctionsOptions || []);
+        return;
+    }
+    
+    if (allowedFunctions.length === 0) {
+        roleSelect.disabled = true;
+        roleSelect.innerHTML = '<option value="">Ce personnel n\'a pas de fonction</option>';
+        if (roleText) roleText.textContent = 'Aucune fonction disponible';
+        updateRoleDropdownOptionsEdit(roleDropdown, [], window.fonctionsOptions || []);
+        return;
+    }
+    
+    roleSelect.disabled = false;
+    
+    // Get all available functions
+    const allFonctions = window.fonctionsOptions || [];
+    
+    // Add only the functions this staff member has
+    allFonctions.forEach(fonction => {
+        if (allowedFunctions.includes(fonction.id)) {
+            const option = document.createElement('option');
+            option.value = fonction.id;
+            option.textContent = fonction.name;
+            roleSelect.appendChild(option);
+        }
+    });
+    
+    // Update the custom dropdown to show only allowed functions
+    updateRoleDropdownOptionsEdit(roleDropdown, allowedFunctions, allFonctions);
+    
+    // Reset role text
+    if (roleText) roleText.textContent = 'Sélectionner rôle';
+}
+
+// Update the custom role dropdown options based on allowed functions
+function updateRoleDropdownOptionsEdit(dropdown, allowedFunctions, allFonctions) {
+    if (!dropdown) return;
+    
+    // Get all role options except the placeholder
+    const options = dropdown.querySelectorAll('.role-select-option');
+    
+    options.forEach(option => {
+        const value = option.getAttribute('data-value');
+        if (!value) {
+            // Keep placeholder visible
+            option.style.display = '';
+            return;
+        }
+        
+        // Show/hide based on whether this function is in the allowed list
+        if (allowedFunctions.length === 0 || allowedFunctions.includes(value)) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    });
+}
+
+// Add staff row
+function addStaffRow() {
+    const container = document.getElementById('medicalStaffContainer');
+    const rowCount = container.querySelectorAll('.staff-row').length;
+    
+    // Build fonction options HTML from fonctionsOptions
+    const fonctionOptionsHtml = (window.fonctionsOptions || []).map(fonction => {
+        return `<option value="${fonction.id}">${fonction.name}</option>`;
+    }).join('');
+    
+    const fonctionDropdownHtml = (window.fonctionsOptions || []).map(fonction => {
+        const roleName = fonction.name.toLowerCase();
+        let iconClass = 'bi-person-fill';
+        if (roleName.includes('anesthésie')) iconClass = 'bi-heart-pulse';
+        else if (roleName.includes('instrumentistes')) iconClass = 'bi-tools';
+        else if (roleName.includes('hygiene')) iconClass = 'bi-shield-check';
+        else if (roleName.includes('médecin') || roleName.includes('anesthésiste')) iconClass = 'bi-stethoscope';
+        else if (roleName.includes('panseuse')) iconClass = 'bi-bandage';
+        
+        return `
+            <div class="role-select-option" data-value="${fonction.id}">
+                <div class="role-option-icon">
+                    <i class="bi ${iconClass}"></i>
+                </div>
+                <div class="role-option-text">${fonction.name}</div>
+            </div>
+        `;
+    }).join('');
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 staff-row';
+    newRow.innerHTML = `
+        <div class="col-md-5">
+            <div class="input-wrapper-modern">
+                <i class="input-icon-wrapper bi bi-person"></i>
+                <input type="text" class="form-control-modern" name="medicalStaffName" list="medicalStaffList" 
+                       placeholder="Rechercher personnel..." onchange="updateRolesForStaff(this)">
+                <input type="hidden" name="medicalStaff" id="medicalStaffId_${rowCount}">
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="custom-role-select">
+                <select name="rolePlayedId" class="form-select-modern" style="display: none;" disabled>
+                    <option value="">Sélectionner rôle</option>
+                    ${fonctionOptionsHtml}
+                </select>
+                <div class="role-select-trigger">
+                    <div class="role-select-content">
+                        <div class="role-select-icon">
+                            <i class="bi bi-person-badge"></i>
+                        </div>
+                        <div class="role-select-text" id="roleText_${rowCount}">Sélectionner rôle</div>
+                    </div>
+                    <div class="role-select-arrow">
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="role-select-dropdown">
+                    <div class="role-select-option" data-value="">
+                        <div class="role-option-icon">
+                            <i class="bi bi-dash-circle"></i>
+                        </div>
+                        <div class="role-option-text">Sélectionner rôle</div>
+                    </div>
+                    ${fonctionDropdownHtml}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStaffRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newRow);
+    
+    // Initialize role select for new row
+    const customSelect = newRow.querySelector('.custom-role-select');
+    if (customSelect) {
+        initializeRoleSelect(customSelect, rowCount);
+    }
+
+    // Setup datalist handler - call updateRolesForStaff to filter roles
+    const input = newRow.querySelector('input[name="medicalStaffName"]');
+    if (input) {
+        input.addEventListener('change', function() {
+            updateRolesForStaff(this);
+        });
+    }
+
+    updateDeleteButtonStates();
+}
+
+// Remove staff row
+function removeStaffRow(btn) {
+    btn.closest('.staff-row').remove();
+    updateDeleteButtonStates();
+}
+
+// Add consumable material row
+function addConsumableMaterialRow() {
+    const container = document.getElementById('consumableMaterialsContainer');
+    const rowCount = container.querySelectorAll('.consumable-material-row').length;
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 consumable-material-row';
+    newRow.innerHTML = `
+        <div class="col-md-6">
+            <div class="input-wrapper-modern">
+                <i class="input-icon-wrapper bi bi-tools"></i>
+                <input type="text" class="form-control-modern" name="consumableMaterialName" list="consumableMaterialsList" 
+                       placeholder="Rechercher matériau consommable...">
+                <input type="hidden" name="consumableMaterialId" id="consumableMaterialId_${rowCount}">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <input type="number" name="consumableMaterialQuantity" class="form-control"
+                   min="1" step="0.01" placeholder="Quantité">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeConsumableMaterialRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newRow);
+
+    // Setup datalist handler
+    const input = newRow.querySelector('input[name="consumableMaterialName"]');
+    if (input) {
+        input.addEventListener('change', function() {
+            const datalist = document.getElementById('consumableMaterialsList');
+            if (datalist) {
+                const options = datalist.querySelectorAll('option');
+                options.forEach(option => {
+                    if (option.value === this.value) {
+                        const materialId = this.parentElement.querySelector('input[name="consumableMaterialId"]');
+                        if (materialId) {
+                            materialId.value = option.getAttribute('data-id');
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    updateDeleteButtonStates();
+}
+
+// Remove consumable material row
+function removeConsumableMaterialRow(btn) {
+    btn.closest('.consumable-material-row').remove();
+    updateDeleteButtonStates();
+}
+
+// Add patient material row
+function addPatientMaterialRow() {
+    const container = document.getElementById('patientMaterialsContainer');
+    const rowCount = container.querySelectorAll('.patient-material-row').length;
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-3 patient-material-row';
+    newRow.innerHTML = `
+        <div class="col-md-5">
+            <div class="input-wrapper-modern">
+                <i class="input-icon-wrapper bi bi-person"></i>
+                <input type="text" class="form-control-modern" name="patientMaterialName" list="patientMaterialsList" 
+                       placeholder="Rechercher matériau patient...">
+                <input type="hidden" name="patientMaterialId" id="patientMaterialId_${rowCount}">
+            </div>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="patientMaterialQuantity" class="form-control"
+                   min="1" step="0.01" placeholder="Qté">
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="patientMaterialReference" class="form-control"
+                   placeholder="Référence/N° série" title="Référence ou numéro de série du matériau">
+        </div>
+        <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePatientMaterialRow(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newRow);
+
+    // Setup datalist handler
+    const input = newRow.querySelector('input[name="patientMaterialName"]');
+    if (input) {
+        input.addEventListener('change', function() {
+            const datalist = document.getElementById('patientMaterialsList');
+            if (datalist) {
+                const options = datalist.querySelectorAll('option');
+                options.forEach(option => {
+                    if (option.value === this.value) {
+                        const materialId = this.parentElement.querySelector('input[name="patientMaterialId"]');
+                        if (materialId) {
+                            materialId.value = option.getAttribute('data-id');
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    updateDeleteButtonStates();
+}
+
+// Remove patient material row
+function removePatientMaterialRow(btn) {
+    btn.closest('.patient-material-row').remove();
+    updateDeleteButtonStates();
+}
+
+// Update delete button states (disable first row if only one row)
+function updateDeleteButtonStates() {
+    // Staff rows
+    const staffContainer = document.getElementById('medicalStaffContainer');
+    const staffRows = staffContainer.querySelectorAll('.staff-row');
+    staffRows.forEach((row, idx) => {
+        const deleteBtn = row.querySelector('button[onclick*="removeStaffRow"]');
+        if (deleteBtn) {
+            deleteBtn.disabled = staffRows.length === 1;
+        }
+    });
+
+    // Consumable material rows
+    const consumableContainer = document.getElementById('consumableMaterialsContainer');
+    const consumableRows = consumableContainer.querySelectorAll('.consumable-material-row');
+    consumableRows.forEach((row, idx) => {
+        const deleteBtn = row.querySelector('button[onclick*="removeConsumableMaterialRow"]');
+        if (deleteBtn) {
+            deleteBtn.disabled = consumableRows.length === 1;
+        }
+    });
+
+    // Patient material rows
+    const patientContainer = document.getElementById('patientMaterialsContainer');
+    const patientRows = patientContainer.querySelectorAll('.patient-material-row');
+    patientRows.forEach((row, idx) => {
+        const deleteBtn = row.querySelector('button[onclick*="removePatientMaterialRow"]');
+        if (deleteBtn) {
+            deleteBtn.disabled = patientRows.length === 1;
+        }
+    });
+}
+
+// ===== INITIALIZATION (inside DOMContentLoaded) =====
+
 // Update base price when prestation changes
 document.addEventListener('DOMContentLoaded', function() {
     const prestationSelect = document.getElementById('prestation');
@@ -170,5 +1024,178 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Status select styling handler
+    const statusSelect = document.getElementById('status');
+    const statusWrapper = statusSelect.closest('.status-select-wrapper');
+
+    if (statusSelect && statusWrapper) {
+        function updateStatusStyling() {
+            // Remove existing status classes
+            statusWrapper.classList.remove('status-planned', 'status-urgent');
+            // Add current status class
+            if (statusSelect.value) {
+                statusWrapper.classList.add('status-' + statusSelect.value);
+            }
+        }
+
+        // Handle focus/blur for wrapper styling
+        statusSelect.addEventListener('focus', function() {
+            statusWrapper.classList.add('focused');
+        });
+
+        statusSelect.addEventListener('blur', function() {
+            statusWrapper.classList.remove('focused');
+        });
+
+        // Initial styling
+        updateStatusStyling();
+
+        // Update styling on change
+        statusSelect.addEventListener('change', updateStatusStyling);
+    }
+
+    // Custom Status Select Functionality
+    const customSelect = document.querySelector('.custom-status-select');
+    if (customSelect) {
+        const selectTrigger = customSelect.querySelector('.status-select-trigger');
+        const selectDropdown = customSelect.querySelector('.status-select-dropdown');
+        const selectOptions = customSelect.querySelectorAll('.status-select-option');
+        const hiddenSelect = customSelect.querySelector('select');
+        const statusText = customSelect.querySelector('#statusText');
+
+        let isOpen = false;
+
+        // Toggle dropdown
+        selectTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            isOpen = !isOpen;
+            toggleDropdown();
+        });
+
+        // Handle option selection
+        selectOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                const text = this.querySelector('.status-option-text').textContent.toUpperCase();
+
+                // Update hidden select
+                hiddenSelect.value = value;
+
+                // Update trigger appearance
+                selectTrigger.classList.remove('status-planned', 'status-urgent');
+                selectTrigger.classList.add('status-' + value);
+                statusText.textContent = text;
+
+                // Update selected state
+                selectOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // Close dropdown
+                isOpen = false;
+                toggleDropdown();
+
+                // Trigger change event for form validation
+                hiddenSelect.dispatchEvent(new Event('change'));
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!customSelect.contains(e.target)) {
+                isOpen = false;
+                toggleDropdown();
+            }
+        });
+
+        // Toggle dropdown function
+        function toggleDropdown() {
+            if (isOpen) {
+                selectDropdown.classList.add('open');
+                selectTrigger.classList.add('active');
+            } else {
+                selectDropdown.classList.remove('open');
+                selectTrigger.classList.remove('active');
+            }
+        }
+
+        // Initialize with current selection
+        const currentValue = hiddenSelect.value;
+        const currentOption = customSelect.querySelector(`[data-value="${currentValue}"]`);
+        if (currentOption) {
+            currentOption.click();
+        }
+    }
+
+    // Disable all form fields if surgery is closed and user is not admin
+    <% if (surgery.statusLifecycle === 'closed' && !permissions.canEditClosedSurgeries) { %>
+        const form = document.getElementById('surgeryForm');
+        if (form) {
+            const inputs = form.querySelectorAll('input, select, textarea, button[type="submit"]');
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.classList.add('disabled');
+            });
+        }
+    <% } %>
+
+    // Initialize role selects for existing staff
+    document.querySelectorAll('.custom-role-select').forEach((customSelect, idx) => {
+        initializeRoleSelect(customSelect, idx);
+    });
+
+    // Setup datalist handlers for medical staff input
+    document.querySelectorAll('input[name="medicalStaffName"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const datalist = document.getElementById('medicalStaffList');
+            if (datalist) {
+                const options = datalist.querySelectorAll('option');
+                options.forEach(option => {
+                    if (option.value === this.value) {
+                        const staffId = this.parentElement.querySelector('input[name="medicalStaff"]');
+                        if (staffId) {
+                            staffId.value = option.getAttribute('data-id');
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    // Setup datalist handlers for consumable materials
+    document.querySelectorAll('input[name="consumableMaterialName"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const datalist = document.getElementById('consumableMaterialsList');
+            if (datalist) {
+                const options = datalist.querySelectorAll('option');
+                options.forEach(option => {
+                    if (option.value === this.value) {
+                        const materialId = this.parentElement.querySelector('input[name="consumableMaterialId"]');
+                        if (materialId) {
+                            materialId.value = option.getAttribute('data-id');
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    // Setup datalist handlers for patient materials
+    document.querySelectorAll('input[name="patientMaterialName"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const datalist = document.getElementById('patientMaterialsList');
+            if (datalist) {
+                const options = datalist.querySelectorAll('option');
+                options.forEach(option => {
+                    if (option.value === this.value) {
+                        const materialId = this.parentElement.querySelector('input[name="patientMaterialId"]');
+                        if (materialId) {
+                            materialId.value = option.getAttribute('data-id');
+                        }
+                    }
+                });
+            }
+        });
+    });
 });
 </script>

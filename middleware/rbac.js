@@ -43,7 +43,15 @@ const ensureBuyer = requireAny('buyer');
 // Combined role checks for common use cases
 const ensureAdminOrDirection = requireAny('admin', 'direction');
 const ensureManagementAccess = requireAny('admin', 'direction'); // Only admin/direction can manage (headDepart excluded)
-const ensureMaterialsAccess = requireAny('admin', 'buyer', 'headDepart'); // Can manage materials (admin, buyer, headDepart)
+const ensureHeadDepartManagement = requireAny('admin', 'direction', 'headDepart'); // Can manage (admin, direction, headDepart)
+// Materials access: view only (admin, buyer, headDepart, direction)
+const ensureMaterialsAccess = requireAny('admin', 'buyer', 'headDepart', 'direction');
+// Management: full CRUD (create/read/update/delete) - admin, buyer, direction
+const ensureMaterialsManagement = requireAny('admin', 'buyer', 'direction');
+// Create/import: allow admin, buyer, and direction
+const ensureMaterialsCreateImport = requireAny('admin', 'buyer', 'direction');
+// Edit: allow admin, buyer, and direction to edit materials
+const ensureMaterialsEdit = requireAny('admin', 'buyer', 'direction');
 const ensureViewPatients = requireAny('admin', 'direction', 'headDepart', 'assistante'); // Can view patients
 const ensureViewSurgeries = requireAny('admin', 'direction', 'headDepart', 'assistante'); // Can view surgeries
 const ensureViewMaterials = requireAny('admin', 'direction', 'headDepart', 'buyer'); // Can view materials
@@ -103,7 +111,11 @@ module.exports = {
   ensureBuyer,
   ensureAdminOrDirection,
   ensureManagementAccess,
+  ensureHeadDepartManagement,
   ensureMaterialsAccess,
+  ensureMaterialsManagement,
+  ensureMaterialsCreateImport,
+  ensureMaterialsEdit,
   ensureViewPatients,
   ensureViewSurgeries,
   ensureViewMaterials,

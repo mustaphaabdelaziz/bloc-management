@@ -1,0 +1,270 @@
+<% layout('layouts/boilerplate') %>
+<!-- views/families/index.ejs -->
+<div class="material-page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="page-title mb-0">Gestion des Familles</h1>
+                <p class="page-subtitle">Groupes de prestations au sein des spécialités</p>
+            </div>
+            <% if (permissions.canManageData) { %>
+            <div class="d-flex gap-2">
+                <a href="/families/new" class="action-button">
+                    <i class="bi bi-plus-circle"></i>Nouvelle Famille
+                </a>
+                <div class="dropdown">
+                    <button class="action-button dropdown-toggle" type="button" id="excelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>Import Excel
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="excelDropdown">
+                        <li><a class="dropdown-item" href="/families/template" target="_blank">
+                            <i class="bi bi-download me-2"></i>Télécharger Modèle
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showImportModal()">
+                            <i class="bi bi-upload me-2"></i>Importer Fichier
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Filtres -->
+    <div class="material-filters">
+        <h5 class="filter-title">
+            <i class="bi bi-funnel"></i>Filtres et Recherche
+        </h5>
+        <form method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Recherche</label>
+                <input type="text" name="search" class="form-control" placeholder="Nom ou description de la famille..." value="<%= search || '' %>">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Spécialité</label>
+                <select name="specialty" class="form-select">
+                    <option value="">Toutes les spécialités</option>
+                    <% specialties.forEach(specialty => { %>
+                        <option value="<%= specialty._id %>" <%= specialtyFilter === specialty._id.toString() ? 'selected' : '' %>>
+                            <%= specialty.name %>
+                        </option>
+                    <% }); %>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a href="/families" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des familles -->
+    <div class="material-card">
+        <div class="card-header">
+            <h5 class="card-title">
+                <i class="bi bi-list-ul"></i>Liste des Familles
+                <span class="badge bg-light text-primary ms-2"><%= families.length %></span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <% if (families && families.length > 0) { %>
+                <div class="material-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Famille</th>
+                                <th>Spécialité</th>
+                                <th>Description</th>
+                                <th>Créé par</th>
+                                <th>Modifié par</th>
+                                <% if (permissions.canManageData) { %>
+                                <th>Actions</th>
+                                <% } %>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% families.forEach(family => { %>
+                                <tr>
+                                    <td>
+                                        <div class="material-name">
+                                            <div class="material-avatar">
+                                                <i class="bi bi-collection"></i>
+                                            </div>
+                                            <div class="material-details">
+                                                <h6><%= family.name %></h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info"><%= family.specialty.name %></span>
+                                    </td>
+                                    <td>
+                                        <% if (family.description) { %>
+                                            <%= family.description.length > 60 ? family.description.substring(0, 60) + '...' : family.description %>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (family.createdBy) { %>
+                                                <%= family.createdBy.firstname %> <%= family.createdBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(family.createdAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (family.updatedBy) { %>
+                                                <%= family.updatedBy.firstname %> <%= family.updatedBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(family.updatedAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <% if (permissions.canManageData) { %>
+                                    <td>
+                                        <div class="material-actions">
+                                            <a href="/families/<%= family._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFamily('<%= family._id %>')" title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <% } %>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="material-empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-collection"></i>
+                    </div>
+                    <h5 class="empty-title">Aucune famille trouvée</h5>
+                    <p class="empty-description">Commencez par ajouter des familles pour grouper vos prestations</p>
+                    <% if (permissions.canManageData) { %>
+                    <a href="/families/new" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>Ajouter la première famille
+                    </a>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteFamily(id) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette famille ?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/families/' + id + '?_method=DELETE';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function showImportModal() {
+    const modal = new bootstrap.Modal(document.getElementById('importExcelModal'));
+    modal.show();
+}
+</script>
+
+<!-- Modal pour importer des familles -->
+<div class="modal fade material-modal" id="importExcelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i>Importer Familles depuis Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" method="POST" action="/families/import" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <!-- Download Template Button -->
+                    <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                        <div>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Besoin d'un modèle ?</strong> Téléchargez le fichier Excel pré-formaté avec des exemples.
+                        </div>
+                        <div>
+                            <a href="/families/template" class="btn btn-sm btn-outline-primary" download>
+                                <i class="bi bi-download me-1"></i>Télécharger Modèle
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="excelFileInput" class="form-label required-field">Fichier Excel</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="excelFileInput" name="excelFile" accept=".xlsx,.xls" required>
+                            <span class="input-group-text">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                            </span>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">
+                            Formats acceptés: .xlsx, .xls | Taille maximale: 5 MB
+                        </small>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Format du fichier Excel:</strong>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Colonnes requises:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Nom</strong> - Nom de la famille</li>
+                                    <li><strong>Spécialité</strong> - Nom exact de la spécialité</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Colonnes optionnelles:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li>Description - Brève description</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border" role="alert">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            <strong>Important:</strong> Les noms de spécialités doivent correspondre exactement aux spécialités existantes dans le système.
+                            Le nom de famille doit être unique au sein de chaque spécialité.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-success" id="importBtn">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

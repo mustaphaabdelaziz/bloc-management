@@ -8,9 +8,25 @@
                 <p class="page-subtitle">Configuration et gestion des rôles du personnel médical</p>
             </div>
             <% if (permissions.canManageData) { %>
-            <a href="/fonctions/new" class="action-button">
-                <i class="bi bi-plus-circle"></i>Nouvelle Fonction
-            </a>
+            <div class="d-flex gap-2">
+                <a href="/fonctions/new" class="action-button">
+                    <i class="bi bi-plus-circle"></i>Nouvelle Fonction
+                </a>
+                <div class="dropdown">
+                    <button class="action-button dropdown-toggle" type="button" id="excelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>Import Excel
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="excelDropdown">
+                        <li><a class="dropdown-item" href="/fonctions/template" target="_blank">
+                            <i class="bi bi-download me-2"></i>Télécharger Modèle
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showImportModal()">
+                            <i class="bi bi-upload me-2"></i>Importer Fichier
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
             <% } %>
         </div>
     </div>
@@ -57,7 +73,8 @@
                             <tr>
                                 <th>Fonction</th>
                                 <th>Description</th>
-                                <th>Créé le</th>
+                                <th>Créé par</th>
+                                <th>Modifié par</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -82,7 +99,28 @@
                                             <span class="text-muted">Aucune description</span>
                                         <% } %>
                                     </td>
-                                    <td><%= typeof moment !== 'undefined' ? moment(fonction.createdAt).format('DD/MM/YYYY') : fonction.createdAt.toLocaleDateString() %></td>
+                                    <td>
+                                        <small>
+                                            <% if (fonction.createdBy) { %>
+                                                <%= fonction.createdBy.firstname %> <%= fonction.createdBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(fonction.createdAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (fonction.updatedBy) { %>
+                                                <%= fonction.updatedBy.firstname %> <%= fonction.updatedBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(fonction.updatedAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
                                     <td>
                                         <% if (permissions.canManageData) { %>
                                         <div class="material-actions">
@@ -128,5 +166,92 @@ function deleteFonction(id) {
         form.submit();
     }
 }
+
+function showImportModal() {
+    const modal = new bootstrap.Modal(document.getElementById('importExcelModal'));
+    modal.show();
+}
 </script>
-</script>
+
+<!-- Modal pour importer des fonctions -->
+<div class="modal fade material-modal" id="importExcelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i>Importer Fonctions depuis Excel
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="importForm" method="POST" action="/fonctions/import" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                        <div>
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Besoin d'un modèle ?</strong> Téléchargez le fichier Excel pré-formaté avec des exemples.
+                        </div>
+                        <div>
+                            <button type="button" id="downloadTemplate" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="bi bi-download me-1"></i>Télécharger (Navigateur)
+                            </button>
+                            <a href="/fonctions/template" class="btn btn-sm btn-outline-secondary" download>
+                                <i class="bi bi-cloud-download me-1"></i>Télécharger (Serveur)
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="excelFileInput" class="form-label required-field">Fichier Excel</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="excelFileInput" name="excelFile" accept=".xlsx,.xls" required>
+                            <span class="input-group-text">
+                                <i class="bi bi-file-earmark-spreadsheet"></i>
+                            </span>
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">
+                            Formats acceptés: .xlsx, .xls | Taille maximale: 5 MB
+                        </small>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert">
+                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Format du fichier Excel:</strong>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Colonnes requises:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Code</strong> - Code unique de la fonction</li>
+                                    <li><strong>Nom</strong> - Nom complet de la fonction</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Colonnes optionnelles:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li>Description - Brève description (jusqu'à 500 caractères)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border" role="alert">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            <strong>Important:</strong> Le code et le nom doivent être uniques dans le système.
+                            Chaque ligne vide sera ignorée.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Annuler
+                    </button>
+                    <button type="submit" class="btn btn-success" id="importBtn">
+                        <i class="bi bi-upload me-1"></i>Importer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="/js/fonction.js"></script>

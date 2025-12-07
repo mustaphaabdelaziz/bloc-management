@@ -21,11 +21,29 @@
             <i class="bi bi-funnel"></i>Filtres et Recherche
         </h5>
         <form method="GET" class="row g-3">
-            <div class="col-md-8">
+            <div class="col-md-4">
                 <label class="form-label">Recherche</label>
                 <input type="text" name="search" class="form-control" placeholder="Code, patient, chirurgien..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label class="form-label">Classification ASA</label>
+                <select name="asaClass" class="form-select">
+                    <option value="">Toutes les classes</option>
+                    <option value="I" <%= typeof asaFilter !== 'undefined' && asaFilter === 'I' ? 'selected' : '' %>>ASA I</option>
+                    <option value="II" <%= typeof asaFilter !== 'undefined' && asaFilter === 'II' ? 'selected' : '' %>>ASA II</option>
+                    <option value="III" <%= typeof asaFilter !== 'undefined' && asaFilter === 'III' ? 'selected' : '' %>>ASA III</option>
+                    <option value="none" <%= typeof asaFilter !== 'undefined' && asaFilter === 'none' ? 'selected' : '' %>>Non spécifiée</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Statut</label>
+                <select name="status" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="planned" <%= typeof statusFilter !== 'undefined' && statusFilter === 'planned' ? 'selected' : '' %>>Planifiée</option>
+                    <option value="urgent" <%= typeof statusFilter !== 'undefined' && statusFilter === 'urgent' ? 'selected' : '' %>>Urgente</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-outline-primary">
@@ -58,6 +76,8 @@
                                 <th>Chirurgien</th>
                                 <th>Prestation</th>
                                 <th>Date</th>
+                                <th>Salle</th>
+                                <th>ASA</th>
                                 <th>Statut</th>
                                 <th>Actions</th>
                             </tr>
@@ -79,13 +99,39 @@
                                         </div>
                                     </td>
                                     <td>
-                                        Dr. <%= surgery.surgeon.firstName %> <%= surgery.surgeon.lastName %>
+                                        Dr. <%= surgery.surgeon.lastName %> <%= surgery.surgeon.firstName %>
                                     </td>
                                     <td>
                                         <%= surgery.prestation.designation %>
                                     </td>
                                     <td>
-                                        <%= typeof moment !== 'undefined' ? moment(surgery.beginDateTime).format('DD/MM/YYYY') : new Date(surgery.beginDateTime).toLocaleDateString('fr-FR') %>
+                                        <%= typeof moment !== 'undefined' ? moment(surgery.incisionTime).format('DD/MM/YYYY') : new Date(surgery.incisionTime).toLocaleDateString('fr-FR') %>
+                                    </td>
+                                    <td>
+                                        <% if (surgery.operatingRoom) { %>
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-hospital me-1"></i><%= surgery.operatingRoom.code %>
+                                            </span>
+                                            <% if (surgery.reservationStatus) { %>
+                                                <br>
+                                                <% if (surgery.reservationStatus === 'confirmed') { %>
+                                                    <small class="badge bg-success mt-1">Confirmé</small>
+                                                <% } else if (surgery.reservationStatus === 'reserved') { %>
+                                                    <small class="badge bg-primary mt-1">Réservé</small>
+                                                <% } %>
+                                            <% } %>
+                                        <% } else { %>
+                                            <span class="text-muted small">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (surgery.asaClass) { %>
+                                            <span class="badge bg-info" title="Classification ASA">
+                                                <i class="bi bi-heart-pulse me-1"></i>ASA <%= surgery.asaClass %><%= surgery.asaUrgent ? ' U' : '' %>
+                                            </span>
+                                        <% } else { %>
+                                            <span class="text-muted small">-</span>
+                                        <% } %>
                                     </td>
                                     <td>
                                         <% if (surgery.status === 'planned') { %>
@@ -95,15 +141,22 @@
                                         <% } else { %>
                                             <span class="badge bg-dark">Annulée</span>
                                         <% } %>
+                                        <% if (surgery.statusLifecycle === 'closed') { %>
+                                            <span class="badge bg-success ms-1">
+                                                <i class="bi bi-lock-fill"></i> Clôturée
+                                            </span>
+                                        <% } %>
                                     </td>
                                     <td>
                                         <div class="material-actions">
                                             <a href="/surgeries/<%= surgery._id %>" class="btn btn-outline-primary btn-sm" title="Voir">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
+                                            <% if (surgery.statusLifecycle !== 'closed' || permissions.canEditClosedSurgeries) { %>
+                                                <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            <% } %>
                                         </div>
                                     </td>
                                 </tr>

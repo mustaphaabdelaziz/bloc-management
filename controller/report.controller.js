@@ -1,6 +1,7 @@
 const Surgery = require("../models/Surgery");
 const Surgeon = require("../models/Surgeon");
 const MedicalStaff = require("../models/MedicalStaff");
+const Material = require("../models/Material");
 const mongoose = require("mongoose");
 const moment = require("moment");
 // Page principale des rapports
@@ -49,20 +50,20 @@ module.exports.surgeonFeesReport = async (req, res) => {
         
         // Test 2: Compter chirurgies dans la période
         const surgeriesInPeriod = await Surgery.countDocuments({
-            beginDateTime: { $gte: startDate, $lte: endDate }
+            incisionTime: { $gte: startDate, $lte: endDate }
         });
         console.log('[SURGEON-FEES] Chirurgies dans période:', surgeriesInPeriod);
         
         // Test 3: Compter chirurgies actives (urgentes et planifiées)
         const activeSurgeries = await Surgery.countDocuments({
-            beginDateTime: { $gte: startDate, $lte: endDate },
+            incisionTime: { $gte: startDate, $lte: endDate },
             status: { $in: ['planned', 'urgent'] }
         });
         console.log('[SURGEON-FEES] Chirurgies actives:', activeSurgeries);
         
         // Test 4: Vérifier les relations
         const surgeriesWithRefs = await Surgery.find({
-            beginDateTime: { $gte: startDate, $lte: endDate },
+            incisionTime: { $gte: startDate, $lte: endDate },
             status: { $in: ['completed', 'in-progress', 'planned', 'urgent'] }
         }).limit(5).populate('surgeon prestation');
         
@@ -77,7 +78,7 @@ module.exports.surgeonFeesReport = async (req, res) => {
         
         // Requête principale simplifiée pour debug
         let matchQuery = {
-            beginDateTime: { $gte: startDate, $lte: endDate },
+            incisionTime: { $gte: startDate, $lte: endDate },
             status: { $in: ['planned', 'urgent'] },
             surgeon: { $ne: null },
             prestation: { $ne: null }
@@ -91,7 +92,7 @@ module.exports.surgeonFeesReport = async (req, res) => {
         
         // Méthode alternative : Simple populate d'abord
         const surgeries = await Surgery.find(matchQuery)
-            .populate('surgeon', 'firstName lastName contractType allocationRate percentageRate')
+            .populate('surgeon', 'firstName lastName contractType locationRate percentageRate')
             .populate('prestation', 'designation')
             .limit(50); // Limiter pour debug
         
@@ -111,7 +112,7 @@ module.exports.surgeonFeesReport = async (req, res) => {
             if (!surgeonReport[surgeonKey]) {
                 surgeonReport[surgeonKey] = {
                     _id: surgery.surgeon._id,
-                    surgeonName: `${surgery.surgeon.firstName} ${surgery.surgeon.lastName}`,
+                    surgeonName: `${surgery.surgeon.lastName} ${surgery.surgeon.firstName}`,
                     contractType: surgery.surgeon.contractType,
                     totalSurgeries: 0,
                     totalAmount: 0,
@@ -123,7 +124,7 @@ module.exports.surgeonFeesReport = async (req, res) => {
             surgeonReport[surgeonKey].totalAmount += surgery.surgeonAmount || 0;
             surgeonReport[surgeonKey].surgeries.push({
                 code: surgery.code,
-                date: surgery.beginDateTime,
+                date: surgery.incisionTime,
                 prestationName: surgery.prestation?.designation || 'N/A',
                 amount: surgery.surgeonAmount || 0
             });
@@ -166,7 +167,7 @@ module.exports.medicalStaffActivityReport = async (req, res) => {
         const staffId = req.query.staffId || '';
         
         let matchQuery = {
-            beginDateTime: {
+            incisionTime: {
                 $gte: startDate,
                 $lte: endDate
             }
@@ -222,7 +223,7 @@ module.exports.medicalStaffActivityReport = async (req, res) => {
                     surgeries: {
                         $push: {
                             code: '$code',
-                            date: '$beginDateTime',
+                            date: '$incisionTime',
                             role: '$roleInfo.name'
                         }
                     }
@@ -265,7 +266,7 @@ module.exports.materialConsumptionReport =async (req, res) => {
         const materialConsumptionReport = await Surgery.aggregate([
             {
                 $match: {
-                    beginDateTime: {
+                    incisionTime: {
                         $gte: startDate,
                         $lte: endDate
                     }
@@ -340,11 +341,15 @@ module.exports.clinicRevenueReport = async (req, res) => {
         console.log('[CLINIC-REVENUE] Dates:', { startDate, endDate });
 
         // Récupérer toutes les chirurgies avec calculs de revenus
+        // Use updatedAt as fallback if incisionTime is not set
         const surgeries = await Surgery.find({
-            beginDateTime: { $gte: startDate, $lte: endDate },
+            $or: [
+                { incisionTime: { $gte: startDate, $lte: endDate } },
+                { incisionTime: { $exists: false, $eq: null }, updatedAt: { $gte: startDate, $lte: endDate } }
+            ],
             status: { $in: ['planned', 'urgent'] }
         })
-        .populate('surgeon', 'firstName lastName contractType allocationRate percentageRate')
+        .populate('surgeon', 'firstName lastName contractType locationRate percentageRate')
         .populate('prestation', 'designation priceHT urgentFeePercentage')
         .populate('consumedMaterials.material', 'designation category priceHT weightedPrice')
         .populate('medicalStaff.staff', 'firstName lastName personalFee')
@@ -354,16 +359,17 @@ module.exports.clinicRevenueReport = async (req, res) => {
 
         // Séparer les revenus par type de contrat
         const revenueByContractType = {
-            allocation: {
+            location: {
                 totalRevenue: 0,
                 totalSurgeries: 0,
                 details: [],
                 breakdown: {
-                    allocationFees: 0,
+                    locationFees: 0,
                     materialCosts: 0,
                     personnelFees: 0,
                     urgentFees: 0,
-                    extraFees: 0
+                    extraFees: 0,
+                    asaFees: 0
                 }
             },
             percentage: {
@@ -387,13 +393,16 @@ module.exports.clinicRevenueReport = async (req, res) => {
             const contractType = surgery.surgeon.contractType;
             const durationHours = surgery.actualDuration ? surgery.actualDuration / 60 : 0;
 
-            if (contractType === 'allocation') {
-                // Calcul pour contrat d'allocation
-                const allocationCost = durationHours * (surgery.surgeon.allocationRate || 0);
+            if (contractType === 'location') {
+                // Calcul pour contrat de location
+                const locationCost = durationHours * (surgery.surgeon.locationRate || 0);
+                // Note: quantity is in the material's unit of measure (meters, liters, pieces, etc.)
+                // priceUsed is the frozen price per unit at the time of surgery
                 const materialCost = surgery.consumedMaterials?.reduce((sum, mat) => {
                     if (!mat.material) return sum;
-                    const weightedPrice = mat.material.weightedPrice || mat.material.priceHT || 0;
-                    return sum + (weightedPrice * (mat.quantity || 0));
+                    // Use frozen priceUsed if available, otherwise fallback to current price
+                    const unitPrice = mat.priceUsed || mat.material.weightedPrice || mat.material.priceHT || 0;
+                    return sum + (unitPrice * (mat.quantity || 0));
                 }, 0) || 0;
                 const personnelCost = surgery.medicalStaff?.reduce((sum, staff) => sum + (staff.staff?.personalFee * durationHours || 0), 0) || 0;
                 // urgent fee is percentage-based; compute monetary urgent amount from prestation price
@@ -401,43 +410,56 @@ module.exports.clinicRevenueReport = async (req, res) => {
 
                 // Calcul des frais supplémentaires
                 let extraFees = 0;
-                // For allocation method: always exclude extra fees, even if applyExtraFees is checked
-                if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration && contractType !== 'allocation') {
-                    const extraduration = surgery.actualDuration - surgery.prestation.duration;
+                // For location method: always exclude extra fees, even if applyExtraFees is checked
+                if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.maxDuration && contractType !== 'location') {
+                    const extraduration = surgery.actualDuration - surgery.prestation.maxDuration;
                     const threshold = surgery.prestation.exceededDurationUnit || 15;
                     if (extraduration >= threshold) {
                         extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold;
                     }
                 }
 
-                // For allocation method: clinic receives allocation cost + materials + personnel (personnel uplifted if urgent)
-                const surgeonAllocationAmount = 0; // surgeon does not receive allocation under new rule
+                // Calculate ASA fee (flat fee for location contracts only)
+                let asaFee = 0;
+                if (surgery.asaClass) {
+                    const AsaPricing = require('../models/AsaPricing');
+                    const asaConfig = await AsaPricing.getPricingByClass(surgery.asaClass);
+                    if (asaConfig) {
+                        asaFee = asaConfig.fee || 0;
+                    }
+                }
+
+                // For location method: clinic receives location cost + materials + personnel (personnel uplifted if urgent) + ASA fee
+                const surgeonLocationAmount = 0; // surgeon does not receive location under new rule
                 const personnelCostWithUrgent = personnelCost * (1 + (surgery.prestation?.urgentFeePercentage || 0));
-                const clinicRevenue = allocationCost + materialCost + personnelCostWithUrgent;
+                const clinicRevenue = locationCost + materialCost + personnelCostWithUrgent + asaFee;
 
-                revenueByContractType.allocation.totalRevenue += clinicRevenue;
-                revenueByContractType.allocation.totalSurgeries++;
-                revenueByContractType.allocation.breakdown.allocationFees += surgeonAllocationAmount;
-                revenueByContractType.allocation.breakdown.materialCosts += materialCost;
+                revenueByContractType.location.totalRevenue += clinicRevenue;
+                revenueByContractType.location.totalSurgeries++;
+                revenueByContractType.location.breakdown.locationFees += surgeonLocationAmount;
+                revenueByContractType.location.breakdown.materialCosts += materialCost;
                 // store the actual personnel cost including urgent uplift in the breakdown
-                revenueByContractType.allocation.breakdown.personnelFees += personnelCostWithUrgent;
-                // Note: urgent fees and extra fees are excluded from allocation method calculation
-                revenueByContractType.allocation.breakdown.urgentFees += 0; // Always 0 for allocation
-                revenueByContractType.allocation.breakdown.extraFees += 0; // Always 0 for allocation
+                revenueByContractType.location.breakdown.personnelFees += personnelCostWithUrgent;
+                // Note: urgent fees and extra fees are excluded from location method calculation
+                revenueByContractType.location.breakdown.urgentFees += 0; // Always 0 for location
+                revenueByContractType.location.breakdown.extraFees += 0; // Always 0 for location
+                revenueByContractType.location.breakdown.asaFees += asaFee;
 
-                revenueByContractType.allocation.details.push({
+                revenueByContractType.location.details.push({
                     surgeryCode: surgery.code,
-                    surgeonName: `${surgery.surgeon.firstName} ${surgery.surgeon.lastName}`,
-                    date: surgery.beginDateTime,
+                    surgeonName: `${surgery.surgeon.lastName} ${surgery.surgeon.firstName}`,
+                    date: surgery.incisionTime || surgery.updatedAt,
                     duration: surgery.actualDuration,
-                    surgeonAmount: surgeonAllocationAmount,
-                    allocationRate: surgery.surgeon.allocationRate,
-                    allocationCost: allocationCost,
+                    surgeonAmount: surgeonLocationAmount,
+                    locationRate: surgery.surgeon.locationRate,
+                    locationCost: locationCost,
                     materialCost,
                     personnelCost,
                     personnelCostWithUrgent,
-                    urgentFee: 0, // Always 0 for allocation method (urgent impact applied via personnel uplift/allocationRate)
-                    extraFees: 0, // Always 0 for allocation method
+                    urgentFee: 0, // Always 0 for location method (urgent impact applied via personnel uplift/locationRate)
+                    extraFees: 0, // Always 0 for location method
+                    asaFee: asaFee,
+                    asaClass: surgery.asaClass || null,
                     totalRevenue: clinicRevenue
                 });
 
@@ -447,10 +469,13 @@ module.exports.clinicRevenueReport = async (req, res) => {
                 const prestationPriceHT = surgery.adjustedPrice || surgery.prestation.priceHT;
                 const urgentPercent = surgery.status === 'urgent' ? (surgery.prestation?.urgentFeePercentage || 0) : 0;
 
+                // Note: quantity is in the material's unit of measure (meters, liters, pieces, etc.)
+                // priceUsed is the frozen price per unit at the time of surgery
                 const totalPatientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
                     if (!mat.material || mat.material.category !== 'patient') return sum;
-                    const weightedPrice = mat.material.weightedPrice || mat.material.priceHT || 0;
-                    return sum + (weightedPrice * (mat.quantity || 0));
+                    // Use frozen priceUsed if available, otherwise fallback to current price
+                    const unitPrice = mat.priceUsed || mat.material.weightedPrice || mat.material.priceHT || 0;
+                    return sum + (unitPrice * (mat.quantity || 0));
                 }, 0) || 0;
 
                 // netAmount is the amount to be split between surgeon and clinic
@@ -459,8 +484,8 @@ module.exports.clinicRevenueReport = async (req, res) => {
                 const surgeonPercentage = surgery.surgeon.percentageRate || 0;
                 // Calculate extra fees (penalties) as before
                 let extraFees = 0;
-                if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                    const extraduration = surgery.actualDuration - surgery.prestation.duration;
+                if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.maxDuration) {
+                    const extraduration = surgery.actualDuration - surgery.prestation.maxDuration;
                     const threshold = surgery.prestation.exceededDurationUnit || 15;
                     if (extraduration >= threshold) {
                         extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold;
@@ -475,10 +500,12 @@ module.exports.clinicRevenueReport = async (req, res) => {
                 const clinicBaseRevenue = netAmount * (1 - surgeonPercentage / 100);
 
                 // Materials and personnel paid by the clinic
+                // Note: quantity is in the material's unit of measure (meters, liters, pieces, etc.)
                 const clinicMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
                     if (!mat.material || mat.material.category === 'patient') return sum;
-                    const weightedPrice = mat.material.weightedPrice || mat.material.priceHT || 0;
-                    return sum + (weightedPrice * (mat.quantity || 0));
+                    // Use frozen priceUsed if available, otherwise fallback to current price
+                    const unitPrice = mat.priceUsed || mat.material.weightedPrice || mat.material.priceHT || 0;
+                    return sum + (unitPrice * (mat.quantity || 0));
                 }, 0) || 0;
                 const clinicPersonnel = surgery.medicalStaff?.reduce((sum, staff) => sum + (staff.staff?.personalFee * durationHours || 0), 0) || 0;
                 const clinicPersonnelWithUrgent = clinicPersonnel * (1 + urgentPercent);
@@ -497,8 +524,8 @@ module.exports.clinicRevenueReport = async (req, res) => {
 
                 revenueByContractType.percentage.details.push({
                     surgeryCode: surgery.code,
-                    surgeonName: `${surgery.surgeon.firstName} ${surgery.surgeon.lastName}`,
-                    date: surgery.beginDateTime,
+                    surgeonName: `${surgery.surgeon.lastName} ${surgery.surgeon.firstName}`,
+                    date: surgery.incisionTime || surgery.updatedAt,
                     duration: surgery.actualDuration,
                     baseRevenue: clinicBaseRevenue,
                     surgeonAmount,
@@ -514,13 +541,13 @@ module.exports.clinicRevenueReport = async (req, res) => {
         }
 
         // Trier les détails par date
-        revenueByContractType.allocation.details.sort((a, b) => new Date(b.date) - new Date(a.date));
+        revenueByContractType.location.details.sort((a, b) => new Date(b.date) - new Date(a.date));
         revenueByContractType.percentage.details.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         console.log('[CLINIC-REVENUE] Rapport généré:', {
-            allocationSurgeries: revenueByContractType.allocation.totalSurgeries,
+            locationSurgeries: revenueByContractType.location.totalSurgeries,
             percentageSurgeries: revenueByContractType.percentage.totalSurgeries,
-            totalAllocationRevenue: revenueByContractType.allocation.totalRevenue,
+            totalLocationRevenue: revenueByContractType.location.totalRevenue,
             totalPercentageRevenue: revenueByContractType.percentage.totalRevenue
         });
 
@@ -556,7 +583,7 @@ module.exports.statisticsReport = async (req, res) => {
         const surgeriesByStatus = await Surgery.aggregate([
             {
                 $match: {
-                    beginDateTime: {
+                    incisionTime: {
                         $gte: startDate,
                         $lte: endDate
                     }
@@ -577,7 +604,7 @@ module.exports.statisticsReport = async (req, res) => {
         const surgeriesBySpecialty = await Surgery.aggregate([
             {
                 $match: {
-                    beginDateTime: {
+                    incisionTime: {
                         $gte: startDate,
                         $lte: endDate
                     }
@@ -707,6 +734,171 @@ module.exports.statisticsReport = async (req, res) => {
         console.error('Erreur rapport statistiques:', error);
         res.status(500).render('errorHandling/error', { 
             statusCode: 'Erreur Rapport Statistiques', 
+            err: { message: error.message } 
+        });
+    }
+};
+
+// Material Usage Statistics Report
+module.exports.materialUsageReport = async (req, res) => {
+    try {
+        console.log('[MATERIAL-USAGE] Début traitement');
+        
+        // Date filters
+        const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(new Date().setMonth(new Date().getMonth() - 6));
+        const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date();
+        const category = req.query.category || ''; // 'patient' or 'consumable' or ''
+        
+        console.log('[MATERIAL-USAGE] Filters:', { startDate, endDate, category });
+
+        // Get surgeries in date range with consumed materials
+        const surgeries = await Surgery.find({
+            incisionTime: { $gte: startDate, $lte: endDate },
+            'consumedMaterials.0': { $exists: true }
+        })
+        .populate('consumedMaterials.material')
+        .populate('surgeon', 'firstName lastName')
+        .populate('prestation', 'designation');
+
+        // Aggregate material usage statistics
+        const materialStats = {};
+        const monthlyTotals = {};
+        const surgeonMaterialUsage = {};
+        const prestationMaterialUsage = {};
+
+        let totalMaterialValue = 0;
+        let totalPatientMaterialValue = 0;
+        let totalConsumableMaterialValue = 0;
+
+        for (const surgery of surgeries) {
+            const monthKey = surgery.incisionTime 
+                ? moment(surgery.incisionTime).format('YYYY-MM') 
+                : 'unknown';
+            
+            if (!monthlyTotals[monthKey]) {
+                monthlyTotals[monthKey] = { count: 0, value: 0, patientValue: 0, consumableValue: 0 };
+            }
+            monthlyTotals[monthKey].count += 1;
+
+            for (const consumed of surgery.consumedMaterials) {
+                if (!consumed.material) continue;
+                
+                const material = consumed.material;
+                const materialId = material._id.toString();
+                const materialCategory = material.category;
+                
+                // Filter by category if specified
+                if (category && materialCategory !== category) continue;
+
+                const value = consumed.quantity * (consumed.priceUsed || 0);
+                totalMaterialValue += value;
+                
+                if (materialCategory === 'patient') {
+                    totalPatientMaterialValue += value;
+                    monthlyTotals[monthKey].patientValue += value;
+                } else {
+                    totalConsumableMaterialValue += value;
+                    monthlyTotals[monthKey].consumableValue += value;
+                }
+                monthlyTotals[monthKey].value += value;
+
+                // Material-level stats
+                if (!materialStats[materialId]) {
+                    materialStats[materialId] = {
+                        material: material,
+                        code: material.code,
+                        designation: material.designation,
+                        category: materialCategory,
+                        totalQuantity: 0,
+                        totalValue: 0,
+                        surgeryCount: 0,
+                        avgPerSurgery: 0
+                    };
+                }
+                materialStats[materialId].totalQuantity += consumed.quantity;
+                materialStats[materialId].totalValue += value;
+                materialStats[materialId].surgeryCount += 1;
+
+                // Surgeon usage
+                if (surgery.surgeon) {
+                    const surgeonKey = surgery.surgeon._id.toString();
+                    const surgeonName = `${surgery.surgeon.lastName || ''} ${surgery.surgeon.firstName || ''}`.trim();
+                    if (!surgeonMaterialUsage[surgeonKey]) {
+                        surgeonMaterialUsage[surgeonKey] = { name: surgeonName, totalValue: 0, materials: {} };
+                    }
+                    surgeonMaterialUsage[surgeonKey].totalValue += value;
+                    if (!surgeonMaterialUsage[surgeonKey].materials[materialId]) {
+                        surgeonMaterialUsage[surgeonKey].materials[materialId] = { designation: material.designation, quantity: 0, value: 0 };
+                    }
+                    surgeonMaterialUsage[surgeonKey].materials[materialId].quantity += consumed.quantity;
+                    surgeonMaterialUsage[surgeonKey].materials[materialId].value += value;
+                }
+
+                // Prestation usage
+                if (surgery.prestation) {
+                    const prestationKey = surgery.prestation._id.toString();
+                    const prestationName = surgery.prestation.designation || 'Unknown';
+                    if (!prestationMaterialUsage[prestationKey]) {
+                        prestationMaterialUsage[prestationKey] = { name: prestationName, totalValue: 0, materials: {} };
+                    }
+                    prestationMaterialUsage[prestationKey].totalValue += value;
+                    if (!prestationMaterialUsage[prestationKey].materials[materialId]) {
+                        prestationMaterialUsage[prestationKey].materials[materialId] = { designation: material.designation, quantity: 0, value: 0 };
+                    }
+                    prestationMaterialUsage[prestationKey].materials[materialId].quantity += consumed.quantity;
+                    prestationMaterialUsage[prestationKey].materials[materialId].value += value;
+                }
+            }
+        }
+
+        // Calculate averages
+        for (const id in materialStats) {
+            materialStats[id].avgPerSurgery = materialStats[id].surgeryCount > 0 
+                ? materialStats[id].totalQuantity / materialStats[id].surgeryCount 
+                : 0;
+        }
+
+        // Convert to sorted arrays
+        const materialList = Object.values(materialStats)
+            .sort((a, b) => b.totalValue - a.totalValue);
+        
+        const monthlyData = Object.entries(monthlyTotals)
+            .map(([month, data]) => ({ month, ...data }))
+            .sort((a, b) => a.month.localeCompare(b.month));
+        
+        const surgeonData = Object.values(surgeonMaterialUsage)
+            .sort((a, b) => b.totalValue - a.totalValue);
+        
+        const prestationData = Object.values(prestationMaterialUsage)
+            .sort((a, b) => b.totalValue - a.totalValue);
+
+        // Get all materials for filter dropdown
+        const allMaterials = await Material.find({}).sort({ designation: 1 });
+
+        res.render('reports/material-usage', {
+            title: 'Rapport d\'Utilisation des Matériaux',
+            filters: {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                category
+            },
+            summary: {
+                totalMaterialValue,
+                totalPatientMaterialValue,
+                totalConsumableMaterialValue,
+                totalSurgeries: surgeries.length,
+                uniqueMaterials: Object.keys(materialStats).length
+            },
+            materialList,
+            monthlyData,
+            surgeonData,
+            prestationData,
+            allMaterials
+        });
+    } catch (error) {
+        console.error('Erreur rapport utilisation matériaux:', error);
+        res.status(500).render('errorHandling/error', { 
+            statusCode: 'Erreur Rapport Matériaux', 
             err: { message: error.message } 
         });
     }

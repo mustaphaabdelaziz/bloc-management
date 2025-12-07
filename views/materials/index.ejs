@@ -8,9 +8,25 @@
                 <p class="page-subtitle">Stock et suivi des matériaux médicaux</p>
             </div>
             <% if (permissions.canManageMaterials) { %>
-            <a href="/materials/new" class="action-button">
-                <i class="bi bi-plus-circle"></i>Nouveau Matériau
-            </a>
+            <div class="d-flex gap-2">
+                <a href="/materials/new" class="action-button">
+                    <i class="bi bi-plus-circle"></i>Nouveau Matériau
+                </a>
+                <div class="dropdown">
+                    <button class="action-button dropdown-toggle" type="button" id="excelDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>Import Excel
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="excelDropdown">
+                        <li><a class="dropdown-item" href="/materials/template" target="_blank">
+                            <i class="bi bi-download me-2"></i>Télécharger Modèle
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="showImportModal()">
+                            <i class="bi bi-upload me-2"></i>Importer Fichier
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
             <% } %>
         </div>
     </div>
@@ -64,18 +80,20 @@
                         <thead>
                             <tr>
                                 <th>Matériau</th>
+                                <th>Référence</th>
                                 <th>Catégorie</th>
                                 <% if (permissions.canViewPricing) { %>
                                 <th>Prix Moyen Pondéré</th>
                                 <% } %>
-                                <th>Stock</th>
                                 <th>Spécialité</th>
+                                <th>Créé par</th>
+                                <th>Modifié par</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% materials.forEach(material => { %>
-                                <tr class="<%= material.stock <= material.alertLevel ? 'table-danger' : material.stock <= material.stockMinimum ? 'table-warning' : '' %>">
+                                <tr>
                                     <td>
                                         <div class="material-name">
                                             <div class="material-avatar">
@@ -89,6 +107,13 @@
                                                 <% } %>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td>
+                                        <% if (material.reference) { %>
+                                            <small class="text-muted"><%= material.reference %></small>
+                                        <% } else { %>
+                                            <span class="text-muted">-</span>
+                                        <% } %>
                                     </td>
                                     <td>
                                         <% if (material.category === 'consumable') { %>
@@ -106,29 +131,9 @@
                                     </td>
                                     <% } %>
                                     <td>
-                                        <% if (material.stock <= material.alertLevel) { %>
-                                            <span class="stock-badge stock-critical">
-                                                <i class="bi bi-exclamation-triangle"></i>
-                                                <%= material.stock %>
-                                                <span class="stock-unit"><%= material.unitOfMeasure %></span>
-                                            </span>
-                                            <div class="text-danger small mt-1">Critique!</div>
-                                        <% } else if (material.stock <= material.stockMinimum) { %>
-                                            <span class="stock-badge stock-low">
-                                                <i class="bi bi-exclamation-circle"></i>
-                                                <%= material.stock %>
-                                                <span class="stock-unit"><%= material.unitOfMeasure %></span>
-                                            </span>
-                                            <div class="text-warning small mt-1">Stock bas</div>
-                                        <% } else { %>
-                                            <span class="stock-badge stock-good">
-                                                <%= material.stock %>
-                                                <span class="stock-unit"><%= material.unitOfMeasure %></span>
-                                            </span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (material.specialty && Array.isArray(material.specialty) && material.specialty.length > 0) { %>
+                                        <% if (material.appliesToAllSpecialties) { %>
+                                            <span class="badge bg-success"><i class="bi bi-globe"></i> Toutes</span>
+                                        <% } else if (material.specialty && Array.isArray(material.specialty) && material.specialty.length > 0) { %>
                                             <div class="specialty-badges">
                                                 <% material.specialty.forEach(spec => { %>
                                                     <span class="badge bg-info"><%= spec.name %></span>
@@ -139,6 +144,28 @@
                                         <% } else { %>
                                             <span class="text-muted small">Général</span>
                                         <% } %>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (material.createdBy) { %>
+                                                <%= material.createdBy.firstname %> <%= material.createdBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(material.createdAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <% if (material.updatedBy) { %>
+                                                <%= material.updatedBy.firstname %> <%= material.updatedBy.lastname %>
+                                                <br>
+                                                <span class="text-muted"><%= typeof moment !== 'undefined' ? moment(material.updatedAt).format('DD/MM/YYYY HH:mm') : '' %></span>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </small>
                                     </td>
                                     <td>
                                         <% if (permissions.canManageMaterials) { %>
@@ -236,4 +263,72 @@ function showArrivalModal(materialId) {
     const modal = new bootstrap.Modal(document.getElementById('arrivalModal'));
     modal.show();
 }
+
+function showImportModal() {
+    const modal = new bootstrap.Modal(document.getElementById('importExcelModal'));
+    modal.show();
+}
 </script>
+
+<!-- Excel Import Modal -->
+<div class="modal fade" id="importExcelModal" tabindex="-1" aria-labelledby="importExcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importExcelModalLabel">
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>Importer Matériaux depuis Excel
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <form action="/materials/import" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label">Fichier Excel (.xlsx ou .xls)</label>
+                        <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                        <div class="form-text">
+                            Sélectionnez un fichier Excel contenant les matériaux à importer.
+                            <a href="/materials/template" target="_blank" class="text-primary">Télécharger le modèle</a>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning" role="alert">
+                        <strong><i class="bi bi-exclamation-triangle me-2"></i>Format du fichier Excel:</strong>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Colonnes requises:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li><strong>Désignation</strong> - Nom du matériau</li>
+                                    <li><strong>Prix d'Achat HT</strong> - Prix unitaire</li>
+                                    <li><strong>TVA</strong> - Taux de TVA</li>
+                                    <li><strong>Catégorie</strong> - consumable ou patient</li>
+                                    <li><strong>Unité de Mesure</strong> - Unité (pce, bt, etc.)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Colonnes optionnelles:</strong>
+                                <ul class="mb-0 mt-1 small">
+                                    <li>Marge de Vente (%) - Pourcentage de marge</li>
+                                    <li>Marque - Marque du fournisseur</li>
+                                    <li>Spécialité - Spécialités applicables</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info border" role="alert">
+                        <small>
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Note:</strong> Le code du matériau sera généré automatiquement au format MAT-{SPECIALITE}-XXX.
+                            Ne pas fournir de code dans le fichier.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-2"></i>Importer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

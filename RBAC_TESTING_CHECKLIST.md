@@ -58,7 +58,7 @@ Use this checklist to verify the RBAC implementation is working correctly.
 - [ ] Can create new surgeon
 - [ ] Can edit existing surgeon
 - [ ] Can delete surgeon
-- [ ] Can see contract information (contractType, allocationRate, percentageRate)
+- [ ] Can see contract information (contractType, locationRate, percentageRate)
 
 ### Materials
 - [ ] Can view materials list

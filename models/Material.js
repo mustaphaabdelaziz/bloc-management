@@ -11,6 +11,12 @@ const materialSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    reference: {
+        type: String,
+        required: false
+    },
+    // Base purchase price - can be used as manual override when priceMode='manual'
+    // Otherwise serves as fallback when no purchase history exists
     priceHT: {
         type: Number,
         required: true
@@ -32,15 +38,24 @@ const materialSchema = new mongoose.Schema({
             }
             // If it's a single value, convert to array
             if (!Array.isArray(value) && value) {
+                // Filter out 'all' sentinel value
+                if (value === 'all') return undefined;
                 return [value];
             }
-            // Filter out empty strings from array
+            // Filter out empty strings and 'all' sentinel from array
             if (Array.isArray(value)) {
-                return value.filter(v => v !== '' && v !== null);
+                const filtered = value.filter(v => v !== '' && v !== null && v !== 'all');
+                return filtered.length > 0 ? filtered : undefined;
             }
             return value;
         }
     },
+    // Flag indicating material applies to all specialties (shown in every specialty filter)
+    appliesToAllSpecialties: {
+        type: Boolean,
+        default: false
+    },
+    // Legacy stock fields - kept for backward compatibility but no longer mutated on surgery consumption
     stock: {
         type: Number,
         default: 0
@@ -66,6 +81,52 @@ const materialSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // Selling markup percentage to derive selling price from average purchase price
+    // e.g., 20 means selling price = averagePrice * 1.20
+    sellingMarkupPercent: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    // Price selection mode: 'average' (computed from purchases), 'manual' (use priceHT as override), 'last' (use last purchase price)
+    priceMode: {
+        type: String,
+        enum: ['average', 'manual', 'last'],
+        default: 'average'
+    },
+    // Purchase history - records each purchase with date and price (quantity optional, informational only)
+    purchases: [{
+        _id: {
+            type: mongoose.Schema.Types.ObjectId,
+            auto: true
+        },
+        date: {
+            type: Date,
+            required: true,
+            default: Date.now
+        },
+        priceHT: {
+            type: Number,
+            required: true
+        },
+        quantity: {
+            type: Number,
+            default: 1  // Informational only, not used for stock tracking
+        },
+        supplier: {
+            type: String,
+            required: false
+        },
+        invoiceRef: {
+            type: String,
+            required: false
+        },
+        notes: {
+            type: String,
+            required: false
+        }
+    }],
+    // Legacy arrivals - kept for backward compatibility with existing data
     arrivals: [{
         _id: {
             type: mongoose.Schema.Types.ObjectId,
@@ -79,6 +140,17 @@ const materialSchema = new mongoose.Schema({
     alertLevel: {
         type: Number, // niveau d'alerte pour le stock
         default: 10
+    },
+    // Audit fields
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    updatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
     },
     // Unit tracking for patient-type materials
     units: [{
@@ -140,17 +212,65 @@ const materialSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Calcul du prix moyen pondéré (Perpetual Weighted Average)
+// Calcul du prix moyen pondéré (from purchases array, or fallback to arrivals for legacy data)
 materialSchema.virtual('weightedPrice').get(function() {
-    // Use perpetual inventory method: current stock value / current stock quantity
-    // This ensures the weighted price reflects only the materials currently in stock,
-    // not all historical arrivals including consumed quantities
+    // New system: calculate from purchases array
+    if (this.purchases && this.purchases.length > 0) {
+        // Calculate weighted average based on quantity (informational) or simple average if no quantities
+        let totalValue = 0;
+        let totalQuantity = 0;
+        
+        this.purchases.forEach(p => {
+            const qty = p.quantity || 1;
+            totalValue += p.priceHT * qty;
+            totalQuantity += qty;
+        });
+        
+        return totalQuantity > 0 ? totalValue / totalQuantity : this.priceHT;
+    }
+    
+    // Legacy fallback: use perpetual inventory method from arrivals
     if (this.stock > 0 && this.stockValue > 0) {
         return this.stockValue / this.stock;
     }
     
-    // Fallback to base price if no stock or no stock value recorded
+    // Final fallback to base price
     return this.priceHT;
+});
+
+// Get the effective purchase price based on priceMode setting
+materialSchema.virtual('effectivePurchasePrice').get(function() {
+    switch (this.priceMode) {
+        case 'manual':
+            return this.priceHT;
+        case 'last':
+            if (this.purchases && this.purchases.length > 0) {
+                // Get the most recent purchase
+                const sorted = [...this.purchases].sort((a, b) => new Date(b.date) - new Date(a.date));
+                return sorted[0].priceHT;
+            }
+            // Fallback to legacy arrivals
+            if (this.arrivals && this.arrivals.length > 0) {
+                const sorted = [...this.arrivals].sort((a, b) => new Date(b.date) - new Date(a.date));
+                return sorted[0].unitPrice;
+            }
+            return this.priceHT;
+        case 'average':
+        default:
+            return this.weightedPrice;
+    }
+});
+
+// Calculate selling price: effectivePurchasePrice * (1 + sellingMarkupPercent/100)
+materialSchema.virtual('sellingPriceHT').get(function() {
+    const basePrice = this.effectivePurchasePrice;
+    const markup = this.sellingMarkupPercent || 0;
+    return basePrice * (1 + markup / 100);
+});
+
+// Selling price with TVA
+materialSchema.virtual('sellingPriceTTC').get(function() {
+    return this.sellingPriceHT * (1 + (this.tva || 0));
 });
 
 // Check if stock is at or below alert level
@@ -193,7 +313,7 @@ materialSchema.virtual('unitsUsed').get(function() {
 materialSchema.pre('save', async function(next) {
   try {
     if (!this.code) {
-      let specialtyCode = 'GEN';
+      let specialtyCode = this.appliesToAllSpecialties ? 'ALL' : 'GEN';
 
       if (this.specialty && Array.isArray(this.specialty) && this.specialty.length > 0) {
         if (this.specialty.length === 1) {
