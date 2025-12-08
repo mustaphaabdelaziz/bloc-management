@@ -26,6 +26,9 @@ const {
   createReservationFromSlots,
   renderCreateSurgeryFromReservation,
   createSurgeryFromReservation,
+  rescheduleSurgery,
+  exportPlanningPDF,
+  exportPlanningExcel,
 } = require("../controller/surgery.controller");
 
 // Debug: ensure handlers are defined
@@ -61,11 +64,14 @@ router.get("/:id/edit", isLoggedIn, ensureHeadDepartManagement, renderEditSurger
 
 // Operating Room Reservation Routes
 router.get("/planning/view", isLoggedIn, ensureViewSurgeries, catchAsync(showPlanning));
+router.get("/planning/export/pdf", isLoggedIn, ensureViewSurgeries, catchAsync(exportPlanningPDF));
+router.get("/planning/export/excel", isLoggedIn, ensureViewSurgeries, catchAsync(exportPlanningExcel));
 router.get("/planning/book-slots", isLoggedIn, catchAsync(showSlotBooking));
 router.get("/planning/slots", isLoggedIn, catchAsync(getSlots));
 router.get("/planning/check-availability", isLoggedIn, catchAsync(checkAvailability));
 router.post("/new/reservation", isLoggedIn, catchAsync(createReservationFromSlots));
 router.post("/:id/reservation", isLoggedIn, catchAsync(createOrUpdateReservation));
+router.put("/:id/reschedule", isLoggedIn, ensureHeadDepartManagement, catchAsync(rescheduleSurgery));
 router.delete("/:id/reservation", isLoggedIn, catchAsync(cancelReservation));
 
 module.exports = router;

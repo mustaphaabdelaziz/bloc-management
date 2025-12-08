@@ -1240,11 +1240,11 @@ module.exports.showPlanning = async (req, res) => {
     const dateFilter = req.query.date || new Date().toISOString().split('T')[0];
     const typeFilter = req.query.type || 'all'; // 'all', 'surgery', 'reservation'
     
-    // Calculate date range (show 7 days from selected date)
+    // Calculate date range - show from current date to 90 days ahead by default
     const startDate = new Date(dateFilter);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 7);
+    endDate.setDate(endDate.getDate() + 90); // Extended to 90 days to show all future reservations
     
     // Get all active operating rooms
     const rooms = await OperatingRoom.find({ isActive: true }).sort({ code: 1 });
@@ -1284,7 +1284,7 @@ module.exports.showPlanning = async (req, res) => {
         .sort({ scheduledStartTime: 1, entreeSalle: 1 })
         .lean();
       
-      // Filter out surgeries without required fields
+      // Filter out surgeries without required fields - surgeries need all fields
       surgeries = surgeries.filter(s => s.surgeon && s.patient && s.prestation);
     }
     
@@ -1297,8 +1297,25 @@ module.exports.showPlanning = async (req, res) => {
         .sort({ scheduledStartTime: 1 })
         .lean();
       
-      // Filter out reservations without required fields
-      reservations = reservations.filter(r => r.surgeon && r.patient && r.prestation);
+      console.log('\n=== RESERVATION DEBUG ===');
+      console.log('Query:', JSON.stringify(reservationQuery, null, 2));
+      console.log('Total reservations found:', reservations.length);
+      reservations.forEach(r => {
+        console.log(`  ${r.temporaryCode || r._id}:`, {
+          room: r.operatingRoom?.name || 'NO ROOM',
+          surgeon: r.surgeon ? `${r.surgeon.firstName} ${r.surgeon.lastName}` : 'NO SURGEON',
+          patient: r.patient ? `${r.patient.firstName} ${r.patient.lastName}` : 'NO PATIENT',
+          prestation: r.prestation?.designation || 'NO PRESTATION',
+          startTime: r.scheduledStartTime,
+          status: r.reservationStatus
+        });
+      });
+      
+      // Don't filter reservations - they can exist with partial data
+      // Only filter if operatingRoom is missing (critical for calendar display)
+      reservations = reservations.filter(r => r.operatingRoom);
+      console.log('Valid reservations (with room):', reservations.length);
+      console.log('========================\n');
     }
     
     // Merge and tag with type
@@ -1409,35 +1426,53 @@ module.exports.createOrUpdateReservation = async (req, res) => {
 module.exports.cancelReservation = async (req, res) => {
   try {
     const { id } = req.params;
+    const { reason } = req.body;
     
-    const surgery = await Surgery.findById(id);
-    if (!surgery) {
-      return res.status(404).json({ error: 'Chirurgie non trouvée' });
+    // Find and update the reservation
+    const reservation = await Reservation.findById(id);
+    if (!reservation) {
+      return res.status(404).json({ success: false, error: 'Réservation non trouvée' });
+    }
+    
+    // Check if already cancelled
+    if (reservation.reservationStatus === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'Cette réservation est déjà annulée' });
     }
     
     // Check permissions
     const userPriv = (req.user && Array.isArray(req.user.privileges)) ? req.user.privileges : [];
-    const isManagement = userPriv.includes('admin') || userPriv.includes('direction') || userPriv.includes('headDepart');
-    const isSurgeonOwner = String(surgery.surgeon) === String(req.user.surgeon || req.user.surgeonId);
+    const isAdmin = userPriv.includes('admin');
+    const isDirection = userPriv.includes('direction');
+    const isHeadDepart = userPriv.includes('headDepart');
+    const isAssistante = userPriv.includes('assistante');
     
-    if (!isManagement && !isSurgeonOwner) {
-      return res.status(403).json({ error: 'Accès non autorisé' });
+    // Allow cancellation if user has proper permissions
+    const canCancel = isAdmin || isDirection || isHeadDepart || isAssistante;
+    
+    if (!canCancel) {
+      return res.status(403).json({ success: false, error: 'Accès non autorisé' });
+    }
+    
+    // Store cancellation reason in notes
+    if (reason) {
+      reservation.reservationNotes = `[ANNULÉE] ${reason}${reservation.reservationNotes ? '\n' + reservation.reservationNotes : ''}`;
     }
     
     // Update reservation status
-    surgery.reservationStatus = 'cancelled';
-    surgery.updatedBy = req.user._id;
+    reservation.reservationStatus = 'cancelled';
+    reservation.updatedBy = req.user._id;
     
-    await surgery.save();
+    await reservation.save();
     
     res.json({
       success: true,
-      message: 'Réservation annulée avec succès'
+      message: 'Réservation annulée avec succès',
+      reservation: reservation
     });
     
   } catch (error) {
     console.error('Error cancelling reservation:', error);
-    res.status(500).json({ error: 'Erreur lors de l\'annulation de la réservation' });
+    res.status(500).json({ success: false, error: 'Erreur lors de l\'annulation de la réservation' });
   }
 };
 
@@ -1623,5 +1658,411 @@ module.exports.createReservationFromSlots = async (req, res) => {
       success: false,
       message: 'Erreur lors de la création de la réservation: ' + error.message 
     });
+  }
+};
+
+// Reschedule surgery or reservation (drag-and-drop support)
+module.exports.rescheduleSurgery = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { scheduledStartTime, scheduledEndTime, type } = req.body;
+    
+    if (!scheduledStartTime || !scheduledEndTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Les horaires de début et fin sont requis'
+      });
+    }
+    
+    // Determine if it's a surgery or reservation
+    let Model, item;
+    if (type === 'reservation') {
+      Model = Reservation;
+      item = await Reservation.findById(id).populate('operatingRoom');
+    } else {
+      Model = Surgery;
+      item = await Surgery.findById(id).populate('operatingRoom');
+    }
+    
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: `${type === 'reservation' ? 'Réservation' : 'Chirurgie'} non trouvée`
+      });
+    }
+    
+    // Check room availability using reservationService
+    const reservationService = require('../services/reservationService');
+    const availability = await reservationService.checkRoomAvailability(
+      item.operatingRoom._id,
+      scheduledStartTime,
+      scheduledEndTime,
+      id
+    );
+    
+    if (!availability.available) {
+      return res.status(409).json({
+        success: false,
+        message: availability.error || 'Le créneau horaire n\'est pas disponible',
+        conflicts: availability.conflicts
+      });
+    }
+    
+    // Update the schedule
+    item.scheduledStartTime = new Date(scheduledStartTime);
+    item.scheduledEndTime = new Date(scheduledEndTime);
+    item.updatedBy = req.user._id;
+    
+    await item.save();
+    
+    res.json({
+      success: true,
+      message: `${type === 'reservation' ? 'Réservation' : 'Chirurgie'} replanifiée avec succès`,
+      item: {
+        id: item._id,
+        scheduledStartTime: item.scheduledStartTime,
+        scheduledEndTime: item.scheduledEndTime
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error rescheduling:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la replanification: ' + error.message
+    });
+  }
+};
+
+// Export planning to PDF with enhanced styling and formatting
+module.exports.exportPlanningPDF = async (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const OperatingRoom = require('../models/OperatingRoom');
+    
+    // Get filter params (same as showPlanning)
+    const roomFilter = req.query.room || '';
+    const surgeonFilter = req.query.surgeon || '';
+    const dateFilter = req.query.date || new Date().toISOString().split('T')[0];
+    const typeFilter = req.query.type || 'all';
+    
+    const startDate = new Date(dateFilter);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 7);
+    
+    // Build queries
+    const surgeryQuery = {
+      $or: [
+        { scheduledStartTime: { $gte: startDate, $lte: endDate } },
+        { entreeSalle: { $gte: startDate, $lte: endDate } }
+      ]
+    };
+    if (roomFilter) surgeryQuery.operatingRoom = roomFilter;
+    if (surgeonFilter) surgeryQuery.surgeon = surgeonFilter;
+    
+    const reservationQuery = {
+      scheduledStartTime: { $gte: startDate, $lte: endDate },
+      reservationStatus: { $in: ['pending', 'confirmed'] }
+    };
+    if (roomFilter) reservationQuery.operatingRoom = roomFilter;
+    if (surgeonFilter) reservationQuery.surgeon = surgeonFilter;
+    
+    // Fetch data
+    let surgeries = [];
+    let reservations = [];
+    
+    if (typeFilter === 'all' || typeFilter === 'surgery') {
+      surgeries = await Surgery.find(surgeryQuery)
+        .populate('surgeon', 'firstName lastName')
+        .populate('patient', 'firstName lastName')
+        .populate('prestation', 'designation')
+        .populate('operatingRoom', 'code name')
+        .sort({ scheduledStartTime: 1 })
+        .lean();
+    }
+    
+    if (typeFilter === 'all' || typeFilter === 'reservation') {
+      reservations = await Reservation.find(reservationQuery)
+        .populate('surgeon', 'firstName lastName')
+        .populate('patient', 'firstName lastName')
+        .populate('prestation', 'designation')
+        .populate('operatingRoom', 'code name')
+        .sort({ scheduledStartTime: 1 })
+        .lean();
+    }
+    
+    const allEvents = [
+      ...surgeries.map(s => ({ ...s, type: 'surgery', code: s.code || 'N/A' })),
+      ...reservations.map(r => ({ ...r, type: 'reservation', code: r.temporaryCode || r.code || 'N/A' }))
+    ].sort((a, b) => {
+      const aTime = new Date(a.scheduledStartTime || a.entreeSalle);
+      const bTime = new Date(b.scheduledStartTime || b.entreeSalle);
+      return aTime - bTime;
+    });
+    
+    // Create PDF with larger page for better content display
+    const doc = new PDFDocument({ margin: 40, size: 'A4', bufferPages: true });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=planning-${dateFilter}.pdf`);
+    doc.pipe(res);
+    
+    // Register fonts that support UTF-8/accented characters
+    try {
+      const path = require('path');
+      const fontPath = path.join(__dirname, '../public/fonts');
+      // Try to use built-in fonts with proper encoding
+      doc.font('Helvetica');
+    } catch (e) {
+      // Fallback to default Helvetica
+      doc.font('Helvetica');
+    }
+    
+    // Define colors
+    const colors = {
+      primary: '#2c3e50',
+      secondary: '#34495e',
+      success: '#27ae60',
+      warning: '#f39c12',
+      border: '#bdc3c7',
+      lightBg: '#ecf0f1',
+      text: '#2c3e50'
+    };
+    
+    // Helper function to draw a box/border
+    const drawBox = (x, y, width, height, color = colors.border) => {
+      doc.strokeColor(color).lineWidth(1).rect(x, y, width, height).stroke();
+    };
+    
+    // Helper function for section headers
+    const drawSectionHeader = (title, y) => {
+      doc.rect(40, y, 515, 25).fillAndStroke(colors.primary, colors.primary);
+      doc.fillColor('white').fontSize(12).font('Helvetica-Bold').text(title, 50, y + 6, { width: 495 });
+      doc.fillColor(colors.text);
+      return y + 30;
+    };
+    
+    // Title and header
+    doc.fillColor(colors.primary).fontSize(24).font('Helvetica-Bold');
+    const titleText = 'Planification des Salles Operatoires';
+    doc.text(titleText, { align: 'center' });
+    doc.moveDown(0.5);
+    
+    // Date range box
+    const startDateStr = startDate.toLocaleDateString('fr-FR');
+    const endDateStr = endDate.toLocaleDateString('fr-FR');
+    const periodText = `Periode: ${startDateStr} au ${endDateStr}`;
+    doc.fontSize(11).fillColor(colors.secondary).text(periodText, { align: 'center' });
+    doc.moveDown();
+    
+    // Summary info
+    doc.fontSize(9).fillColor('#555').text(`Total d'evenements: ${allEvents.length}`, { align: 'center' });
+    doc.moveDown(1.5);
+    
+    // Draw separator
+    doc.strokeColor(colors.border).lineWidth(1).moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+    doc.moveDown(1);
+    
+    // Events with enhanced table format
+    let currentY = doc.y;
+    
+    allEvents.forEach((event, index) => {
+      // Check if we need a new page (leave space for at least one event)
+      if (currentY > 700) {
+        doc.addPage();
+        currentY = 40;
+      }
+      
+      const start = new Date(event.scheduledStartTime || event.entreeSalle);
+      const end = new Date(event.scheduledEndTime || event.sortieSalle);
+      const eventType = event.type === 'reservation' ? 'Reservation' : 'Chirurgie';
+      const typeColor = event.type === 'reservation' ? colors.warning : colors.success;
+      
+      // Event card background
+      const cardHeight = 140;
+      doc.rect(40, currentY, 515, cardHeight).fillAndStroke(colors.lightBg, colors.border);
+      
+      let contentY = currentY + 10;
+      
+      // Event header with type badge
+      doc.fontSize(10).fillColor('white').font('Helvetica-Bold');
+      doc.rect(40, contentY - 5, 100, 20).fillAndStroke(typeColor, typeColor);
+      doc.text(eventType, 45, contentY, { width: 90 });
+      
+      // Event code
+      doc.fillColor(colors.primary).font('Helvetica-Bold').fontSize(11);
+      const codeText = `Code: ${event.code}`;
+      doc.text(codeText, 150, contentY - 5, { width: 400 });
+      
+      contentY += 22;
+      doc.fillColor(colors.text).font('Helvetica').fontSize(9);
+      
+      // Date and time - formatted nicely
+      const startTime = start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const endTime = end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const timeStr = `${startTime} - ${endTime}`;
+      
+      const dayOfWeek = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][start.getDay()];
+      const monthName = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'][start.getMonth()];
+      const dateStr = `${dayOfWeek} ${start.getDate()} ${monthName} ${start.getFullYear()}`;
+      
+      doc.text(`Date: ${dateStr} | Heure: ${timeStr}`, 50, contentY, { width: 505 });
+      contentY += 18;
+      
+      // Operating room
+      if (event.operatingRoom) {
+        const roomCode = event.operatingRoom.code || '';
+        const roomName = event.operatingRoom.name || '';
+        const roomText = `Salle: ${roomCode} - ${roomName}`;
+        doc.text(roomText, 50, contentY, { width: 505 });
+        contentY += 16;
+      }
+      
+      // Surgeon - full name displayed
+      if (event.surgeon) {
+        const lastName = (event.surgeon.lastName || '').toUpperCase();
+        const firstName = event.surgeon.firstName || '';
+        const surgeonName = `Dr. ${lastName} ${firstName}`;
+        doc.font('Helvetica-Bold').text(`Chirurgien: `, 50, contentY, { continued: true });
+        doc.font('Helvetica').text(surgeonName, { width: 445 });
+        contentY += 16;
+      }
+      
+      // Patient - full name displayed
+      if (event.patient) {
+        const firstName = event.patient.firstName || '';
+        const lastName = event.patient.lastName || '';
+        const patientName = `${firstName} ${lastName}`;
+        doc.font('Helvetica-Bold').text(`Patient: `, 50, contentY, { continued: true });
+        doc.font('Helvetica').text(patientName, { width: 445 });
+        contentY += 16;
+      }
+      
+      // Prestation - full name displayed
+      if (event.prestation) {
+        const prestationName = event.prestation.designation || '';
+        doc.font('Helvetica-Bold').text(`Prestation: `, 50, contentY, { continued: true });
+        doc.font('Helvetica').text(prestationName, { width: 445 });
+        contentY += 16;
+      }
+      
+      currentY += cardHeight + 15;
+    });
+    
+    // Footer on last page
+    doc.moveDown(2);
+    doc.fontSize(8).fillColor('#999');
+    const footerDate = new Date().toLocaleDateString('fr-FR');
+    const footerTime = new Date().toLocaleTimeString('fr-FR');
+    doc.text(`Genere le: ${footerDate} a ${footerTime}`, { align: 'center' });
+    doc.text('Clinique - Systeme de Gestion des Salles Operatoires', { align: 'center' });
+    
+    doc.end();
+    
+  } catch (error) {
+    console.error('Error exporting PDF:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Export planning to Excel
+module.exports.exportPlanningExcel = async (req, res) => {
+  try {
+    const ExcelJS = require('exceljs');
+    const OperatingRoom = require('../models/OperatingRoom');
+    
+    // Get filter params
+    const roomFilter = req.query.room || '';
+    const surgeonFilter = req.query.surgeon || '';
+    
+    // Always start from today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = today;
+    
+    // No end date - fetch all future reservations from today
+    const endDate = new Date('2099-12-31');
+    
+    // Build queries for reservations only (from today onwards)
+    const reservationQuery = {
+      scheduledStartTime: { $gte: startDate, $lte: endDate },
+      reservationStatus: { $in: ['pending', 'confirmed'] }
+    };
+    if (roomFilter) reservationQuery.operatingRoom = roomFilter;
+    if (surgeonFilter) reservationQuery.surgeon = surgeonFilter;
+    
+    // Fetch only reservations (no surgeries)
+    const reservations = await Reservation.find(reservationQuery)
+      .populate('surgeon', 'firstName lastName')
+      .populate('patient', 'firstName lastName')
+      .populate('prestation', 'designation')
+      .populate('operatingRoom', 'code name')
+      .sort({ scheduledStartTime: 1 })
+      .lean();
+    
+    const allEvents = reservations.map(r => ({ 
+      ...r, 
+      type: 'reservation', 
+      code: r.temporaryCode || r.code || 'N/A' 
+    }));
+    
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Planning');
+    
+    // Add headers
+    worksheet.columns = [
+      { header: 'Type', key: 'type', width: 15 },
+      { header: 'Code', key: 'code', width: 15 },
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Heure Début', key: 'startTime', width: 12 },
+      { header: 'Heure Fin', key: 'endTime', width: 12 },
+      { header: 'Salle', key: 'room', width: 20 },
+      { header: 'Chirurgien', key: 'surgeon', width: 25 },
+      { header: 'Patient', key: 'patient', width: 25 },
+      { header: 'Prestation', key: 'prestation', width: 30 },
+      { header: 'Statut', key: 'status', width: 15 }
+    ];
+    
+    // Style headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0D6EFD' }
+    };
+    worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    
+    // Add data
+    allEvents.forEach(event => {
+      const start = new Date(event.scheduledStartTime);
+      const end = new Date(event.scheduledEndTime);
+      
+      worksheet.addRow({
+        type: 'Réservation',
+        code: event.code,
+        date: start.toLocaleDateString('fr-FR'),
+        startTime: start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        endTime: end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        room: event.operatingRoom ? `${event.operatingRoom.code} - ${event.operatingRoom.name}` : '-',
+        surgeon: event.surgeon ? `Dr. ${event.surgeon.lastName} ${event.surgeon.firstName}` : '-',
+        patient: event.patient ? `${event.patient.firstName} ${event.patient.lastName}` : '-',
+        prestation: event.prestation ? event.prestation.designation : '-',
+        status: event.reservationStatus
+      });
+    });
+    
+    // Set response headers
+    const todayStr = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=reservations-${todayStr}.xlsx`);
+    
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+    
+  } catch (error) {
+    console.error('Error exporting Excel:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

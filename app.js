@@ -89,10 +89,29 @@ const startApp = async () => {
 
     // const PORT = process.env.PORT
     const PORT = 7777
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Serveur démarré sur le port ${PORT}`);
       console.log(`Application accessible sur http://localhost:${PORT}`);
     });
+
+    // WebSocket setup for real-time updates
+    const io = require('socket.io')(server);
+    
+    io.on('connection', (socket) => {
+      console.log('Client connected to WebSocket');
+      
+      socket.on('planning-changed', (data) => {
+        // Broadcast to all other clients
+        socket.broadcast.emit('planning-update', data);
+      });
+      
+      socket.on('disconnect', () => {
+        console.log('Client disconnected from WebSocket');
+      });
+    });
+    
+    // Make io available to controllers
+    app.set('io', io);
 
   } catch (error) {
     console.error("Failed to connect to the database", error);

@@ -1,288 +1,337 @@
 <% layout('layouts/boilerplate') %>
 <!-- views/surgeries/planning.ejs -->
-<div class="material-page-header">
+<div class="modern-page-header">
     <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="page-title mb-0">Planification des Salles Opératoires</h1>
-                <p class="page-subtitle">Calendrier et réservations</p>
+        <div class="header-content">
+            <div class="header-text">
+                <h1 class="page-title">
+                    <i class="bi bi-calendar3-event me-3"></i>
+                    Planification des Salles Opératoires
+                </h1>
+                <p class="page-subtitle">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Calendrier interactif et réservations - Cliquez sur un jour pour voir les détails
+                </p>
             </div>
-            <% if (permissions.canCreateReservations) { %>
-            <a href="/surgeries/new" class="action-button">
-                <i class="bi bi-plus-circle"></i>Nouvelle Chirurgie
-            </a>
-            <% } %>
+            <div class="header-actions">
+                <% if (permissions.canCreateReservations) { %>
+                <div class="action-buttons">
+                    <a href="/surgeries/planning/book-slots" class="btn-modern btn-primary-modern">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Réserver un Créneau</span>
+                    </a>
+                    <a href="/surgeries/new" class="btn-modern btn-secondary-modern">
+                        <i class="bi bi-plus-circle-fill"></i>
+                        <span>Nouvelle Chirurgie</span>
+                    </a>
+                </div>
+                <% } %>
+                <div class="export-buttons">
+                    <button type="button" class="btn-modern btn-success-modern" id="exportPdfBtn">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>PDF</span>
+                    </button>
+                    <button type="button" class="btn-modern btn-success-modern" id="exportExcelBtn">
+                        <i class="bi bi-file-earmark-excel"></i>
+                        <span>Excel</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="container-fluid">
-    <!-- Filtres -->
-    <div class="material-filters">
-        <h5 class="filter-title">
-            <i class="bi bi-funnel"></i>Filtres
-        </h5>
-        <form method="GET" class="row g-3">
-            <div class="col-md-2">
-                <label class="form-label">Type</label>
-                <select name="type" class="form-select">
-                    <option value="all" <%= filters.type === 'all' ? 'selected' : '' %>>Tous</option>
-                    <option value="surgery" <%= filters.type === 'surgery' ? 'selected' : '' %>>Chirurgies</option>
-                    <option value="reservation" <%= filters.type === 'reservation' ? 'selected' : '' %>>Réservations</option>
-                </select>
+    <!-- Modern Filters Section -->
+    <div class="modern-filters-card">
+        <div class="filters-header">
+            <div class="filter-title-section">
+                <div class="filter-icon">
+                    <i class="bi bi-funnel-fill"></i>
+                </div>
+                <div>
+                    <h4 class="filter-title">Filtres & Recherche</h4>
+                    <p class="filter-subtitle">Affinez votre vue du planning</p>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label">Salle</label>
-                <select name="room" class="form-select">
-                    <option value="">Toutes les salles</option>
-                    <% rooms.forEach(room => { %>
-                        <option value="<%= room._id %>" <%= filters.room === room._id.toString() ? 'selected' : '' %>>
-                            <%= room.code %> - <%= room.name %>
-                        </option>
-                    <% }); %>
-                </select>
+            <div class="filter-stats">
+                <div class="stat-item">
+                    <span class="stat-number"><%= events.length %></span>
+                    <span class="stat-label">Événements</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number"><%= rooms.length %></span>
+                    <span class="stat-label">Salles</span>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Chirurgien</label>
-                <select name="surgeon" class="form-select">
-                    <option value="">Tous les chirurgiens</option>
-                    <% surgeons.forEach(surgeon => { %>
-                        <option value="<%= surgeon._id %>" <%= filters.surgeon === surgeon._id.toString() ? 'selected' : '' %>>
-                            Dr. <%= surgeon.lastName %> <%= surgeon.firstName %>
-                        </option>
-                    <% }); %>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Date de début</label>
-                <input type="date" name="date" class="form-control" value="<%= filters.date %>">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">&nbsp;</label>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary">
-                        <i class="bi bi-search"></i> Filtrer
+        </div>
+
+        <form method="GET" class="modern-filter-form">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="bi bi-tag"></i>
+                        Type d'événement
+                    </label>
+                    <select name="type" class="modern-select">
+                        <option value="all" <%= filters.type === 'all' ? 'selected' : '' %>>Tous les types</option>
+                        <option value="surgery" <%= filters.type === 'surgery' ? 'selected' : '' %>>Chirurgies uniquement</option>
+                        <option value="reservation" <%= filters.type === 'reservation' ? 'selected' : '' %>>Réservations uniquement</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="bi bi-hospital"></i>
+                        Salle d'opération
+                    </label>
+                    <select name="room" class="modern-select">
+                        <option value="">Toutes les salles</option>
+                        <% rooms.forEach(room => { %>
+                            <option value="<%= room._id %>" <%= filters.room === room._id.toString() ? 'selected' : '' %>>
+                                <%= room.code %> - <%= room.name %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="bi bi-person-badge"></i>
+                        Chirurgien
+                    </label>
+                    <select name="surgeon" class="modern-select">
+                        <option value="">Tous les chirurgiens</option>
+                        <% surgeons.forEach(surgeon => { %>
+                            <option value="<%= surgeon._id %>" <%= filters.surgeon === surgeon._id.toString() ? 'selected' : '' %>>
+                                Dr. <%= surgeon.lastName %> <%= surgeon.firstName %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="bi bi-calendar-date"></i>
+                        Date de début
+                    </label>
+                    <input type="date" name="date" class="modern-input" value="<%= filters.date %>">
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn-modern btn-primary-modern">
+                        <i class="bi bi-search"></i>
+                        <span>Appliquer les filtres</span>
                     </button>
-                    <a href="/surgeries/planning/view" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                    <a href="/surgeries/planning/view" class="btn-modern btn-outline-modern">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        <span>Réinitialiser</span>
                     </a>
                 </div>
             </div>
         </form>
     </div>
 
-    <!-- Planning Grid -->
-    <div class="card mt-4">
-        <div class="card-header bg-primary text-white">
-            <h6 class="mb-0">
-                <i class="bi bi-calendar3 me-2"></i>
-                Période: <%= typeof moment !== 'undefined' ? moment(startDate).format('DD/MM/YYYY') : new Date(startDate).toLocaleDateString('fr-FR') %>
-                au
-                <%= typeof moment !== 'undefined' ? moment(endDate).format('DD/MM/YYYY') : new Date(endDate).toLocaleDateString('fr-FR') %>
-            </h6>
-        </div>
-        <div class="card-body">
-            <% if (events.length > 0) { %>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Type</th>
-                                <th>Date</th>
-                                <th>Heure</th>
-                                <th>Salle</th>
-                                <th>Chirurgien</th>
-                                <th>Patient</th>
-                                <th>Prestation</th>
-                                <th>Durée</th>
-                                <th>Statut</th>
-                                <th>Code</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% events.forEach(event => { %>
-                                <tr>
-                                    <td>
-                                        <% if (event.type === 'reservation') { %>
-                                            <span class="badge bg-info text-white">
-                                                <i class="bi bi-calendar-check"></i> Réservation
-                                            </span>
-                                        <% } else { %>
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-scissors"></i> Chirurgie
-                                            </span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <%
-                                            const displayDate = event.scheduledStartTime || event.entreeSalle;
-                                            if (displayDate) {
-                                        %>
-                                            <%= typeof moment !== 'undefined' ? moment(displayDate).format('DD/MM/YYYY') : new Date(displayDate).toLocaleDateString('fr-FR') %>
-                                        <% } else { %>
-                                            <span class="text-muted">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <%
-                                            const displayStartTime = event.scheduledStartTime || event.entreeSalle;
-                                            const displayEndTime = event.scheduledEndTime || event.sortieSalle;
-                                            if (displayStartTime && displayEndTime) {
-                                        %>
-                                            <strong>
-                                                <%= typeof moment !== 'undefined' ? moment(displayStartTime).format('HH:mm') : new Date(displayStartTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
-                                            </strong>
-                                            -
-                                            <%= typeof moment !== 'undefined' ? moment(displayEndTime).format('HH:mm') : new Date(displayEndTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
-                                        <% } else { %>
-                                            <span class="text-muted">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (event.operatingRoom) { %>
-                                            <span class="badge bg-light text-dark">
-                                                <%= event.operatingRoom.code %>
-                                            </span>
-                                            <br>
-                                            <small class="text-muted"><%= event.operatingRoom.name %></small>
-                                        <% } else { %>
-                                            <span class="text-muted">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (event.surgeon) { %>
-                                            Dr. <%= event.surgeon.lastName %> <%= event.surgeon.firstName %>
-                                        <% } else { %>
-                                            <span class="text-muted">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (event.patient) { %>
-                                            <%= event.patient.firstName %> <%= event.patient.lastName %>
-                                        <% } else { %>
-                                            <span class="text-muted">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (event.prestation) { %>
-                                            <small><%= event.prestation.designation %></small>
-                                        <% } else { %>
-                                            <span class="text-muted">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <%
-                                            const startTime = new Date(event.scheduledStartTime || event.entreeSalle);
-                                            const endTime = new Date(event.scheduledEndTime || event.sortieSalle);
-                                            const duration = (endTime - startTime) / (1000 * 60);
-                                            const hours = Math.floor(duration / 60);
-                                            const minutes = duration % 60;
-                                        %>
-                                        <small class="text-muted">
-                                            <% if (hours > 0) { %><%= hours %>h<% } %>
-                                            <% if (minutes > 0) { %><%= minutes %>min<% } %>
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <% if (event.type === 'reservation') { %>
-                                            <% if (event.reservationStatus === 'confirmed') { %>
-                                                <span class="badge bg-success">Confirmé</span>
-                                            <% } else if (event.reservationStatus === 'pending') { %>
-                                                <span class="badge bg-warning text-dark">En attente</span>
-                                            <% } else if (event.reservationStatus === 'cancelled') { %>
-                                                <span class="badge bg-danger">Annulé</span>
-                                            <% } %>
-                                        <% } else { %>
-                                            <% if (event.status === 'urgent') { %>
-                                                <span class="badge bg-danger">Urgente</span>
-                                            <% } else if (event.status === 'planned') { %>
-                                                <span class="badge bg-primary">Planifiée</span>
-                                            <% } %>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (event.type === 'surgery') { %>
-                                            <a href="/surgeries/<%= event._id %>" class="btn btn-sm btn-outline-primary">
-                                                <%= event.code %>
-                                            </a>
-                                        <% } else { %>
-                                            <span class="badge bg-secondary">
-                                                <%= event.code %>
-                                            </span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (event.type === 'reservation' && (event.reservationStatus === 'pending' || event.reservationStatus === 'confirmed')) { %>
-                                            <a href="/surgeries/new/from-reservation/<%= event._id %>" class="btn btn-sm btn-success" title="Convertir en chirurgie">
-                                                <i class="bi bi-arrow-right-circle"></i> Convertir
-                                            </a>
-                                        <% } else if (event.type === 'surgery') { %>
-                                            <a href="/surgeries/<%= event._id %>/edit" class="btn btn-sm btn-outline-secondary" title="Modifier">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                        <% } %>
-                                    </td>
-                                </tr>
-                            <% }); %>
-                        </tbody>
-                    </table>
+    <!-- Main Content Layout -->
+    <div class="modern-content-layout">
+        <!-- Calendar Section -->
+        <div class="calendar-section">
+            <div class="modern-calendar-card">
+                <div class="calendar-header">
+                    <div class="calendar-title-section">
+                        <div class="calendar-icon">
+                            <i class="bi bi-calendar3"></i>
+                        </div>
+                        <div>
+                            <h3 class="calendar-title">Calendrier des Opérations</h3>
+                            <p class="calendar-subtitle">Vue interactive avec drag & drop</p>
+                        </div>
+                    </div>
+                    <div class="calendar-controls">
+                        <div class="view-toggle-buttons">
+                            <button type="button" class="view-btn" id="viewDayBtn">
+                                <i class="bi bi-calendar-day"></i>
+                                <span>Jour</span>
+                            </button>
+                            <button type="button" class="view-btn active" id="viewWeekBtn">
+                                <i class="bi bi-calendar-week"></i>
+                                <span>Semaine</span>
+                            </button>
+                            <button type="button" class="view-btn" id="viewMonthBtn">
+                                <i class="bi bi-calendar-month"></i>
+                                <span>Mois</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            <% } else { %>
-                <div class="material-empty-state">
-                    <div class="empty-icon">
-                        <i class="bi bi-calendar-x"></i>
-                    </div>
-                    <h5 class="empty-title">Aucune planification trouvée</h5>
-                    <p class="empty-description">
-                        Aucune chirurgie ou réservation pour cette période
-                        <% if (filters.room || filters.surgeon || filters.type !== 'all') { %>
-                            avec les filtres sélectionnés
-                        <% } %>
-                    </p>
-                    <% if (permissions.canCreateReservations) { %>
-                    <div class="d-flex gap-2 justify-content-center">
-                        <a href="/surgeries/new" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Créer une chirurgie
-                        </a>
-                        <a href="/surgeries/planning/slots" class="btn btn-info text-white">
-                            <i class="bi bi-calendar-check"></i> Faire une réservation
-                        </a>
-                    </div>
+
+                <div class="calendar-body">
+                    <% if (events.length === 0) { %>
+                        <div class="modern-empty-state">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-calendar-x"></i>
+                            </div>
+                            <div class="empty-state-content">
+                                <h4 class="empty-state-title">Aucun événement planifié</h4>
+                                <p class="empty-state-description">
+                                    Aucun événement trouvé pour cette période
+                                    <% if (filters.room || filters.surgeon || filters.type !== 'all') { %>
+                                        avec les filtres sélectionnés
+                                    <% } %>
+                                </p>
+                                <% if (permissions.canCreateReservations) { %>
+                                <div class="empty-state-actions">
+                                    <a href="/surgeries/new" class="btn-modern btn-primary-modern">
+                                        <i class="bi bi-plus-circle-fill"></i>
+                                        <span>Créer une chirurgie</span>
+                                    </a>
+                                    <a href="/surgeries/planning/slots" class="btn-modern btn-outline-modern">
+                                        <i class="bi bi-calendar-plus"></i>
+                                        <span>Faire une réservation</span>
+                                    </a>
+                                </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% } else { %>
+                        <div id="calendar" class="modern-calendar"></div>
                     <% } %>
                 </div>
-            <% } %>
+            </div>
+        </div>
+
+        <!-- Sidebar Section -->
+        <div class="sidebar-section">
+            <!-- Utilization Statistics -->
+            <div class="modern-sidebar-card">
+                <div class="sidebar-card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <div>
+                        <h4 class="card-title">Taux d'Occupation</h4>
+                        <p class="card-subtitle">Utilisation des salles</p>
+                    </div>
+                </div>
+                <div class="sidebar-card-body">
+                    <div id="utilizationStats" class="utilization-container">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p>Calcul des statistiques...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conflict Alerts -->
+            <div class="modern-sidebar-card" id="conflictAlertsCard" style="display: none;">
+                <div class="sidebar-card-header warning">
+                    <div class="card-icon">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="card-title">Conflits Détectés</h4>
+                        <p class="card-subtitle">Résolution requise</p>
+                    </div>
+                </div>
+                <div class="sidebar-card-body">
+                    <div id="conflictAlerts" class="conflict-container"></div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Legend -->
-    <div class="card mt-3">
-        <div class="card-body">
-            <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Légende</h6>
-            <div class="d-flex flex-wrap gap-3">
-                <div>
-                    <span class="badge bg-info text-white"><i class="bi bi-calendar-check"></i> Réservation</span>
-                    <small class="text-muted ms-2">Slot réservé (pas encore confirmé comme chirurgie)</small>
+    <!-- Selected Day Events -->
+    <div class="modern-events-card" id="selectedDayCard" style="display: none;">
+        <div class="events-card-header">
+            <div class="events-header-content">
+                <div class="events-icon">
+                    <i class="bi bi-list-check"></i>
                 </div>
                 <div>
-                    <span class="badge bg-warning text-dark"><i class="bi bi-scissors"></i> Chirurgie</span>
-                    <small class="text-muted ms-2">Chirurgie confirmée avec tous les détails</small>
+                    <h3 class="events-title">Événements du <span id="selectedDateDisplay"></span></h3>
+                    <p class="events-subtitle">Détails des opérations et réservations</p>
                 </div>
-                <div>
-                    <span class="badge bg-success">Confirmé</span>
-                    <small class="text-muted ms-2">Réservation confirmée</small>
+            </div>
+            <button type="button" class="close-events-btn" onclick="document.getElementById('selectedDayCard').style.display='none'">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="events-card-body">
+            <div id="selectedDayEvents" class="events-container">
+                <!-- Events will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Legend -->
+    <div class="modern-legend-card">
+        <div class="legend-header">
+            <div class="legend-icon">
+                <i class="bi bi-info-circle-fill"></i>
+            </div>
+            <h4 class="legend-title">Guide des Événements</h4>
+        </div>
+        <div class="legend-content">
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-badge reservation">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="legend-info">
+                        <span class="legend-label">Réservation</span>
+                        <span class="legend-desc">Slot réservé (pas encore confirmé)</span>
+                    </div>
                 </div>
-                <div>
-                    <span class="badge bg-warning text-dark">En attente</span>
-                    <small class="text-muted ms-2">Réservation en attente de confirmation</small>
+
+                <div class="legend-item">
+                    <div class="legend-badge surgery">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <div class="legend-info">
+                        <span class="legend-label">Chirurgie</span>
+                        <span class="legend-desc">Opération confirmée avec tous les détails</span>
+                    </div>
                 </div>
-                <div>
-                    <span class="badge bg-primary">Planifiée</span>
-                    <small class="text-muted ms-2">Chirurgie planifiée</small>
+
+                <div class="legend-item">
+                    <div class="legend-badge confirmed">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="legend-info">
+                        <span class="legend-label">Confirmé</span>
+                        <span class="legend-desc">Réservation validée</span>
+                    </div>
                 </div>
-                <div>
-                    <span class="badge bg-danger">Urgente</span>
-                    <small class="text-muted ms-2">Chirurgie urgente</small>
+
+                <div class="legend-item">
+                    <div class="legend-badge pending">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div class="legend-info">
+                        <span class="legend-label">En attente</span>
+                        <span class="legend-desc">Confirmation en cours</span>
+                    </div>
+                </div>
+
+                <div class="legend-item">
+                    <div class="legend-badge planned">
+                        <i class="bi bi-calendar-event"></i>
+                    </div>
+                    <div class="legend-info">
+                        <span class="legend-label">Planifiée</span>
+                        <span class="legend-desc">Chirurgie programmée</span>
+                    </div>
+                </div>
+
+                <div class="legend-item">
+                    <div class="legend-badge urgent">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="legend-info">
+                        <span class="legend-label">Urgente</span>
+                        <span class="legend-desc">Intervention prioritaire</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -290,21 +339,2199 @@
 </div>
 
 <style>
-.material-empty-state {
+/* ===== MODERN UI STYLES ===== */
+
+/* ===== CSS Variables ===== */
+:root {
+    /* Modern Color Palette */
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    --info-gradient: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+
+    /* Neutral Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border-color: #e2e8f0;
+    --border-hover: #cbd5e1;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.15);
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+/* ===== Modern Page Header ===== */
+.modern-page-header {
+    background: var(--primary-gradient);
+    color: white;
+    padding: var(--spacing-2xl) 0;
+    margin-bottom: var(--spacing-2xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.03"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.03"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.02"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.02"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
+}
+
+.header-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-xl);
+}
+
+.header-text {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0 0 var(--spacing-sm) 0;
+    background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.export-buttons {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+/* ===== Modern Buttons ===== */
+.btn-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left var(--transition-slow);
+}
+
+.btn-modern:hover::before {
+    left: 100%;
+}
+
+.btn-primary-modern {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+}
+
+.btn-secondary-modern {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.btn-secondary-modern:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-success-modern {
+    background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-success-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, #047857 0%, #0f766e 100%);
+}
+
+.btn-outline-modern {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-outline-modern:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+}
+
+/* ===== Modern Filters Card ===== */
+.modern-filters-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-filters-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.filter-title-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.filter-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.filter-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.filter-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.filter-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+.stat-item {
     text-align: center;
-    padding: 3rem 1rem;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    min-width: 60px;
 }
-.material-empty-state .empty-icon {
-    font-size: 4rem;
-    color: #dee2e6;
-    margin-bottom: 1rem;
+
+.stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
 }
-.material-empty-state .empty-title {
-    color: #6c757d;
-    margin-bottom: 0.5rem;
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
 }
-.material-empty-state .empty-description {
-    color: #adb5bd;
-    margin-bottom: 1.5rem;
+
+.modern-filter-form {
+    margin-top: var(--spacing-xl);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.filter-label i {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.modern-select,
+.modern-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.modern-select:focus,
+.modern-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.filter-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: end;
+}
+
+/* ===== Modern Content Layout ===== */
+.modern-content-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: var(--spacing-xl);
+    align-items: start;
+}
+
+.calendar-section {
+    min-height: 600px;
+}
+
+.sidebar-section {
+    position: sticky;
+    top: var(--spacing-xl);
+}
+
+/* ===== Modern Calendar Card ===== */
+.modern-calendar-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.calendar-header {
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.calendar-title-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.calendar-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.calendar-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.calendar-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+}
+
+.view-toggle-buttons {
+    display: flex;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.view-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: none;
+    background: white;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.view-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.view-btn.active {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.calendar-body {
+    padding: var(--spacing-xl);
+}
+
+/* ===== Modern Calendar ===== */
+.modern-calendar {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+/* ===== Modern Empty State ===== */
+.modern-empty-state {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-lg);
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-xl);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.empty-state-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+/* ===== Modern Sidebar Cards ===== */
+.modern-sidebar-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-lg);
+    overflow: hidden;
+}
+
+.sidebar-card-header {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.sidebar-card-header.warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-bottom-color: #f59e0b;
+}
+
+.card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.sidebar-card-header .card-icon {
+    background: var(--success-gradient);
+    color: white;
+}
+
+.sidebar-card-header.warning .card-icon {
+    background: var(--warning-gradient);
+    color: white;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.card-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.sidebar-card-body {
+    padding: var(--spacing-lg);
+}
+
+/* ===== Utilization Stats ===== */
+.utilization-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.utilization-item {
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid;
+    transition: all var(--transition-fast);
+}
+
+.utilization-item:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.utilization-item.high {
+    border-left-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.utilization-item.medium {
+    border-left-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.utilization-item.low {
+    border-left-color: #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.utilization-bar {
+    height: 24px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: var(--spacing-sm);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.utilization-bar-fill {
+    height: 100%;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    transition: width var(--transition-slow);
+    position: relative;
+}
+
+.utilization-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+    border-radius: inherit;
+}
+
+.loading-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-muted);
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--spacing-md);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== Conflict Alerts ===== */
+.conflict-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.conflict-alert-item {
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: #92400e;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===== Modern Events Card ===== */
+.modern-events-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-xl);
+    overflow: hidden;
+}
+
+.events-card-header {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.events-header-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.events-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--info-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.events-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.events-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.close-events-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.close-events-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.events-card-body {
+    padding: var(--spacing-lg);
+}
+
+.events-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* ===== Event Items ===== */
+.event-item {
+    border-left: 4px solid;
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.event-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: currentColor;
+    opacity: 0.1;
+}
+
+.event-item:hover {
+    transform: translateX(8px);
+    box-shadow: var(--shadow-md);
+}
+
+.event-item.event-reservation {
+    border-left-color: #17a2b8;
+    color: #17a2b8;
+}
+
+.event-item.event-surgery {
+    border-left-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.event-item.event-urgent {
+    border-left-color: #ef4444;
+    color: #ef4444;
+}
+
+/* Surgeon-specific colors for reservations */
+.event-item.event-reservation[data-surgeon-color] {
+    color: inherit !important;
+}
+
+.event-item.event-reservation .event-item-title {
+    color: var(--text-primary) !important;
+}
+
+.event-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-md);
+}
+
+.event-item-title {
+    font-weight: 700;
+    font-size: 1.125rem;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.event-item-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.event-item-detail {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.875rem;
+}
+
+.event-item-detail i {
+    color: var(--text-muted);
+    width: 16px;
+    font-size: 0.875rem;
+}
+
+.event-item-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+}
+
+/* ===== Modern Legend ===== */
+.modern-legend-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.legend-header {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.legend-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.legend-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.legend-content {
+    padding: var(--spacing-lg);
+}
+
+.legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+}
+
+.legend-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.legend-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.legend-badge.reservation {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.legend-badge.surgery {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.legend-badge.confirmed {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.legend-badge.pending {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.legend-badge.planned {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.legend-badge.urgent {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.legend-info {
+    flex: 1;
+}
+
+.legend-label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.legend-desc {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* ===== FullCalendar Custom Styling ===== */
+#calendar {
+    max-width: 100%;
+    margin: 0 auto;
+    font-size: 0.875rem;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.fc {
+    --fc-border-color: var(--border-color);
+    --fc-button-bg-color: #667eea;
+    --fc-button-border-color: #667eea;
+    --fc-button-hover-bg-color: #5a67d8;
+    --fc-button-hover-border-color: #5a67d8;
+    --fc-button-active-bg-color: #4c51bf;
+    --fc-today-bg-color: rgba(102, 126, 234, 0.1);
+}
+
+.fc-button {
+    border-radius: var(--radius-md) !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    padding: var(--spacing-xs) var(--spacing-md) !important;
+}
+
+.fc-event {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: none;
+    transition: all var(--transition-fast);
+}
+
+.fc-event:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-sm);
+}
+
+.fc-event.event-reservation {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    border-color: #138496;
+}
+
+.fc-event.event-surgery {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: #d97706;
+    color: white;
+}
+
+.fc-event.event-urgent {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #dc2626;
+}
+
+.fc-event.event-conflict {
+    position: relative;
+    border: 2px dashed #ff6b6b !important;
+    animation: conflict-pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+}
+
+@keyframes conflict-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
+.fc-event.event-conflict::after {
+    content: '⚠️';
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: 0.7rem;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+/* ===== MONTH VIEW TEXT READABILITY ===== */
+.fc-view-harness .fc-daygrid-event {
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.fc-view-harness .fc-daygrid-event .fc-event-title {
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Ensure minimum contrast in month view */
+.fc-view-harness .fc-daygrid-event {
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Force readable text in month view for all events */
+.fc-view-harness .fc-daygrid-event,
+.fc-view-harness .fc-daygrid-event .fc-event-title {
+    color: #FFFFFF !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;
+    font-weight: 700 !important;
+}
+
+/* Override background colors for month view to ensure readability */
+.fc-view-harness .fc-daygrid-event {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 100%) !important;
+    border: 2px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+    .modern-content-layout {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    .sidebar-section {
+        position: static;
+    }
+
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-lg);
+    }
+
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .legend-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .modern-page-header {
+        padding: var(--spacing-xl) 0;
+    }
+
+    .modern-filters-card,
+    .modern-calendar-card,
+    .modern-sidebar-card,
+    .modern-events-card,
+    .modern-legend-card {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .export-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .view-toggle-buttons {
+        width: 100%;
+    }
+
+    .view-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* ===== Accessibility ===== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== Dark Mode Support ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #1e293b;
+        --bg-secondary: #334155;
+        --bg-tertiary: #475569;
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --border-color: #475569;
+        --border-hover: #64748b;
+    }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+    .modern-page-header,
+    .header-actions,
+    .filter-actions,
+    .calendar-controls {
+        display: none !important;
+    }
+
+    .modern-calendar-card,
+    .modern-sidebar-card,
+    .modern-events-card,
+    .modern-legend-card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+
+/* ===== MODERN MODAL STYLES ===== */
+
+/* Modal Overlay */
+.modern-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Modal Container */
+.modern-modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: modalSlideIn 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Header */
+.modern-modal-header {
+    padding: var(--spacing-xl);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.modal-title-section {
+    flex: 1;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-xs) 0;
+}
+
+.modal-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Modal Body */
+.modern-modal-body {
+    padding: var(--spacing-xl);
+}
+
+.modal-form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.modal-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.modal-label i {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.modern-textarea {
+    width: 100%;
+    padding: var(--spacing-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: all var(--transition-fast);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.modern-textarea:focus {
+    outline: none;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    transform: translateY(-1px);
+}
+
+.modern-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.modal-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: #92400e;
+}
+
+.modal-warning i {
+    color: #f59e0b;
+    font-size: 1rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Modal Footer */
+.modern-modal-footer {
+    padding: var(--spacing-xl);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    background: var(--bg-secondary);
+}
+
+.btn-danger-modern {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-danger-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* ===== RESPONSIVE MODAL ===== */
+@media (max-width: 768px) {
+    .modern-modal {
+        width: 95%;
+        margin: var(--spacing-lg);
+    }
+
+    .modern-modal-header {
+        padding: var(--spacing-lg);
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-md);
+    }
+
+    .modern-modal-body {
+        padding: var(--spacing-lg);
+    }
+
+    .modern-modal-footer {
+        padding: var(--spacing-lg);
+        flex-direction: column;
+    }
+
+    .modern-modal-footer .btn-modern {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ===== MODERN ALERT STYLES ===== */
+
+.modern-alert {
+    position: fixed;
+    top: var(--spacing-xl);
+    right: var(--spacing-xl);
+    max-width: 500px;
+    width: 90%;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    border-left: 5px solid;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    z-index: 10000;
+}
+
+.modern-alert-success {
+    border-left-color: #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.modern-alert-error {
+    border-left-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+.alert-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    color: white;
+}
+
+.modern-alert-success .alert-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.modern-alert-error .alert-icon {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 var(--spacing-xs) 0;
+    color: var(--text-primary);
+}
+
+.modern-alert-success .alert-title {
+    color: #166534;
+}
+
+.modern-alert-error .alert-title {
+    color: #7f1d1d;
+}
+
+.alert-message {
+    font-size: 0.875rem;
+    margin: 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.modern-alert-success .alert-message {
+    color: #166534;
+    opacity: 0.9;
+}
+
+.modern-alert-error .alert-message {
+    color: #7f1d1d;
+    opacity: 0.9;
+}
+
+.alert-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.alert-close-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+}
+
+/* Alert Animations */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) translateX(0);
+    }
+}
+
+@keyframes slideOutUp {
+    from {
+        opacity: 1;
+        transform: translateY(0) translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px) translateX(20px);
+    }
+}
+
+/* Responsive Alert */
+@media (max-width: 768px) {
+    .modern-alert {
+        top: var(--spacing-lg);
+        right: var(--spacing-sm);
+        left: var(--spacing-sm);
+        max-width: none;
+        width: auto;
+    }
+
+    .alert-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize variables
+    let currentReservationId = null;
+    
+    // Define cancelReservationRequest function first (before it's called)
+    function cancelReservationRequest(reservationId, reason) {
+        fetch(`/surgeries/${reservationId}/reservation`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reason: reason
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show modern success alert
+                showModernAlert('success', 'Réservation annulée', 'La réservation a été annulée avec succès. Le calendrier va se rafraîchir.');
+                // Reload the calendar after 2 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showModernAlert('error', 'Erreur', data.error || 'Une erreur est survenue lors de l\'annulation');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showModernAlert('error', 'Erreur', 'Erreur lors de l\'annulation de la réservation');
+        });
+    }
+    
+    // Modern Alert Function
+    function showModernAlert(type, title, message) {
+        const alertId = 'modern-alert-' + Date.now();
+        const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
+        const gradient = type === 'success' ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+        
+        const alertHTML = `
+<div id="${alertId}" class="modern-alert modern-alert-${type}" style="animation: slideInDown 0.4s ease;">
+    <div class="alert-icon">
+        <i class="bi ${icon}"></i>
+    </div>
+    <div class="alert-content">
+        <h4 class="alert-title">${title}</h4>
+        <p class="alert-message">${message}</p>
+    </div>
+    <button type="button" class="alert-close-btn" onclick="document.getElementById('${alertId}').remove()">
+        <i class="bi bi-x"></i>
+    </button>
+</div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', alertHTML);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                alert.style.animation = 'slideOutUp 0.4s ease';
+                setTimeout(() => alert.remove(), 400);
+            }
+        }, 5000);
+    }
+    
+    // Setup Modal DOM elements
+    const cancelModalHTML = `
+<div class="modern-modal-overlay" id="cancelModal" style="display: none;">
+    <div class="modern-modal">
+        <div class="modern-modal-header">
+            <div class="modal-icon">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="modal-title-section">
+                <h3 class="modal-title">Annuler la réservation</h3>
+                <p class="modal-subtitle">Veuillez confirmer l'annulation de cette réservation</p>
+            </div>
+            <button type="button" class="modal-close-btn" id="cancelModalClose">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+        <div class="modern-modal-body">
+            <div class="modal-form-group">
+                <label for="cancelReason" class="modal-label">
+                    <i class="bi bi-chat-quote"></i>
+                    Raison de l'annulation (optionnel)
+                </label>
+                <textarea 
+                    id="cancelReason" 
+                    class="modern-textarea" 
+                    placeholder="Ex: Patient annulé, urgence médicale, changement de planning..."
+                    rows="3"
+                ></textarea>
+            </div>
+            <div class="modal-warning">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Cette action est irréversible. La réservation sera marquée comme annulée.</span>
+            </div>
+        </div>
+        <div class="modern-modal-footer">
+            <button type="button" class="btn-modern btn-outline-modern" id="cancelModalCancel">
+                <i class="bi bi-arrow-left"></i>
+                <span>Annuler</span>
+            </button>
+            <button type="button" class="btn-modern btn-danger-modern" id="cancelModalConfirm">
+                <i class="bi bi-x-circle"></i>
+                <span>Confirmer l'annulation</span>
+            </button>
+        </div>
+    </div>
+</div>
+`;
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', cancelModalHTML);
+    
+    // Helper function to close modal
+    function closeCancelModal() {
+        document.getElementById('cancelModal').style.display = 'none';
+        document.getElementById('cancelReason').value = '';
+        currentReservationId = null;
+    }
+    
+    // Modal event listeners
+    document.getElementById('cancelModalClose').addEventListener('click', closeCancelModal);
+    document.getElementById('cancelModalCancel').addEventListener('click', closeCancelModal);
+    
+    // Close modal on overlay click
+    document.getElementById('cancelModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCancelModal();
+        }
+    });
+    
+    // Confirm cancellation
+    document.getElementById('cancelModalConfirm').addEventListener('click', function() {
+        const reason = document.getElementById('cancelReason').value.trim();
+        if (currentReservationId) {
+            cancelReservationRequest(currentReservationId, reason);
+            closeCancelModal();
+        }
+    });
+    
+    // Handle Enter key in textarea
+    document.getElementById('cancelReason').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            document.getElementById('cancelModalConfirm').click();
+        }
+    });
+    
+    // ===== CALENDAR INITIALIZATION =====
+    const calendarEl = document.getElementById('calendar');
+    const selectedDayCard = document.getElementById('selectedDayCard');
+    const selectedDayEvents = document.getElementById('selectedDayEvents');
+    const selectedDateDisplay = document.getElementById('selectedDateDisplay');
+    const utilizationStats = document.getElementById('utilizationStats');
+    const conflictAlertsCard = document.getElementById('conflictAlertsCard');
+    const conflictAlerts = document.getElementById('conflictAlerts');
+    
+    // Server-side data
+    const eventsData = <%- JSON.stringify(events) %>;
+    const roomsData = <%- JSON.stringify(rooms) %>;
+    const canCreateReservations = <%= permissions.canCreateReservations ? 'true' : 'false' %>;
+    const canEditSurgeries = <%= (permissions.canCreateReservations || permissions.canEditSurgeries) ? 'true' : 'false' %>;
+    
+    // WebSocket connection for real-time updates
+    let socket;
+    if (typeof io !== 'undefined') {
+        socket = io();
+        socket.on('planning-update', function(data) {
+            console.log('Planning update received:', data);
+            // Reload the page to reflect changes
+            window.location.reload();
+        });
+    }
+    
+    // Detect conflicts
+    function detectConflicts(events) {
+        const conflicts = [];
+        
+        for (let i = 0; i < events.length; i++) {
+            for (let j = i + 1; j < events.length; j++) {
+                const event1 = events[i];
+                const event2 = events[j];
+                
+                // Check if same room
+                if (event1.operatingRoom?._id === event2.operatingRoom?._id) {
+                    const start1 = new Date(event1.scheduledStartTime || event1.entreeSalle);
+                    const end1 = new Date(event1.scheduledEndTime || event1.sortieSalle);
+                    const start2 = new Date(event2.scheduledStartTime || event2.entreeSalle);
+                    const end2 = new Date(event2.scheduledEndTime || event2.sortieSalle);
+                    
+                    // Check for time overlap
+                    if ((start1 < end2 && end1 > start2)) {
+                        conflicts.push({
+                            event1: event1,
+                            event2: event2,
+                            room: event1.operatingRoom
+                        });
+                    }
+                }
+            }
+        }
+        
+        return conflicts;
+    }
+    
+    const detectedConflicts = detectConflicts(eventsData);
+    const conflictEventIds = new Set();
+    detectedConflicts.forEach(conflict => {
+        conflictEventIds.add(conflict.event1._id);
+        conflictEventIds.add(conflict.event2._id);
+    });
+    
+    // Display conflicts
+    if (detectedConflicts.length > 0) {
+        conflictAlertsCard.style.display = 'block';
+        conflictAlerts.innerHTML = detectedConflicts.map(conflict => `
+            <div class="conflict-alert-item">
+                <strong>⚠️ Conflit détecté:</strong><br>
+                <small>
+                    ${conflict.event1.code} et ${conflict.event2.code}<br>
+                    Salle: ${conflict.room.code} - ${conflict.room.name}
+                </small>
+            </div>
+        `).join('');
+    }
+    
+    // Calculate room utilization
+    function calculateUtilization() {
+        const utilizationByRoom = {};
+        const weekDuration = 7 * 12 * 60; // 7 days * 12 hours/day * 60 min/hour
+        
+        roomsData.forEach(room => {
+            utilizationByRoom[room._id] = {
+                room: room,
+                totalMinutes: 0,
+                percentage: 0
+            };
+        });
+        
+        eventsData.forEach(event => {
+            if (event.operatingRoom) {
+                const start = new Date(event.scheduledStartTime || event.entreeSalle);
+                const end = new Date(event.scheduledEndTime || event.sortieSalle);
+                const duration = (end - start) / (1000 * 60); // minutes
+                
+                if (utilizationByRoom[event.operatingRoom._id]) {
+                    utilizationByRoom[event.operatingRoom._id].totalMinutes += duration;
+                }
+            }
+        });
+        
+        Object.keys(utilizationByRoom).forEach(roomId => {
+            const util = utilizationByRoom[roomId];
+            util.percentage = Math.round((util.totalMinutes / weekDuration) * 100);
+        });
+        
+        return Object.values(utilizationByRoom);
+    }
+    
+    const utilization = calculateUtilization();
+    utilizationStats.innerHTML = utilization.map(util => {
+        const level = util.percentage >= 70 ? 'high' : util.percentage >= 40 ? 'medium' : 'low';
+        const color = level === 'high' ? '#dc3545' : level === 'medium' ? '#ffc107' : '#28a745';
+        
+        return `
+            <div class="utilization-item ${level}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>${util.room.code}</strong>
+                    <span class="badge bg-${level === 'high' ? 'danger' : level === 'medium' ? 'warning' : 'success'}">${util.percentage}%</span>
+                </div>
+                <small class="text-muted">${util.room.name}</small>
+                <div class="utilization-bar">
+                    <div class="utilization-bar-fill" style="width: ${util.percentage}%; background-color: ${color};">
+                        ${util.percentage > 15 ? util.percentage + '%' : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Surgeon Color Mapping System - Month View Friendly
+    const surgeonColors = {};
+    const beautifulColors = [
+        { bg: '#DC2626', text: '#FFFFFF', border: '#B91C1C' }, // Dark Red
+        { bg: '#0D9488', text: '#FFFFFF', border: '#0F766E' }, // Dark Teal
+        { bg: '#1D4ED8', text: '#FFFFFF', border: '#1E40AF' }, // Dark Blue
+        { bg: '#15803D', text: '#FFFFFF', border: '#166534' }, // Dark Green
+        { bg: '#CA8A04', text: '#FFFFFF', border: '#A16207' }, // Dark Yellow
+        { bg: '#7C3AED', text: '#FFFFFF', border: '#6D28D9' }, // Dark Purple
+        { bg: '#BE185D', text: '#FFFFFF', border: '#9D174D' }, // Dark Pink
+        { bg: '#0369A1', text: '#FFFFFF', border: '#0284C7' }, // Dark Light Blue
+        { bg: '#6B21A8', text: '#FFFFFF', border: '#7C3AED' }, // Dark Lavender
+        { bg: '#9D174D', text: '#FFFFFF', border: '#BE185D' }, // Dark Hot Pink
+        { bg: '#C2410C', text: '#FFFFFF', border: '#EA580C' }, // Dark Orange
+        { bg: '#3730A3', text: '#FFFFFF', border: '#4338CA' }, // Dark Indigo
+        { bg: '#047857', text: '#FFFFFF', border: '#065F46' }, // Dark Emerald
+        { bg: '#C2410C', text: '#FFFFFF', border: '#EA580C' }, // Dark Coral
+        { bg: '#0891B2', text: '#FFFFFF', border: '#0E7490' }, // Dark Cyan
+        { bg: '#D97706', text: '#FFFFFF', border: '#B45309' }, // Dark Amber
+        { bg: '#BE185D', text: '#FFFFFF', border: '#9D174D' }, // Dark Rose
+        { bg: '#0F766E', text: '#FFFFFF', border: '#115E59' }, // Dark Mint
+        { bg: '#7C3AED', text: '#FFFFFF', border: '#6D28D9' }, // Dark Violet
+        { bg: '#B45309', text: '#FFFFFF', border: '#92400E' }  // Dark Gold
+    ];
+
+    function getSurgeonColor(surgeonId) {
+        if (!surgeonId) return { bg: '#6C757D', text: '#FFFFFF', border: '#495057' }; // Default gray
+        
+        if (!surgeonColors[surgeonId]) {
+            // Assign a random beautiful color
+            const colorIndex = Object.keys(surgeonColors).length % beautifulColors.length;
+            surgeonColors[surgeonId] = beautifulColors[colorIndex];
+        }
+        return surgeonColors[surgeonId];
+    }
+    
+    // Transform events for FullCalendar
+    const calendarEvents = eventsData.map(event => {
+        const start = event.scheduledStartTime || event.entreeSalle;
+        const end = event.scheduledEndTime || event.sortieSalle;
+        
+        let title = '';
+        let className = 'event-' + event.type;
+        let backgroundColor = '';
+        let textColor = '';
+        let borderColor = '';
+        
+        // Add conflict indicator
+        if (conflictEventIds.has(event._id)) {
+            className += ' event-conflict';
+        }
+        
+        if (event.type === 'reservation') {
+            // Get surgeon-specific color for reservations
+            const surgeonColor = getSurgeonColor(event.surgeon?._id || event.surgeon);
+            backgroundColor = surgeonColor.bg;
+            textColor = surgeonColor.text;
+            borderColor = surgeonColor.border;
+            
+            title = `🗓️ ${event.code}`;
+            if (event.patient) {
+                title += ` - ${event.patient.firstName} ${event.patient.lastName}`;
+            }
+        } else {
+            title = `✂️ ${event.code}`;
+            if (event.patient) {
+                title += ` - ${event.patient.firstName} ${event.patient.lastName}`;
+            }
+            if (event.status === 'urgent') {
+                className = className.replace('event-surgery', 'event-urgent');
+                title = `⚠️ ${title}`;
+            }
+        }
+        
+        return {
+            id: event._id,
+            title: title,
+            start: start,
+            end: end,
+            className: className,
+            backgroundColor: backgroundColor,
+            textColor: textColor,
+            borderColor: borderColor,
+            editable: canEditSurgeries, // Enable drag-and-drop
+            extendedProps: {
+                type: event.type,
+                code: event.code,
+                patient: event.patient,
+                surgeon: event.surgeon,
+                prestation: event.prestation,
+                operatingRoom: event.operatingRoom,
+                status: event.type === 'reservation' ? event.reservationStatus : event.status,
+                reservationStatus: event.reservationStatus,
+                hasConflict: conflictEventIds.has(event._id)
+            }
+        };
+    });
+    
+    // Initialize FullCalendar
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: ''
+        },
+        locale: 'fr',
+        firstDay: 1,
+        slotMinTime: '07:00:00',
+        slotMaxTime: '20:00:00',
+        allDaySlot: false,
+        height: 'auto',
+        editable: canEditSurgeries,
+        events: calendarEvents,
+        eventClick: function(info) {
+            const event = info.event;
+            showEventDetails(event);
+        },
+        dateClick: function(info) {
+            showDayEvents(info.dateStr);
+        },
+        eventDrop: function(info) {
+            handleEventDrop(info);
+        },
+        eventResize: function(info) {
+            handleEventResize(info);
+        }
+    });
+    
+    calendar.render();
+    
+    // Handle drag-and-drop event rescheduling
+    async function handleEventDrop(info) {
+        const event = info.event;
+        const newStart = event.start.toISOString();
+        const newEnd = event.end.toISOString();
+        
+        if (!confirm(`Voulez-vous vraiment déplacer ${event.extendedProps.code} ?\n\nNouveau horaire: ${event.start.toLocaleString('fr-FR')} - ${event.end.toLocaleString('fr-FR')}`)) {
+            info.revert();
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/surgeries/${event.id}/reschedule`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    scheduledStartTime: newStart,
+                    scheduledEndTime: newEnd,
+                    type: event.extendedProps.type
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Erreur lors de la replanification');
+            }
+            
+            alert('✅ Événement replanifié avec succès!');
+            
+            // Emit WebSocket event
+            if (socket) {
+                socket.emit('planning-changed', {
+                    eventId: event.id,
+                    type: 'reschedule'
+                });
+            }
+            
+            // Reload to update conflicts and stats
+            window.location.reload();
+        } catch (error) {
+            alert('❌ Erreur: ' + error.message);
+            info.revert();
+        }
+    }
+    
+    // Handle event resize
+    async function handleEventResize(info) {
+        await handleEventDrop(info);
+    }
+    
+    // Export to PDF
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+        const params = new URLSearchParams(window.location.search);
+        window.open(`/surgeries/planning/export/pdf?${params.toString()}`, '_blank');
+    });
+    
+    // Export to Excel
+    document.getElementById('exportExcelBtn').addEventListener('click', function() {
+        const params = new URLSearchParams(window.location.search);
+        window.open(`/surgeries/planning/export/excel?${params.toString()}`, '_blank');
+    });
+    
+    // Cancel Reservation button click handler (modal is opened via button click)
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.cancel-reservation-btn')) {
+            const btn = e.target.closest('.cancel-reservation-btn');
+            currentReservationId = btn.getAttribute('data-reservation-id');
+            
+            // Show modal
+            document.getElementById('cancelModal').style.display = 'flex';
+            document.getElementById('cancelReason').focus();
+        }
+    });
+    
+    // View switcher buttons
+    document.getElementById('viewDayBtn').addEventListener('click', function() {
+        calendar.changeView('timeGridDay');
+        updateActiveButton(this);
+    });
+    
+    document.getElementById('viewWeekBtn').addEventListener('click', function() {
+        calendar.changeView('timeGridWeek');
+        updateActiveButton(this);
+    });
+    
+    document.getElementById('viewMonthBtn').addEventListener('click', function() {
+        calendar.changeView('dayGridMonth');
+        updateActiveButton(this);
+    });
+    
+    function updateActiveButton(button) {
+        document.querySelectorAll('.btn-group .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        button.classList.add('active');
+    }
+    
+    function showDayEvents(dateStr) {
+        const date = new Date(dateStr);
+        const dayEvents = calendarEvents.filter(event => {
+            const eventDate = new Date(event.start);
+            return eventDate.toDateString() === date.toDateString();
+        });
+        
+        if (dayEvents.length === 0) {
+            selectedDayCard.style.display = 'none';
+            return;
+        }
+        
+        selectedDateDisplay.textContent = date.toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        selectedDayEvents.innerHTML = dayEvents.map(event => renderEventItem(event)).join('');
+        selectedDayCard.style.display = 'block';
+        
+        selectedDayCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    function showEventDetails(event) {
+        const dateStr = event.startStr.split('T')[0];
+        showDayEvents(dateStr);
+    }
+    
+    function renderEventItem(event) {
+        const props = event.extendedProps;
+        const startTime = new Date(event.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const endTime = new Date(event.end).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        
+        const duration = Math.round((new Date(event.end) - new Date(event.start)) / (1000 * 60));
+        const hours = Math.floor(duration / 60);
+        const minutes = duration % 60;
+        let durationText = '';
+        if (hours > 0) durationText += hours + 'h ';
+        if (minutes > 0) durationText += minutes + 'min';
+        
+        let statusBadge = '';
+        if (props.type === 'reservation') {
+            if (props.status === 'confirmed') {
+                statusBadge = '<span class="badge bg-success">Confirmé</span>';
+            } else if (props.status === 'pending') {
+                statusBadge = '<span class="badge bg-warning text-dark">En attente</span>';
+            } else if (props.status === 'cancelled') {
+                statusBadge = '<span class="badge bg-danger">Annulé</span>';
+            }
+        } else {
+            if (props.status === 'urgent') {
+                statusBadge = '<span class="badge bg-danger">Urgente</span>';
+            } else if (props.status === 'planned') {
+                statusBadge = '<span class="badge bg-primary">Planifiée</span>';
+            }
+        }
+        
+        let typeBadge = '';
+        if (props.type === 'reservation') {
+            typeBadge = '<span class="badge bg-info text-white"><i class="bi bi-calendar-check"></i> Réservation</span>';
+        } else {
+            typeBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-scissors"></i> Chirurgie</span>';
+        }
+        
+        let conflictBadge = '';
+        if (props.hasConflict) {
+            conflictBadge = '<span class="badge bg-danger ms-2"><i class="bi bi-exclamation-triangle"></i> Conflit</span>';
+        }
+        
+        let actions = '';
+        if (props.type === 'reservation' && (props.reservationStatus === 'pending' || props.reservationStatus === 'confirmed')) {
+            actions = `
+                <a href="/surgeries/new/from-reservation/${event.id}" class="btn btn-sm btn-success" title="Convertir en chirurgie">
+                    <i class="bi bi-arrow-right-circle"></i> Convertir
+                </a>
+                <button type="button" class="btn btn-sm btn-danger cancel-reservation-btn" data-reservation-id="${event.id}" title="Annuler la réservation">
+                    <i class="bi bi-x-circle"></i> Annuler
+                </button>
+            `;
+        } else if (props.type === 'surgery') {
+            actions = `
+                <a href="/surgeries/${event.id}" class="btn btn-sm btn-outline-primary" title="Voir détails">
+                    <i class="bi bi-eye"></i> Voir
+                </a>
+                <a href="/surgeries/${event.id}/edit" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+            `;
+        }
+        
+        let eventItemStyle = '';
+        if (props.type === 'reservation' && props.surgeon) {
+            const surgeonColor = getSurgeonColor(props.surgeon._id || props.surgeon);
+            eventItemStyle = `style="border-left-color: ${surgeonColor.border}; background: linear-gradient(135deg, ${surgeonColor.bg}15 0%, ${surgeonColor.bg}08 100%);"`;
+        }
+        
+        return `
+            <div class="event-item ${event.className}" ${eventItemStyle}>
+                <div class="event-item-header">
+                    <div>
+                        <h5 class="event-item-title">${props.code}</h5>
+                        ${typeBadge} ${statusBadge} ${conflictBadge}
+                    </div>
+                </div>
+                <div class="event-item-details">
+                    <div class="event-item-detail">
+                        <i class="bi bi-clock"></i>
+                        <span><strong>${startTime}</strong> - ${endTime} (${durationText})</span>
+                    </div>
+                    ${props.operatingRoom ? `
+                        <div class="event-item-detail">
+                            <i class="bi bi-hospital"></i>
+                            <span><strong>${props.operatingRoom.code}</strong> - ${props.operatingRoom.name}</span>
+                        </div>
+                    ` : ''}
+                    ${props.surgeon ? `
+                        <div class="event-item-detail">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Dr. ${props.surgeon.lastName} ${props.surgeon.firstName}</span>
+                        </div>
+                    ` : ''}
+                    ${props.patient ? `
+                        <div class="event-item-detail">
+                            <i class="bi bi-person"></i>
+                            <span>${props.patient.firstName} ${props.patient.lastName}</span>
+                        </div>
+                    ` : ''}
+                    ${props.prestation ? `
+                        <div class="event-item-detail">
+                            <i class="bi bi-file-medical"></i>
+                            <span>${props.prestation.designation}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                ${actions ? `
+                    <div class="event-item-actions">
+                        ${actions}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+});
+</script>
