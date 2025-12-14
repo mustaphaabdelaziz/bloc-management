@@ -1,1121 +1,1077 @@
 <% layout('layouts/boilerplate') %>
 
+<style>
+/* Medical Theme Enhancements */
+:root {
+    --medical-primary: #007bff;
+    --medical-secondary: #28a745;
+    --medical-accent: #17a2b8;
+    --medical-success: #198754;
+    --medical-warning: #fd7e14;
+    --medical-danger: #dc3545;
+    --medical-info: #0dcaf0;
+    --medical-light: #f8f9fa;
+    --medical-dark: #212529;
+    --medical-blue: #007bff;
+    --medical-green: #28a745;
+    --medical-gray: #6c757d;
+}
+
+.medical-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.medical-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.medical-header {
+    background: linear-gradient(135deg, var(--medical-blue) 0%, var(--medical-primary) 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.medical-header::before {
+    content: '🏥';
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 2rem;
+    opacity: 0.3;
+}
+
+.timeline-item {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--medical-blue);
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.timeline-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-left-color: var(--medical-green);
+}
+
+/* Special styling for the exit item */
+.timeline-item.bg-light {
+    border-left-color: var(--medical-gray);
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+}
+
+.timeline-item.bg-light:hover {
+    border-left-color: var(--medical-secondary);
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-planned {
+    background: linear-gradient(135deg, #6f42c1, #6610f2);
+    color: white;
+}
+
+.status-urgent {
+    background: linear-gradient(135deg, #fd7e14, #ff6b35);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(253, 126, 20, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0); }
+}
+
+.financial-highlight {
+    background: linear-gradient(135deg, var(--medical-green), #20c997);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.medical-btn {
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.medical-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.table-medical {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.table-medical thead th {
+    background: linear-gradient(135deg, var(--medical-blue), var(--medical-primary));
+    color: white;
+    border: none;
+    padding: 1rem;
+    font-weight: 600;
+}
+
+.table-medical tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table-medical tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+@media (max-width: 768px) {
+    .medical-card {
+        margin-bottom: 1rem;
+    }
+
+    .timeline-item {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+    .medical-header {
+        padding: 1rem;
+    }
+
+    .medical-header h4 {
+        font-size: 1.25rem;
+    }
+}
+</style>
+
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <!-- Surgery Header with Actions -->
-            <div class="card surgery-card mb-4">
-                <div class="card-header bg-primary text-white surgery-header">
+            <div class="card medical-card mb-4">
+                <div class="card-header medical-header">
                     <div>
                         <h4 class="mb-2">
-                            <i class="fas fa-clipboard me-2"></i>
-                            Détails de la Chirurgie
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            🏥 Détails de la Chirurgie
                             <% if (surgery.statusLifecycle === 'closed') { %>
                                 <span class="badge bg-success ms-2">
-                                    <i class="bi bi-lock-fill"></i> Clôturée
+                                    <i class="bi bi-lock-fill"></i> 🔒 Clôturée
                                 </span>
                             <% } %>
                         </h4>
+                        <p class="mb-0 opacity-75">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Suivi médical complet de l'intervention
+                        </p>
                     </div>
-                    <div class="d-flex gap-2 ms-auto ">
+                    <div class="d-flex gap-2 ms-auto flex-wrap">
                         <% if (surgery.statusLifecycle !== 'closed' || permissions.canEditClosedSurgeries) { %>
-                            <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-light btn-sm" title="Modifier la chirurgie">
-                                <i class="fas fa-edit me-1"></i>Modifier
+                            <a href="/surgeries/<%= surgery._id %>/edit" class="btn btn-light medical-btn" title="Modifier la chirurgie">
+                                <i class="fas fa-edit"></i>✏️ Modifier
                             </a>
                         <% } %>
                         <% if (permissions.canCloseSurgeries) { %>
                             <% if (surgery.statusLifecycle === 'editable') { %>
                                 <form method="POST" action="/surgeries/<%= surgery._id %>/close" class="d-inline">
-                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Êtes-vous-vous sûr de vouloir clôturer cette chirurgie? Elle ne pourra plus être modifiée.')" title="Clôturer la chirurgie">
-                                        <i class="bi bi-lock-fill me-1"></i>Clôturer
+                                    <button type="submit" class="btn btn-primary medical-btn" onclick="return confirm('Êtes-vous sûr de vouloir clôturer cette chirurgie? Elle ne pourra plus être modifiée.')" title="Clôturer la chirurgie">
+                                        <i class="bi bi-lock-fill"></i>🔒 Clôturer
                                     </button>
                                 </form>
                             <% } else if (surgery.statusLifecycle === 'closed') { %>
                                 <form method="POST" action="/surgeries/<%= surgery._id %>/reopen" class="d-inline">
-                                    <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('êtes-vous sûr de vouloir rouvrir cette chirurgie?')" title="RRouvrir la chirurgie">
-                                        <i class="bi bi-unlock-fill me-1"></i>Rouvrir
+                                    <button type="submit" class="btn btn-warning medical-btn" onclick="return confirm('Êtes-vous sûr de vouloir rouvrir cette chirurgie?')" title="Rouvrir la chirurgie">
+                                        <i class="bi bi-unlock-fill"></i>🔓 Rouvrir
                                     </button>
                                 </form>
                             <% } %>
                         <% } %>
-                        <a href="/surgeries" class="btn btn-light btn-sm" title="Retour à la liste">
-                            <i class="fas fa-arrow-left me-1"></i>Retour
+                        <a href="/surgeries" class="btn btn-light text-dark medical-btn" title="Retour à la liste">
+                            <i class="fas fa-arrow-left"></i>⬅️ Retour
                         </a>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p class="mb-2"><strong>Code:</strong> <%= surgery.code %></p>
-                            <p class="mb-2"><strong>Patient:</strong> <%= surgery.patient ? `${surgery.patient.firstName} ${surgery.patient.lastName}` : 'N/A' %></p>
-                            <p class="mb-2"><strong>Chirurgien:</strong> Dr. <%= surgery.surgeon ? `${surgery.surgeon.lastName} ${surgery.surgeon.firstName}` : 'N/A' %></p>
-                            <p class="mb-2"><strong>Prestation:</strong> <%= surgery.prestation ? surgery.prestation.designation : 'N/A' %></p>
-                            <% if (surgery.operatingRoom) { %>
-                            <p class="mb-2">
-                                <strong>Salle opératoire:</strong>
-                                <a href="/operating-rooms/<%= surgery.operatingRoom._id %>" class="badge bg-light text-dark text-decoration-none">
-                                    <i class="bi bi-hospital me-1"></i><%= surgery.operatingRoom.code %> - <%= surgery.operatingRoom.name %>
-                                </a>
-                                <% if (surgery.reservationStatus) { %>
-                                    <% if (surgery.reservationStatus === 'confirmed') { %>
-                                        <span class="badge bg-success ms-1">Confirmé</span>
-                                    <% } else if (surgery.reservationStatus === 'reserved') { %>
-                                        <span class="badge bg-primary ms-1">Réservé</span>
-                                    <% } else if (surgery.reservationStatus === 'cancelled') { %>
-                                        <span class="badge bg-danger ms-1">Annulé</span>
-                                    <% } else if (surgery.reservationStatus === 'completed') { %>
-                                        <span class="badge bg-secondary ms-1">Terminé</span>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="bg-light rounded-3 p-3 h-100">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-user-injured me-2"></i>👤 Informations Patient
+                                </h6>
+                                <div class="mb-2">
+                                    <strong class="text-muted">Code:</strong>
+                                    <span class="badge bg-primary ms-2"><%= surgery.code %></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong class="text-muted">Patient:</strong>
+                                    <span class="fw-bold"><%= surgery.patient ? `${surgery.patient.firstName} ${surgery.patient.lastName}` : 'N/A' %></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong class="text-muted">Chirurgien:</strong>
+                                    <span class="fw-bold text-success">Dr. <%= surgery.surgeon ? `${surgery.surgeon.lastName} ${surgery.surgeon.firstName}` : 'N/A' %></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong class="text-muted">Prestation:</strong>
+                                    <span class="fw-bold"><%= surgery.prestation ? surgery.prestation.designation : 'N/A' %></span>
+                                </div>
+                                <% if (surgery.operatingRoom) { %>
+                                <div class="mb-2">
+                                    <strong class="text-muted">Salle opératoire:</strong>
+                                    <a href="/operating-rooms/<%= surgery.operatingRoom._id %>" class="badge bg-light text-dark text-decoration-none ms-2">
+                                        <i class="bi bi-hospital me-1"></i>🏥 <%= surgery.operatingRoom.code %> - <%= surgery.operatingRoom.name %>
+                                    </a>
+                                    <% if (surgery.reservationStatus) { %>
+                                        <% if (surgery.reservationStatus === 'confirmed') { %>
+                                            <span class="badge bg-success ms-1">✅ Confirmé</span>
+                                        <% } else if (surgery.reservationStatus === 'reserved') { %>
+                                            <span class="badge bg-primary ms-1">📅 Réservé</span>
+                                        <% } else if (surgery.reservationStatus === 'cancelled') { %>
+                                            <span class="badge bg-danger ms-1">❌ Annulé</span>
+                                        <% } else if (surgery.reservationStatus === 'completed') { %>
+                                            <span class="badge bg-secondary ms-1">✅ Terminé</span>
+                                        <% } %>
                                     <% } %>
+                                </div>
+                                <% if (surgery.scheduledStartTime && surgery.scheduledEndTime) { %>
+                                <div class="mb-2">
+                                    <strong class="text-muted">Créneau réservé:</strong>
+                                    <div class="mt-1">
+                                        <i class="fas fa-clock me-1 text-info"></i>
+                                        <%= typeof moment !== 'undefined' ? moment(surgery.scheduledStartTime).format('DD/MM/YYYY HH:mm') : new Date(surgery.scheduledStartTime).toLocaleString('fr-FR') %>
+                                        <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                        <%= typeof moment !== 'undefined' ? moment(surgery.scheduledEndTime).format('HH:mm') : new Date(surgery.scheduledEndTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
+                                    </div>
+                                </div>
                                 <% } %>
-                            </p>
-                            <% if (surgery.scheduledStartTime && surgery.scheduledEndTime) { %>
-                            <p class="mb-2">
-                                <strong>Créneau réservé:</strong>
-                                <%= typeof moment !== 'undefined' ? moment(surgery.scheduledStartTime).format('DD/MM/YYYY HH:mm') : new Date(surgery.scheduledStartTime).toLocaleString('fr-FR') %>
-                                -
-                                <%= typeof moment !== 'undefined' ? moment(surgery.scheduledEndTime).format('HH:mm') : new Date(surgery.scheduledEndTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
-                            </p>
-                            <% } %>
-                            <% } %>
+                                <% } %>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p class="mb-2"><strong>Statut:</strong>
-                                <span class="badge status-badge <%= surgery.status === 'completed' ? 'bg-success' : surgery.status === 'urgent' ? 'status-urgent' : 'status-planned' %>">
-                                    <%= surgery.status === 'completed' ? 'Terminée' : surgery.status === 'urgent' ? 'Urgente' : 'Planifiée' %>
-                                </span>
-                            </p>
-                            <% if (surgery.asaClass) { %>
-                            <p class="mb-2">
-                                <strong>Classification ASA:</strong>
-                                <span class="badge bg-info">
-                                    <i class="bi bi-heart-pulse me-1"></i>
-                                    ASA <%= surgery.asaClass %><%= surgery.asaUrgent ? ' U' : '' %>
-                                </span>
-                                <span class="text-muted small ms-2" data-bs-toggle="tooltip" title="<%= surgery.asaClass === 'I' ? 'Patient en bonne santé' : surgery.asaClass === 'II' ? 'Maladie systémique légère' : 'Maladie systémique grave' %>">
-                                    <i class="bi bi-info-circle"></i>
-                                </span>
-                            </p>
-                            <% } %>
-                            <p class="mb-2"><strong>Durée prévue:</strong> <%= surgery.prestation ? `${surgery.prestation.duration} min` : 'N/A' %></p>
-                            <p class="mb-2"><strong>Durée réelle:</strong> <%= surgery.actualDuration ? `${surgery.actualDuration} min` : 'N/A' %></p>
-                            <% if (canViewFinancialInfo) { %>
-                            <p class="mb-2"><strong>Prix de base:</strong> <%= surgery.prestation ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) : 'N/A' %></p>
-                            <% } %>
-                            <% if (surgery.statusLifecycle === 'closed') { %>
-                                <p class="mb-2"><strong>État:</strong>
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-lock-fill"></i> Clôturée
+                        <div class="col-lg-6">
+                            <div class="bg-light rounded-3 p-3 h-100">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-stethoscope me-2"></i>🩺 Statut Médical
+                                </h6>
+                                <div class="mb-3">
+                                    <strong class="text-muted">Statut:</strong>
+                                    <span class="status-badge <%= surgery.status === 'completed' ? 'bg-success' : surgery.status === 'urgent' ? 'status-urgent' : 'status-planned' %> ms-2">
+                                        <%= surgery.status === 'completed' ? '✅ Terminée' : surgery.status === 'urgent' ? '🚨 Urgente' : '📋 Planifiée' %>
                                     </span>
-                                </p>
-                                <% if (surgery.closedAt) { %>
-                                    <p class="mb-2"><strong>Clôturée le:</strong> <%= new Date(surgery.closedAt).toLocaleDateString('fr-FR') %> à <%= new Date(surgery.closedAt).toLocaleTimeString('fr-FR') %></p>
+                                </div>
+                                <% if (surgery.asaClass) { %>
+                                <div class="mb-3">
+                                    <strong class="text-muted">Classification ASA:</strong>
+                                    <span class="badge bg-info ms-2 p-2">
+                                        <i class="bi bi-heart-pulse me-1"></i>💓 ASA <%= surgery.asaClass %><%= surgery.asaUrgent ? ' U' : '' %>
+                                    </span>
+                                    <span class="text-muted small ms-2" data-bs-toggle="tooltip" title="<%= surgery.asaClass === 'I' ? 'Patient en bonne santé' : surgery.asaClass === 'II' ? 'Maladie systémique légère' : 'Maladie systémique grave' %>">
+                                        <i class="bi bi-info-circle"></i>
+                                    </span>
+                                </div>
                                 <% } %>
-                            <% } %>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-white rounded">
+                                            <div class="text-muted small">Durée prévue</div>
+                                            <div class="fw-bold text-primary">
+                                                <i class="fas fa-clock me-1"></i>
+                                                <%= surgery.prestation ? `${surgery.prestation.duration} min` : 'N/A' %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-white rounded">
+                                            <div class="text-muted small">Durée réelle</div>
+                                            <div class="fw-bold text-info">
+                                                <i class="fas fa-stopwatch me-1"></i>
+                                                <%= surgery.actualDuration ? `${surgery.actualDuration} min` : 'N/A' %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% if (canViewFinancialInfo) { %>
+                                <div class="mt-3 p-2 bg-success bg-opacity-10 rounded">
+                                    <strong class="text-muted">Prix de base:</strong>
+                                    <span class="fw-bold text-success ms-2">
+                                        <%= surgery.prestation ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) : 'N/A' %>
+                                    </span>
+                                </div>
+                                <% } %>
+                                <% if (surgery.statusLifecycle === 'closed') { %>
+                                <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded">
+                                    <strong class="text-muted">État:</strong>
+                                    <span class="badge bg-success ms-2">
+                                        <i class="bi bi-lock-fill"></i> 🔒 Clôturée
+                                    </span>
+                                </div>
+                                <% if (surgery.closedAt) { %>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-check me-1"></i>
+                                        Clôturée le <%= new Date(surgery.closedAt).toLocaleDateString('fr-FR') %> à <%= new Date(surgery.closedAt).toLocaleTimeString('fr-FR') %>
+                                    </small>
+                                </div>
+                                <% } %>
+                                <% } %>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Surgical Timeline Card -->
-            <div class="card mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">
-                        <i class="fas fa-hourglass-start me-2"></i>
-                        Chronologie de l'Intervention
-                    </h5>
+            <div class="card medical-card mb-4">
+                <div class="card-header bg-warning text-dark d-flex align-items-center">
+                    <i class="fas fa-hourglass-half me-2"></i>
+                    <h5 class="mb-0">⏰ Chronologie de l'Intervention</h5>
+                    <div class="ms-auto">
+                        <small class="text-muted">Suivi temporel détaillé</small>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="timeline">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="timeline-item mb-3">
-                                    <h6 class="text-primary">
-                                        <i class="fas fa-sign-in-alt me-2"></i>Entrée au Bloc
-                                    </h6>
-                                    <p class="mb-1">
-                                        <strong><%= surgery.entreeBloc ? new Date(surgery.entreeBloc).toLocaleString('fr-FR') : 'Non enregistrée' %></strong>
-                                    </p>
+                    <div class="row g-3">
+                        <!-- First Row: Entrée au Bloc & Entrée en Salle d'Opération -->
+                        <div class="col-md-6">
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-primary mb-1">🚪 Entrée au Bloc</h6>
+                                        <small class="text-muted">Début de l'intervention</small>
+                                    </div>
                                 </div>
-
-                                <div class="timeline-item mb-3">
-                                    <h6 class="text-info">
-                                        <i class="fas fa-door-open me-2"></i>Entrée en Salle d'Opération
-                                    </h6>
-                                    <p class="mb-1">
-                                        <strong><%= surgery.entreeSalle ? new Date(surgery.entreeSalle).toLocaleString('fr-FR') : 'Non enregistrée' %></strong>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="timeline-item mb-3">
-                                    <h6 class="text-success">
-                                        <i class="fas fa-cut me-2"></i>Heure d'Incision
-                                    </h6>
-                                    <p class="mb-1">
-                                        <strong><%= surgery.incisionTime ? new Date(surgery.incisionTime).toLocaleString('fr-FR') : 'Non enregistrée' %></strong>
-                                    </p>
-                                </div>
-
-                                <div class="timeline-item mb-3">
-                                    <h6 class="text-danger">
-                                        <i class="fas fa-stitches me-2"></i>Heure de Fermeture d'Incision
-                                    </h6>
-                                    <p class="mb-1">
-                                        <strong><%= surgery.closingIncisionTime ? new Date(surgery.closingIncisionTime).toLocaleString('fr-FR') : 'Non enregistrée' %></strong>
-                                    </p>
-                                </div>
+                                <p class="mb-0 fw-bold text-primary">
+                                    <%= surgery.entreeBloc ? new Date(surgery.entreeBloc).toLocaleString('fr-FR') : '⏳ Non enregistrée' %>
+                                </p>
                             </div>
                         </div>
 
-                        <% if (surgery.sortieSalle) { %>
-                            <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <div class="timeline-item">
-                                        <h6 class="text-secondary">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Sortie de Salle d'Opération
-                                        </h6>
-                                        <p class="mb-0">
-                                            <strong><%= new Date(surgery.sortieSalle).toLocaleString('fr-FR') %></strong>
-                                        </p>
+                        <div class="col-md-6">
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-door-open"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-info mb-1">🏥 Entrée en Salle d'Opération</h6>
+                                        <small class="text-muted">Préparation chirurgicale</small>
                                     </div>
                                 </div>
+                                <p class="mb-0 fw-bold text-info">
+                                    <%= surgery.entreeSalle ? new Date(surgery.entreeSalle).toLocaleString('fr-FR') : '⏳ Non enregistrée' %>
+                                </p>
                             </div>
+                        </div>
+
+                        <!-- Second Row: Heure d'Incision & Fermeture d'Incision -->
+                        <div class="col-md-6">
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-cut"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-success mb-1">✂️ Heure d'Incision</h6>
+                                        <small class="text-muted">Début de l'acte chirurgical</small>
+                                    </div>
+                                </div>
+                                <p class="mb-0 fw-bold text-success">
+                                    <%= surgery.incisionTime ? new Date(surgery.incisionTime).toLocaleString('fr-FR') : '⏳ Non enregistrée' %>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="timeline-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-stitches"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-danger mb-1">🧵 Fermeture d'Incision</h6>
+                                        <small class="text-muted">Fin de l'acte chirurgical</small>
+                                    </div>
+                                </div>
+                                <p class="mb-0 fw-bold text-danger">
+                                    <%= surgery.closingIncisionTime ? new Date(surgery.closingIncisionTime).toLocaleString('fr-FR') : '⏳ Non enregistrée' %>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Third Row: Sortie de Salle d'Opération (Full Width) -->
+                        <% if (surgery.sortieSalle) { %>
+                        <div class="col-12">
+                            <div class="timeline-item text-center bg-light">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <h6 class="text-secondary mb-1">🚶 Sortie de Salle d'Opération</h6>
+                                        <small class="text-muted">Fin de l'intervention</small>
+                                    </div>
+                                </div>
+                                <p class="mb-0 fw-bold text-secondary">
+                                    <%= new Date(surgery.sortieSalle).toLocaleString('fr-FR') %>
+                                </p>
+                            </div>
+                        </div>
                         <% } %>
                     </div>
                 </div>
             </div>
 
             <!-- Material Consumption & Staff Participation -->
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-box me-2"></i>
-                        Matériaux Consommés & Personnel Participant
-                    </h5>
+            <div class="card medical-card mb-4">
+                <div class="card-header bg-info text-white d-flex align-items-center">
+                    <i class="fas fa-boxes me-2"></i>
+                    <h5 class="mb-0">📦 Matériaux Consommés & 👥 Personnel Participant</h5>
+                    <div class="ms-auto">
+                        <small class="opacity-75">Gestion des ressources médicales</small>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row g-4">
                         <!-- Materials Section -->
-                        <div class="col-md-6 mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="text-info mb-0">
-                                    <i class="fas fa-box-open me-2"></i>
-                                    Matériaux Utilisés
-                                </h6>
-                               
-                            </div>
-                            <% if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) { %>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-hover materials-table">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Matériau</th>
-                                                <th>Catégorie</th>
-                                                <th>Référence</th>
-                                                <th>Quantité</th>
-                                                <% if (canViewFinancialInfo) { %>
-                                                <th>Prix unitaire</th>
-                                                <th>Total</th>
-                                                <% } %>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <% surgery.consumedMaterials.forEach(cm => { %>
-                                                <% 
-                                                    // Get unit abbreviation for price display
-                                                    const unitMap = {
-                                                        'mètre (m)': 'm',
-                                                        'litre (L)': 'L',
-                                                        'millilitre (mL)': 'mL',
-                                                        'gramme (g)': 'g',
-                                                        'milligramme (mg)': 'mg',
-                                                        'pièce (Pce)': 'pce',
-                                                        'boîte (Bt)': 'bt',
-                                                        'paquet (Paq)': 'paq',
-                                                        'sachet (S)': 's',
-                                                        'flacon (Fl)': 'fl',
-                                                        'unité (U)': 'u'
-                                                    };
-                                                    const unitFull = cm.unitOfMeasure || (cm.material ? cm.material.unitOfMeasure : '') || 'unité (U)';
-                                                    const unitAbbr = unitMap[unitFull] || unitFull;
-                                                %>
+                        <div class="col-lg-6">
+                            <div class="bg-light rounded-3 p-3 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="text-info mb-0">
+                                        <i class="fas fa-box-open me-2"></i>🩹 Matériaux Utilisés
+                                    </h6>
+                                    <% if (surgery.statusLifecycle !== 'closed' && canViewFinancialInfo) { %>
+                                        <button type="button" class="btn btn-sm btn-outline-primary medical-btn" data-bs-toggle="modal" data-bs-target="#addMaterialsModal" title="Ajouter des matériaux">
+                                            <i class="fas fa-plus"></i>➕ Ajouter
+                                        </button>
+                                    <% } %>
+                                </div>
+                                <% if (surgery.consumedMaterials && surgery.consumedMaterials.length > 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-medical">
+                                            <thead>
                                                 <tr>
-                                                    <td><%= cm.material ? cm.material.designation : 'N/A' %></td>
-                                                    <td>
-                                                        <% if (cm.material && cm.material.category === 'patient') { %>
-                                                            <span class="badge bg-primary">Patient</span>
-                                                        <% } else { %>
-                                                            <span class="badge bg-secondary">Consommable</span>
-                                                        <% } %>
-                                                    </td>
-                                                    <td>
-                                                        <% if (cm.patientReference) { %>
-                                                            <span class="badge bg-info text-dark" title="Référence/N° série du matériau">
-                                                                <i class="bi bi-tag me-1"></i><%= cm.patientReference %>
-                                                            </span>
-                                                        <% } else { %>
-                                                            <span class="text-muted">-</span>
-                                                        <% } %>
-                                                    </td>
-                                                    <td><%= cm.quantity %> <%= unitFull %></td>
+                                                    <th><i class="fas fa-tag me-1"></i>Matériau</th>
+                                                    <th><i class="fas fa-layer-group me-1"></i>Catégorie</th>
+                                                    <th><i class="fas fa-hashtag me-1"></i>Référence</th>
+                                                    <th><i class="fas fa-weight me-1"></i>Quantité</th>
                                                     <% if (canViewFinancialInfo) { %>
-                                                    <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(cm.priceUsed || 0) %>/<%= unitAbbr %></td>
-                                                    <td><strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format((cm.priceUsed || 0) * cm.quantity) %></strong></td>
+                                                    <th><i class="fas fa-tag me-1"></i>Prix U.</th>
+                                                    <th><i class="fas fa-calculator me-1"></i>Total</th>
                                                     <% } %>
                                                 </tr>
-                                            <% }); %>
-                                        </tbody>
-                                        <% if (canViewFinancialInfo) { %>
-                                        <tfoot class="table-light">
-                                            <tr class="fw-bold bg-light">
-                                                <td colspan="3"><strong>Total Matériaux</strong></td>
-                                                <td>
-                                                    <% let totalQuantity = 0; %>
-                                                    <% surgery.consumedMaterials?.forEach(cm => { totalQuantity += cm.quantity; }); %>
-                                                    <%= totalQuantity %>
-                                                </td>
-                                                <td></td>
-                                                <td class="text-end">
-                                                    <strong>
-                                                        <% const totalMaterialCost = (surgery.consumedMaterials || []).reduce((sum, cm) => {
-                                                            return sum + ((cm.priceUsed || 0) * cm.quantity);
+                                            </thead>
+                                            <tbody>
+                                                <% surgery.consumedMaterials.forEach(cm => { %>
+                                                    <% 
+                                                        // Get unit abbreviation for price display
+                                                        const unitMap = {
+                                                            'mètre (m)': 'm',
+                                                            'litre (L)': 'L',
+                                                            'millilitre (mL)': 'mL',
+                                                            'gramme (g)': 'g',
+                                                            'milligramme (mg)': 'mg',
+                                                            'pièce (Pce)': 'pce',
+                                                            'boîte (Bt)': 'bt',
+                                                            'paquet (Paq)': 'paq',
+                                                            'sachet (S)': 's',
+                                                            'flacon (Fl)': 'fl',
+                                                            'unité (U)': 'u'
+                                                        };
+                                                        const unitFull = cm.unitOfMeasure || (cm.material ? cm.material.unitOfMeasure : '') || 'unité (U)';
+                                                        const unitAbbr = unitMap[unitFull] || unitFull;
+                                                    %>
+                                                    <tr>
+                                                        <td>
+                                                            <strong><%= cm.material ? cm.material.designation : 'N/A' %></strong>
+                                                        </td>
+                                                        <td>
+                                                            <% if (cm.material && cm.material.category === 'patient') { %>
+                                                                <span class="badge bg-primary">👤 Patient</span>
+                                                            <% } else { %>
+                                                                <span class="badge bg-secondary">🔧 Consommable</span>
+                                                            <% } %>
+                                                        </td>
+                                                        <td>
+                                                            <% if (cm.patientReference) { %>
+                                                                <span class="badge bg-info text-dark" title="Référence/N° série du matériau">
+                                                                    <i class="bi bi-tag me-1"></i><%= cm.patientReference %>
+                                                                </span>
+                                                            <% } else { %>
+                                                                <span class="text-muted">-</span>
+                                                            <% } %>
+                                                        </td>
+                                                        <td>
+                                                            <span class="fw-bold"><%= cm.quantity %></span> <%= unitFull %>
+                                                        </td>
+                                                        <% if (canViewFinancialInfo) { %>
+                                                        <td><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(cm.priceUsed || 0) %>/<%= unitAbbr %></td>
+                                                        <td><strong><%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format((cm.priceUsed || 0) * cm.quantity) %></strong></td>
+                                                        <% } %>
+                                                    </tr>
+                                                <% }); %>
+                                            </tbody>
+                                            <% if (canViewFinancialInfo) { %>
+                                            <tfoot class="table-light">
+                                                <tr class="fw-bold">
+                                                    <td colspan="3"><strong>📊 Total Matériaux</strong></td>
+                                                    <td>
+                                                        <% let totalQuantity = 0; %>
+                                                        <% surgery.consumedMaterials?.forEach(cm => { totalQuantity += cm.quantity; }); %>
+                                                        <strong><%= totalQuantity %></strong>
+                                                    </td>
+                                                    <td></td>
+                                                    <td class="text-end">
+                                                        <strong class="text-primary">
+                                                            <% const totalMaterialCost = (surgery.consumedMaterials || []).reduce((sum, cm) => {
+                                                                return sum + ((cm.priceUsed || 0) * cm.quantity);
+                                                            }, 0); %>
+                                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalMaterialCost) %>
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-muted small">
+                                                    <td colspan="3"><em>↳ 🏥 Matériaux patient</em></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td class="text-end">
+                                                        <% const patientMaterialsTotal = (surgery.consumedMaterials || []).reduce((sum, cm) => {
+                                                            return sum + (cm.material?.category === 'patient' ? (cm.priceUsed || 0) * cm.quantity : 0);
                                                         }, 0); %>
-                                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalMaterialCost) %>
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                            <tr class="text-muted small">
-                                                <td colspan="3"><em>↳ Matériaux patient</em></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td class="text-end">
-                                                    <% const patientMaterialsTotal = (surgery.consumedMaterials || []).reduce((sum, cm) => {
-                                                        return sum + (cm.material?.category === 'patient' ? (cm.priceUsed || 0) * cm.quantity : 0);
-                                                    }, 0); %>
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterialsTotal) %>
-                                                </td>
-                                            </tr>
-                                            <tr class="text-muted small">
-                                                <td colspan="3"><em>↳ Matériaux clinique</em></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td class="text-end">
-                                                    <% const clinicMaterialsTotal = (surgery.consumedMaterials || []).reduce((sum, cm) => {
-                                                        return sum + (cm.material?.category !== 'patient' ? (cm.priceUsed || 0) * cm.quantity : 0);
-                                                    }, 0); %>
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicMaterialsTotal) %>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                        <% } %>
-                                    </table>
-                                </div>
-                            <% } else { %>
-                                <p class="text-muted">Aucun matériau consommé</p>
-                            <% } %>
+                                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterialsTotal) %>
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-muted small">
+                                                    <td colspan="3"><em>↳ 🏥 Matériaux clinique</em></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td class="text-end">
+                                                        <% const clinicMaterialsTotal = (surgery.consumedMaterials || []).reduce((sum, cm) => {
+                                                            return sum + (cm.material?.category !== 'patient' ? (cm.priceUsed || 0) * cm.quantity : 0);
+                                                        }, 0); %>
+                                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicMaterialsTotal) %>
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                            <% } %>
+                                        </table>
+                                    </div>
+                                <% } else { %>
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">📭 Aucun matériau consommé</p>
+                                    </div>
+                                <% } %>
+                            </div>
                         </div>
 
                         <!-- Staff Section -->
-                        <div class="col-md-6 mb-3">
-                            <h6 class="text-info mb-3">
-                                <i class="fas fa-users me-2"></i>
-                                Personnel Participant
-                            </h6>
-                            <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-hover staff-table">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Personnel</th>
-                                                <th>Rôle</th>
-                                                <% if (canViewFinancialInfo) { %>
-                                                <th>Tarif horaire</th>
-                                                <% } %>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <% surgery.medicalStaff.forEach(ms => { %>
+                        <div class="col-lg-6">
+                            <div class="bg-light rounded-3 p-3 h-100">
+                                <h6 class="text-info mb-3">
+                                    <i class="fas fa-users me-2"></i>👨‍⚕️ Personnel Participant
+                                </h6>
+                                <% if (surgery.medicalStaff && surgery.medicalStaff.length > 0) { %>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-medical">
+                                            <thead>
                                                 <tr>
-                                                    <td>
-                                                        <% if (ms.staff) { %>
-                                                            <%= ms.staff.firstName %> <%= ms.staff.lastName %>
-                                                        <% } else { %>
-                                                            N/A
-                                                        <% } %>
-                                                    </td>
-                                                    <td>
-                                                        <% if (ms.rolePlayedId && ms.rolePlayedId.name) { %>
-                                                            <span class="badge bg-secondary"><%= ms.rolePlayedId.name %></span>
-                                                        <% } else { %>
-                                                            <span class="text-muted">-</span>
-                                                        <% } %>
-                                                    </td>
+                                                    <th><i class="fas fa-user-md me-1"></i>Personnel</th>
+                                                    <th><i class="fas fa-user-tag me-1"></i>Rôle</th>
                                                     <% if (canViewFinancialInfo) { %>
-                                                    <td>
-                                                        <% if (ms.staff && ms.staff.personalFee) { %>
-                                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(ms.staff.personalFee) %>/h
-                                                        <% } else { %>
-                                                            <span class="text-muted">-</span>
-                                                        <% } %>
-                                                    </td>
+                                                    <th><i class="fas fa-clock me-1"></i>Tarif/h</th>
                                                     <% } %>
                                                 </tr>
-                                            <% }); %>
-                                        </tbody>
-                                        <% if (canViewFinancialInfo) { %>
-                                        <tfoot class="table-light">
-                                            <tr class="fw-bold bg-light">
-                                                <td colspan="2"><strong>Total Frais Personnel</strong></td>
-                                                <td class="text-end">
-                                                    <strong>
-                                                        <% const durationInHours = (surgery.actualDuration || 0) / 60; %>
-                                                        <% const totalStaffCost = (surgery.medicalStaff || []).reduce((sum, s) => {
-                                                            return sum + ((s.staff?.personalFee || 0) * durationInHours);
-                                                        }, 0); %>
-                                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalStaffCost) %>
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                            <tr class="text-muted small">
-                                                <td colspan="2"><em>Durée: <%= durationInHours.toFixed(2) %> heures</em></td>
-                                                <td class="text-end text-muted"></td>
-                                            </tr>
-                                        </tfoot>
-                                        <% } %>
-                                    </table>
-                                </div>
-                            <% } else { %>
-                                <p class="text-muted">Aucun personnel enregistré</p>
-                            <% } %>
+                                            </thead>
+                                            <tbody>
+                                                <% surgery.medicalStaff.forEach(ms => { %>
+                                                    <tr>
+                                                        <td>
+                                                            <% if (ms.staff) { %>
+                                                                <div class="d-flex align-items-center">
+                                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                                        <%= ms.staff.firstName.charAt(0) %><%= ms.staff.lastName.charAt(0) %>
+                                                                    </div>
+                                                                    <div>
+                                                                        <strong><%= ms.staff.firstName %> <%= ms.staff.lastName %></strong>
+                                                                    </div>
+                                                                </div>
+                                                            <% } else { %>
+                                                                <span class="text-muted">N/A</span>
+                                                            <% } %>
+                                                        </td>
+                                                        <td>
+                                                            <% if (ms.rolePlayedId && ms.rolePlayedId.name) { %>
+                                                                <span class="badge bg-secondary"><%= ms.rolePlayedId.name %></span>
+                                                            <% } else { %>
+                                                                <span class="text-muted">-</span>
+                                                            <% } %>
+                                                        </td>
+                                                        <% if (canViewFinancialInfo) { %>
+                                                        <td>
+                                                            <% if (ms.staff && ms.staff.personalFee) { %>
+                                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(ms.staff.personalFee) %>/h
+                                                            <% } else { %>
+                                                                <span class="text-muted">-</span>
+                                                            <% } %>
+                                                        </td>
+                                                        <% } %>
+                                                    </tr>
+                                                <% }); %>
+                                            </tbody>
+                                            <% if (canViewFinancialInfo) { %>
+                                            <tfoot class="table-light">
+                                                <tr class="fw-bold">
+                                                    <td colspan="2"><strong>💰 Total Frais Personnel</strong></td>
+                                                    <td class="text-end">
+                                                        <strong class="text-success">
+                                                            <% const durationInHours = (surgery.actualDuration || 0) / 60; %>
+                                                            <% const totalStaffCost = (surgery.medicalStaff || []).reduce((sum, s) => {
+                                                                return sum + ((s.staff?.personalFee || 0) * durationInHours);
+                                                            }, 0); %>
+                                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalStaffCost) %>
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                                <tr class="text-muted small">
+                                                    <td colspan="2"><em>⏱️ Durée: <%= durationInHours.toFixed(2) %> heures</em></td>
+                                                    <td class="text-end text-muted"></td>
+                                                </tr>
+                                            </tfoot>
+                                            <% } %>
+                                        </table>
+                                    </div>
+                                <% } else { %>
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">👥 Aucun personnel enregistré</p>
+                                    </div>
+                                <% } %>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Custom Fees Section -->
             <% if (canViewFinancialInfo) { %>
-            <!-- Header -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">
-                        <i class="fas fa-calculator me-2"></i>
-                        Explication des Calculs d'Honoraires
-                    </h3>
+            <div class="card medical-card mb-4">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-tag me-2"></i>
+                        <h5 class="mb-0">💰 Frais Personnalisés</h5>
+                    </div>
+                    <% if (surgery.statusLifecycle !== 'closed') { %>
+                        <button type="button" class="btn btn-sm btn-outline-primary medical-btn" data-bs-toggle="modal" data-bs-target="#addCustomFeesModal" title="Ajouter des frais personnalisés">
+                            <i class="fas fa-plus"></i>➕ Ajouter Frais
+                        </button>
+                    <% } %>
+                </div>
+                <div class="card-body">
+                    <% if (surgery.customFees && surgery.customFees.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-medical">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-file-invoice me-1"></i>Nom du Frais</th>
+                                        <th><i class="fas fa-coins me-1"></i>Montant</th>
+                                        <th><i class="fas fa-calendar-alt me-1"></i>Date</th>
+                                        <% if (surgery.statusLifecycle !== 'closed') { %>
+                                        <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                                        <% } %>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% surgery.customFees.forEach((fee, index) => { %>
+                                        <tr>
+                                            <td>
+                                                <strong><%= fee.feeName %></strong>
+                                                <small class="text-muted d-block">Frais supplémentaire</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark p-2">
+                                                    <i class="fas fa-coins me-1"></i>
+                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(fee.feeAmount) %>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar-check me-1"></i>
+                                                    <%= new Date(fee.createdAt).toLocaleDateString('fr-FR') %>
+                                                </small>
+                                            </td>
+                                            <% if (surgery.statusLifecycle !== 'closed') { %>
+                                            <td>
+                                                <form method="POST" action="/surgeries/<%= surgery._id %>/custom-fees/<%= index %>?_method=DELETE" style="display:inline;">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger medical-btn" onclick="return confirm('⚠️ CONFIRMATION DE SUPPRESSION\n\nVous êtes sur le point de supprimer le frais personnalisé :\n• <%= fee.description %>\n• Montant : <%= fee.amount %> €\n\nCette action est irréversible.\n\nConfirmer la suppression ?')" title="Supprimer le frais">
+                                                        <i class="fas fa-trash"></i>🗑️
+                                                    </button>
+                                                </form>
+                                            </td>
+                                            <% } %>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td><strong>📊 Total Frais Personnalisés</strong></td>
+                                        <td colspan="<%= surgery.statusLifecycle !== 'closed' ? '3' : '2' %>" class="text-end">
+                                            <strong class="text-warning">
+                                                <% const totalCustomFees = (surgery.customFees || []).reduce((sum, fee) => sum + (fee.feeAmount || 0), 0); %>
+                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(totalCustomFees) %>
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="text-center py-4">
+                            <i class="fas fa-tag fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">
+                                <i class="fas fa-info-circle me-2"></i>
+                                💼 Aucun frais personnalisé ajouté pour cette chirurgie
+                            </p>
+                        </div>
+                    <% } %>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <small>
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>💡 Note:</strong> Les frais personnalisés sont déduits du montant du chirurgien lors du calcul final des honoraires.
+                        </small>
+                    </div>
                 </div>
             </div>
             <% } %>
 
-            <!-- Main Calculation Explanation -->
+
+            <!-- Financial Calculation Display -->
             <% if (canViewFinancialInfo) { %>
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0">
-                        <i class="fas fa-lightbulb me-2"></i>
-                        Comment sont calculés les honoraires ?
-                    </h4>
+            <div class="card medical-card mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-calculator me-2"></i>
+                        <h4 class="mb-0">💰 Répartition Financière</h4>
+                        <small class="opacity-75">Analyse détaillée des coûts et revenus</small>
+                    </div>
+                    <a href="/surgeries/<%= surgery._id %>/export/financial-excel" class="btn btn-light medical-btn">
+                        <i class="fas fa-file-excel"></i>📊 Exporter en Excel
+                    </a>
                 </div>
                 <div class="card-body">
 
-                    <% if (!(surgery.surgeon && surgery.surgeon.contractType === 'location')) { %>
-                    <!-- Base Calculation -->
-                    <div class="row mb-4 calculation-step">
-                        <div class="col-12">
-                            <h5 class="text-primary mb-3">
-                                <i class="fas fa-1 me-2"></i>
-                                1. Calcul de Base
-                            </h5>
-                            <div class="bg-light p-3 rounded">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong>Prix de la prestation HT</strong>
-                                        <br>
-                                        <small class="text-muted">Prix utilisé pour cette chirurgie</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h5 text-primary">
-                                            <% const basePrice = surgery.adjustedPrice || (surgery.prestation ? surgery.prestation.priceHT : 0); %>
-                                            <% const urgentMultiplier = (surgery.status === 'urgent' && surgery.prestation) ? (1 + (surgery.prestation.urgentFeePercentage || 0)) : 1; %>
-                                            <% const effectivePrice = basePrice * urgentMultiplier; %>
-                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(effectivePrice) %>
-                                        </span>
-                                    </div>
+                    <% 
+                    // Calculate all components for display
+                    const basePrice = surgery.adjustedPrice || (surgery.prestation ? surgery.prestation.priceHT : 0);
+                    const urgentRate = (surgery.status === 'urgent' && surgery.prestation) ? (surgery.prestation.urgentFeePercentage || 0) : 0;
+                    const effectivePrice = basePrice * (1 + urgentRate);
+                    const patientMaterials = (surgery.consumedMaterials || []).reduce((sum, mat) => {
+                        return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
+                    }, 0);
+                    const otherMaterials = (surgery.consumedMaterials || []).reduce((sum, mat) => {
+                        return sum + (mat.material?.category !== 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
+                    }, 0);
+                    const durationH = (surgery.actualDuration || 0) / 60;
+                    const personnelFees = (surgery.medicalStaff || []).reduce((sum, s) => {
+                        return sum + ((s.staff?.personalFee || 0) * durationH);
+                    }, 0);
+                    const customFeeTotal = (surgery.customFees || []).reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
+                    
+                    // Calculate extra fees with tolerance
+                    let extraFee = 0;
+                    if (surgery.applyExtraFees && surgery.actualDuration > (surgery.prestation?.duration || 0)) {
+                        const extraDuration = surgery.actualDuration - surgery.prestation.duration;
+                        const tolerance = surgery.prestation.exceededDurationTolerance || 15;
+                        const billableExtraDuration = Math.max(0, extraDuration - tolerance);
+                        if (billableExtraDuration > 0) {
+                            const durationUnit = surgery.prestation.exceededDurationUnit || 15;
+                            const extraUnits = Math.ceil(billableExtraDuration / durationUnit);
+                            extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
+                        }
+                    }
+                    
+                    const isLocationContract = surgery.surgeon && surgery.surgeon.contractType === 'location';
+                    %>
+
+                    <% if (!isLocationContract) { %>
+                    <!-- SURGEON SECTION (Percentage Contract) -->
+                    <div class="mb-4">
+                        <div class="card border-success medical-card">
+                            <div class="card-header bg-success text-white d-flex align-items-center">
+                                <i class="fas fa-user-md me-2"></i>
+                                <h5 class="mb-0">👨‍⚕️ Part du Chirurgien</h5>
+                                <div class="ms-auto">
+                                    <small class="badge bg-light text-success">Contrat Pourcentage</small>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="financial-highlight mb-4">
+                                    <h2 class="display-4 text-white mb-0 fw-bold">
+                                        <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surgery.surgeonAmount || 0) %> DA
+                                    </h2>
+                                    <small class="text-white-50">💼 Montant total du chirurgien</small>
                                 </div>
 
-                                <% if (surgery.adjustedPrice) { %>
-                                <hr class="my-2">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong class="text-warning">Prix ajusté appliqué</strong>
-                                        <br>
-                                        <small class="text-muted">Prix spécifique utilisé pour cette chirurgie</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h5 text-warning">
-                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.adjustedPrice) %>
-                                        </span>
-                                    </div>
-                                </div>
-                                <% } %>
-
-                                <!-- Base Price -->
-                                <hr class="my-2">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong class="text-info">Prix de base de la prestation</strong>
-                                        <br>
-                                        <small class="text-muted">Prix HT défini dans la prestation</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h5 text-info">
-                                            <% if (surgery.prestation) { %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.priceHT) %>
-                                            <% } else { %>
-                                                N/A
-                                            <% } %>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <% if (surgery.status === 'urgent' && surgery.prestation && surgery.prestation.urgentFeePercentage > 0) { %>
-                                <hr class="my-2">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong class="text-danger">+ Frais d'urgence (<%= (surgery.prestation.urgentFeePercentage * 100).toFixed(0) %>%)</strong>
-                                        <br>
-                                        <small class="text-muted">Majoration appliquée aux chirurgies urgentes</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h6 text-danger">
-                                            <% const basePriceForUrgent = surgery.adjustedPrice || surgery.prestation.priceHT; %>
-                                            <% const urgentFeeAmount = basePriceForUrgent * surgery.prestation.urgentFeePercentage; %>
-                                            <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(urgentFeeAmount) %>
-                                        </span>
-                                    </div>
-                                </div>
-                                <% } %>
-
-                                <hr class="my-2">
-
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong class="text-danger">- Matériaux patient</strong>
-                                        <br>
-                                        <small class="text-muted">Coût des matériaux utilisés pour le patient</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h6 text-danger">
-                                            <% if (surgery.consumedMaterials) { %>
-                                                <% const patientMaterials = surgery.consumedMaterials.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0); %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterials) %>
-                                            <% } else { %>
-                                                0,00 DA
-                                            <% } %>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <hr class="my-2">
-
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong class="text-success">= Base de calcul</strong>
-                                        <br>
-                                        <small class="text-muted">Montant utilisé pour répartir les honoraires</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h4 text-success">
-                                            <% if (surgery.prestation) { %>
-                                                <% const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT; %>
-                                                <% const urgentMultiplier = surgery.status === 'urgent' ? (1 + (surgery.prestation.urgentFeePercentage || 0)) : 1; %>
-                                                <% const effectivePrice = basePrice * urgentMultiplier; %>
-                                                <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0) || 0; %>
-                                                <% const baseAmount = effectivePrice - patientMaterials; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(baseAmount) %>
-                                            <% } else { %>
-                                                N/A
-                                            <% } %>
-                                        </span>
-                                    </div>
+                                <h6 class="text-muted mb-3">
+                                    <i class="fas fa-chart-line me-2"></i>📈 Détail du calcul:
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered table-medical">
+                                        <tbody>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold">
+                                                    <i class="fas fa-euro-sign me-2 text-success"></i>Prix effectif
+                                                    <br><small class="text-muted">Prix de base <%= urgentRate > 0 ? '× (1 + ' + (urgentRate * 100).toFixed(0) + '% urgence)' : '' %></small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(effectivePrice) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-danger">
+                                                    <i class="fas fa-minus me-2"></i>− Matériaux patient
+                                                    <br><small class="text-muted">Exclus du calcul chirurgien</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-danger">
+                                                    − <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(patientMaterials) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold">
+                                                    <i class="fas fa-percentage me-2 text-info"></i>× Taux chirurgien
+                                                    <br><small class="text-muted"><%= (surgery.surgeon?.percentageRate || 45) %>% de la base</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-info">
+                                                    <% const surgeonBase = (effectivePrice - patientMaterials) * ((surgery.surgeon?.percentageRate || 45) / 100); %>
+                                                    <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surgeonBase) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-danger">
+                                                    <i class="fas fa-clock me-2"></i>− Frais dépassement
+                                                    <br><small class="text-muted">Déduits du chirurgien (après tolérance)</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-danger">
+                                                    − <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(extraFee) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-danger">
+                                                    <i class="fas fa-tag me-2"></i>− Frais personnalisés
+                                                    <br><small class="text-muted">Déduits du chirurgien</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-danger">
+                                                    − <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(customFeeTotal) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="table-success fw-bold">
+                                                <td class="bg-success text-white">
+                                                    <i class="fas fa-equals me-2"></i>= TOTAL CHIRURGIEN
+                                                </td>
+                                                <td class="text-end bg-success text-white">
+                                                    <strong><%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surgery.surgeonAmount || 0) %> DA</strong>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <% } %>
-
-                    <!-- Surgeon Share: hidden for location contracts (clinic breakdown shown instead) -->
-                    <% if (!(surgery.surgeon && surgery.surgeon.contractType === 'location')) { %>
-                    <div class="row mb-4 calculation-step">
-                            <div class="bg-light p-3 rounded">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong>Part du chirurgien (<%= (surgery.surgeon.percentageRate || 45) %>%)</strong>
-                                        <br>
-                                        <small class="text-muted">((Prix effectif - Matériaux patient) × <%= (surgery.surgeon.percentageRate || 45) %>% - Frais dépassement</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h5 text-success">
-                                            <% if (surgery.prestation) { %>
-                                                <% const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT; %>
-                                                <% const urgentRate = surgery.status === 'urgent' ? (surgery.prestation.urgentFeePercentage || 0) : 0; %>
-                                                <% const effectivePrice = basePrice * (1 + urgentRate); %>
-                                                <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0) || 0; %>
-                                                <% const surgeonRate = (surgery.surgeon.percentageRate || 45) / 100; %>
-                                                <% const surgeonBase = (effectivePrice - patientMaterials) * surgeonRate; %>
-                                                <% 
-                                                let extraFee = 0;
-                                                if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                    const extraDuration = surgery.actualDuration - surgery.prestation.duration;
-                                                    const durationUnit = surgery.prestation.exceededDurationUnit || 15;
-                                                    const extraUnits = Math.ceil(extraDuration / durationUnit);
-                                                    extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
-                                                }
-                                                const surgeonShare = surgeonBase - extraFee;
-                                                %>
-                                                <%= !isNaN(surgeonShare) ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(Math.max(0, surgeonShare)) : 'N/A' %>
-                                            <% } else { %>
-                                                N/A
-                                            <% } %>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
-                                    <% const extraDuration = surgery.actualDuration - surgery.prestation.duration; %>
-                                    <% const tolerance = surgery.prestation.exceededDurationTolerance || 15; %>
-                                    <% const billableExtraDuration = Math.max(0, extraDuration - tolerance); %>
-                                    <% const durationUnit = surgery.prestation.exceededDurationUnit || 15; %>
-                                    <% const extraUnits = billableExtraDuration > 0 ? Math.ceil(billableExtraDuration / durationUnit) : 0; %>
-                                    <% const extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits; %>
-                                    <% if (extraFee > 0) { %>
-                                    <hr class="my-2">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-8">
-                                            <strong class="text-danger">- Frais dépassement appliqués</strong>
-                                            <br>
-                                            <small class="text-muted">Déduits du montant du chirurgien (après tolérance de <%= tolerance %> min)</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h6 text-danger">
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFee) %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <% } %>
-                                <% } %>
-                            </div>
-                        </div>
-                    </div>
-                    <% } %>
-
-                    <!-- Extra Fees -->
-                    <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
-                        <% const extraDuration = surgery.actualDuration - surgery.prestation.duration; %>
-                        <% const tolerance = surgery.prestation.exceededDurationTolerance || 15; %>
-                        <% const billableExtraDuration = Math.max(0, extraDuration - tolerance); %>
-                        <% const durationUnit = surgery.prestation.exceededDurationUnit || 15; %>
-                        <% const extraUnits = billableExtraDuration > 0 ? Math.ceil(billableExtraDuration / durationUnit) : 0; %>
-                        <% const extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits; %>
-                        <div class="row mb-4 calculation-step">
-                            <div class="col-12">
-                                <h5 class="text-warning mb-3">
-                                    <i class="fas fa-3 me-2"></i>
-                                    3. Frais de Dépassement
-                                </h5>
-                                <div class="bg-light p-3 rounded">
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <strong>Durée prévue:</strong> <%= surgery.prestation.duration %> min
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Durée réelle:</strong> <%= surgery.actualDuration %> min
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <strong>Dépassement brut:</strong> <%= extraDuration %> min
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Marge de tolérance:</strong> <span class="badge bg-info"><%= tolerance %> min</span>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <strong>Dépassement facturable:</strong> <span class="text-primary"><%= billableExtraDuration %> min</span>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Unité de dépassement:</strong> <%= durationUnit %> min
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-6">
-                                            <strong>Unités facturées:</strong> <%= extraUnits %> unités
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Frais par unité:</strong> <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.exceededDurationFee || 0) %>
-                                        </div>
-                                    </div>
-                                    <% if (extraFee > 0) { %>
-                                    <hr class="my-2">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-8">
-                                            <strong class="text-warning">Frais dépassement appliqués</strong>
-                                            <br>
-                                            <small class="text-muted">
-                                                <%= extraUnits %> unités à <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(surgery.prestation.exceededDurationFee || 0) %>
-                                            </small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h5 text-warning">
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFee) %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <% } else { %>
-                                    <hr class="my-2">
-                                    <div class="alert alert-success mb-0">
-                                        <i class="bi bi-check-circle me-2"></i>
-                                        <strong>Aucun frais appliqué:</strong> Le dépassement est dans la marge de tolérance de <%= tolerance %> minutes.
-                                    </div>
-                                    <% } %>
-                                </div>
-                            </div>
-                        </div>
-                    <% } %>
-
-                    <!-- Final Result (show clinic share instead of surgeon total) -->
-                    <div class="row mb-4 calculation-step">
-                        <div class="col-12">
-                            <h5 class="text-primary mb-3">
-                                <i class="fas fa-4 me-2"></i>
-                                4. Résultat Final – Part de la Clinique
-                            </h5>
-                            <div class="bg-primary bg-opacity-10 p-4 rounded text-center">
-                                <h3 class="text-primary mb-2">Part de la Clinique</h3>
-                                <div class="display-4 text-primary mb-2">
-                                    <% if (surgery.prestation) { %>
-                                        <% const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT; %>
-                                        <% const urgentMultiplier = surgery.status === 'urgent' ? (1 + (surgery.prestation.urgentFeePercentage || 0)) : 1; %>
-                                        <% const effectivePrice = basePrice * urgentMultiplier; %>
-                                        <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                            return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                        }, 0) || 0; %>
-                                        <%
-                                        let clinicShare = 0;
-                                        if (surgery.surgeon && surgery.surgeon.contractType === 'location') {
-                                            // For location contracts: Clinic = (location Rate × Duration) + Materials (clinic + patient) + Personnel Fees (increased if urgent) + Overtime Fees + ASA Fee
-                                            const locationRate = surgery.surgeon.locationRate || 0;
-                                            const durationH = (surgery.actualDuration || 0) / 60;
-                                            const locationCost = locationRate * durationH;
-                                            const otherMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                return sum + (mat.material?.category !== 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                            }, 0) || 0;
-                                            const personnelFees = (surgery.medicalStaff || []).reduce((sum, s) => {
-                                                return sum + ((s.staff?.personalFee || 0) * durationH);
-                                            }, 0);
-                                            const personnelFeesWithUrgent = personnelFees * urgentMultiplier;
-                                            let extraFees = 0;
-                                            if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                const extraduration = surgery.actualDuration - surgery.prestation.duration;
-                                                const threshold = surgery.prestation.exceededDurationUnit || 15;
-                                                if (extraduration >= threshold) {
-                                                    extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold;
-                                                }
-                                            }
-                                            const asaFee = (surgery.asaClass && surgery.asaPricing) ? (surgery.asaPricing.fee || 0) : 0;
-                                            clinicShare = locationCost + patientMaterials + otherMaterials + personnelFeesWithUrgent + extraFees + asaFee;
-                                        } else {
-                                            // For percentage contracts, clinic gets percentage share
-                                            const clinicRate = 1 - ((surgery.surgeon.percentageRate || 45) / 100);
-                                            const clinicBase = (effectivePrice - patientMaterials) * clinicRate;
-                                            let extraFee = 0;
-                                            if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                const extraDuration = surgery.actualDuration - surgery.prestation.duration;
-                                                const durationUnit = surgery.prestation.exceededDurationUnit || 15;
-                                                const extraUnits = Math.ceil(extraDuration / durationUnit);
-                                                extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
-                                            }
-                                            clinicShare = clinicBase + patientMaterials + extraFee;
-                                        }
-                                        %>
-                                        <%= !isNaN(clinicShare) ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicShare) : 'N/A' %>
-                                    <% } else { %>
-                                        N/A
-                                    <% } %>
-                                </div>
-                                <p class="text-muted mb-0">
-                                    <strong>Formule:</strong>
-                                    <% if (surgery.surgeon && surgery.surgeon.contractType === 'location') { %>
-                                        Clinique = (Taux d'location × Durée) + Matériaux (clinique + patient) + Frais personnel (majorés si urgent) + Frais dépassement + Frais ASA
-                                    <% } else { %>
-                                        Clinique = ((Prix de base × (1 + Urgent%)) - Matériaux patient) × (1 - Taux chirurgien) + Matériaux patient + Frais dépassement
-                                    <% } %>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Clinic Share -->
-                    <div class="row calculation-step">
-                        <div class="col-12">
-                            <h5 class="text-info mb-3">
-                                <i class="fas fa-5 me-2"></i>
-                                <% if (surgery.surgeon && surgery.surgeon.contractType === 'location') { %>
-                                    5. Revenus de la Clinique (location)
-                                <% } else { %>
-                                    5. Part de la Clinique (<%= 100 - (surgery.surgeon.percentageRate || 45) %>%)
-                                <% } %>
-                            </h5>
-                            <div class="bg-light p-3 rounded">
-                                <% if (surgery.surgeon && surgery.surgeon.contractType === 'location') { %>
-                                    <% // Clinic breakdown for location contracts: locationCost + materials + personnel fees (with urgent uplift) + extraFees %>
-                                    <div class="row mb-2">
-                                        <div class="col-md-8">
-                                            <strong>Coût d'location (Durée × Taux d'location)</strong>
-                                            <br>
-                                            <small class="text-muted">Coût de la salle/opération supporté par la clinique</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h6 text-info">
-                                                <% const durationInHours = (surgery.actualDuration || 0) / 60; %>
-                                                <% const locationRate = surgery.surgeon?.locationRate || 0; %>
-                                                <% const urgentUpliftForRate = surgery.status === 'urgent' && surgery.prestation ? locationRate * (surgery.prestation.urgentFeePercentage || 0) : 0; %>
-                                                <% const effectivelocationRate = locationRate + urgentUpliftForRate; %>
-                                                <% const locationCost = durationInHours * effectivelocationRate; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(locationCost) %>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <hr class="my-2">
-
-                                    <div class="row mb-2">
-                                        <div class="col-md-8">
-                                            <strong>Matériaux patient</strong>
-                                            <br>
-                                            <small class="text-muted">Coût des matériaux facturés au patient</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h6 text-info">
-                                                <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0) || 0; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterials) %>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mb-2">
-                                        <div class="col-md-8">
-                                            <strong>Autres matériaux (clinique)</strong>
-                                            <br>
-                                            <small class="text-muted">Matériaux non facturés directement au patient</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h6 text-info">
-                                                <% const otherMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category !== 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0) || 0; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(otherMaterials) %>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mb-2">
-                                        <div class="col-md-8">
-                                            <strong>Frais du personnel (horaire)</strong>
-                                            <br>
-                                            <small class="text-muted">Total des frais horaires du personnel (majoré si urgent)</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h6 text-info">
-                                                <% const durationH = (surgery.actualDuration || 0) / 60; %>
-                                                <% const personnelFees = (surgery.medicalStaff || []).reduce((sum, s) => {
-                                                    return sum + ((s.staff?.personalFee || 0) * durationH);
-                                                }, 0); %>
-                                                <% const personnelFeesWithUrgent = personnelFees * (surgery.status === 'urgent' ? (1 + (surgery.prestation?.urgentFeePercentage || 0)) : 1); %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(personnelFeesWithUrgent) %>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <% // Extra fees (dépassement) go to clinic %>
-                                    <% let extraFees = 0; %>
-                                    <% if (surgery.applyExtraFees && surgery.actualDuration > (surgery.prestation?.duration || 0)) { %>
-                                        <% const extraduration = surgery.actualDuration - surgery.prestation.duration; %>
-                                        <% const threshold = surgery.prestation.exceededDurationUnit || 15; %>
-                                        <% if (extraduration >= threshold) { %>
-                                            <% extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold; %>
-                                            <hr class="my-2">
-                                            <div class="row mb-2">
-                                                <div class="col-md-8">
-                                                    <strong>Frais de dépassement</strong>
-                                                    <br>
-                                                    <small class="text-muted">Frais additionnels facturés à la clinique</small>
-                                                </div>
-                                                <div class="col-md-4 text-end">
-                                                    <span class="h6 text-info">
-                                                        <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFees) %>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        <% } %>
-                                    <% } %>
-
-                                    <% // ASA fees (only for location contracts with ASA class) %>
-                                    <% let asaFeeAmount = 0; %>
-                                    <% if (surgery.asaClass && surgery.asaPricing) { %>
-                                        <% asaFeeAmount = surgery.asaPricing.fee || 0; %>
-                                        <hr class="my-2">
-                                        <div class="row mb-2">
-                                            <div class="col-md-8">
-                                                <strong>Frais ASA (Classe <%= surgery.asaClass %>)</strong>
-                                                <br>
-                                                <small class="text-muted">Frais forfaitaire payé par le chirurgien à la clinique</small>
-                                            </div>
-                                            <div class="col-md-4 text-end">
-                                                <span class="h6 text-info">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(asaFeeAmount) %>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    <% } %>
-
-                                    <hr class="my-2">
-
-                                    <div class="row align-items-center">
-                                        <div class="col-md-8">
-                                            <strong class="text-primary">= Total Clinique</strong>
-                                            <br>
-                                            <small class="text-muted">location + Matériaux + Personnel + Frais dépassement + Frais ASA</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h4 text-primary">
-                                                <% const clinicTotal = locationCost + patientMaterials + otherMaterials + personnelFeesWithUrgent + (extraFees || 0) + asaFeeAmount; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicTotal) %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                <% } else { %>
-                                    <div class="row align-items-center">
-                                        <div class="col-md-8">
-                                            <strong>Part de la clinique (<%= 100 - (surgery.surgeon.percentageRate || 45) %>%)</strong>
-                                            <br>
-                                            <small class="text-muted">((Prix effectif - Matériaux patient) × <%= 100 - (surgery.surgeon.percentageRate || 45) %>% + Matériaux patient + Frais dépassement</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h5 text-info">
-                                                <% if (surgery.prestation) { %>
-                                                    <% const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT; %>
-                                                    <% const urgentRate = surgery.status === 'urgent' ? (surgery.prestation.urgentFeePercentage || 0) : 0; %>
-                                                    <% const effectivePrice = basePrice * (1 + urgentRate); %>
-                                                    <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                        return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                    }, 0) || 0; %>
-                                                    <% const clinicRate = 1 - ((surgery.surgeon.percentageRate || 45) / 100); %>
-                                                    <% const clinicBase = (effectivePrice - patientMaterials) * clinicRate; %>
-                                                    <% 
-                                                    let extraFee = 0;
-                                                    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                        const extraDuration = surgery.actualDuration - surgery.prestation.duration;
-                                                        const durationUnit = surgery.prestation.exceededDurationUnit || 15;
-                                                        const extraUnits = Math.ceil(extraDuration / durationUnit);
-                                                        extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
-                                                    }
-                                                    const clinicShare = clinicBase + patientMaterials + extraFee;
-                                                    %>
-                                                    <%= !isNaN(clinicShare) ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(clinicShare) : 'N/A' %>
-                                                <% } else { %>
-                                                    N/A
-                                                <% } %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                <% } %>
-
-                                <hr class="my-2">
-
-                                <% if (surgery.surgeon && surgery.surgeon.contractType === 'location') { %>
-                                    <div class="row align-items-center">
-                                        <div class="col-md-8">
-                                            <strong class="text-info">+ Matériaux patient</strong>
-                                            <br>
-                                            <small class="text-muted">Facturés au patient</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h5 text-info">
-                                                <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0) || 0; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterials) %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                <% } else { %>
-                                    <div class="row align-items-center">
-                                        <div class="col-md-8">
-                                            <strong class="text-info">+ Matériaux patient</strong>
-                                            <br>
-                                            <small class="text-muted">Facturés au patient mais inclus dans les revenus clinique</small>
-                                        </div>
-                                        <div class="col-md-4 text-end">
-                                            <span class="h5 text-info">
-                                                <% const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                    return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                }, 0) || 0; %>
-                                                <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(patientMaterials) %>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <% if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) { %>
-                                        <% const extraDuration = surgery.actualDuration - surgery.prestation.duration; %>
-                                        <% const durationUnit = surgery.prestation.exceededDurationUnit || 15; %>
-                                        <% const extraUnits = Math.ceil(extraDuration / durationUnit); %>
-                                        <% const extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits; %>
-                                        <hr class="my-2">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-8">
-                                                <strong class="text-success">+ Frais dépassement appliqués</strong>
-                                                <br>
-                                                <small class="text-muted">Ajoutés au montant de la clinique</small>
-                                            </div>
-                                            <div class="col-md-4 text-end">
-                                                <span class="h6 text-success">
-                                                    <%= new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(extraFee) %>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    <% } %>
-                                <% } %>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <hr class="my-2">
-
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <strong class="text-primary">= Total Clinique</strong>
-                                        <br>
-                                        <small class="text-muted">Revenus totaux de la clinique</small>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        <span class="h4 text-primary">
-                                            <% if (surgery.prestation) { %>
-                                                <%
-                                                let finalClinicTotal = 0;
-                                                if (surgery.surgeon && surgery.surgeon.contractType === 'location') {
-                                                    // For location contracts, use the same calculation as above
-                                                    const locationRate = surgery.surgeon.locationRate || 0;
-                                                    const durationH = (surgery.actualDuration || 0) / 60;
-                                                    const locationCost = locationRate * durationH;
-                                                    const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                        return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                    }, 0) || 0;
-                                                    const otherMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                        return sum + (mat.material?.category !== 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                    }, 0) || 0;
-                                                    const personnelFees = (surgery.medicalStaff || []).reduce((sum, s) => {
-                                                        return sum + ((s.staff?.personalFee || 0) * durationH);
-                                                    }, 0);
-                                                    const urgentMultiplier = surgery.status === 'urgent' ? (1 + (surgery.prestation.urgentFeePercentage || 0)) : 1;
-                                                    const personnelFeesWithUrgent = personnelFees * urgentMultiplier;
-                                                    let extraFees = 0;
-                                                    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                        const extraduration = surgery.actualDuration - surgery.prestation.duration;
-                                                        const threshold = surgery.prestation.exceededDurationUnit || 15;
-                                                        if (extraduration >= threshold) {
-                                                            extraFees = (surgery.prestation.exceededDurationFee || 0) * extraduration / threshold;
-                                                        }
-                                                    }
-                                                    finalClinicTotal = locationCost + patientMaterials + otherMaterials + personnelFeesWithUrgent + extraFees;
-                                                } else {
-                                                    // For percentage contracts
-                                                    const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT;
-                                                    const urgentRate = surgery.status === 'urgent' ? (surgery.prestation.urgentFeePercentage || 0) : 0;
-                                                    const effectivePrice = basePrice * (1 + urgentRate);
-                                                    const patientMaterials = surgery.consumedMaterials?.reduce((sum, mat) => {
-                                                        return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
-                                                    }, 0) || 0;
-                                                    const clinicRate = 1 - ((surgery.surgeon.percentageRate || 45) / 100);
-                                                    const clinicBase = (effectivePrice - patientMaterials) * clinicRate;
-                                                    let extraFee = 0;
-                                                    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
-                                                        const extraDuration = surgery.actualDuration - surgery.prestation.duration;
-                                                        const durationUnit = surgery.prestation.exceededDurationUnit || 15;
-                                                        const extraUnits = Math.ceil(extraDuration / durationUnit);
-                                                        extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
-                                                    }
-                                                    finalClinicTotal = clinicBase + patientMaterials + extraFee;
-                                                }
-                                                %>
-                                                <%= !isNaN(finalClinicTotal) ? new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(finalClinicTotal) : 'N/A' %>
-                                            <% } else { %>
-                                                N/A
-                                            <% } %>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- Summary Card -->
-            <div class="card summary-card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Résumé des Règles de Calcul
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <% if (surgery.surgeon && surgery.surgeon.contractType === 'location') { %>
-                        <div class="alert alert-info alert-custom">
-                            <h6 class="alert-heading">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Contrat d'location Horaire
-                            </h6>
-                            <ul class="mb-0">
-                                <li><strong>Chirurgien:</strong> Reoit taux horaire effectif à durée réelle</li>
-                                <li><strong>Taux effectif:</strong> Taux de base + frais urgents (si applicable)</li>
-                                <li><strong>Clinique:</strong> Reoit prix HT effectif + matériaux patient + frais personnels</li>
-                                <li><strong>Prix HT effectif:</strong> Prix ajusté à (1 + frais urgents) ou Prix de base à (1 + frais urgents)</li>
-                                <li><strong>Matériaux patient:</strong> Facturés au patient</li>
-                                <li><strong>Frais dépassement:</strong> Supportés par la clinique</li>
-                            </ul>
-                        </div>
                     <% } else { %>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-success">Chirurgien reçoit:</h6>
-                                <ul class="list-unstyled">
-                                    <li><i class="fas fa-check-circle text-success me-2"></i><%= (surgery.surgeon.percentageRate || 45) %>% du prix effectif (avec frais urgents inclus)</li>
-                                    <li><i class="fas fa-check-circle text-success me-2"></i>Prix effectif = Prix de base à (1 + frais urgents)</li>
-                                    <li><i class="fas fa-times-circle text-danger me-2"></i>Frais de dépassement déduits de son montant</li>
-                                    <li><i class="fas fa-check-circle text-success me-2"></i>Taux fixe, pas de variation</li>
-                                </ul>
+                    <!-- SURGEON SECTION (Location Contract) - Shows 0 -->
+                    <div class="mb-4">
+                        <div class="card border-secondary medical-card">
+                            <div class="card-header bg-secondary text-white d-flex align-items-center">
+                                <i class="fas fa-user-md me-2"></i>
+                                <h5 class="mb-0">👨‍⚕️ Part du Chirurgien (Contrat Location)</h5>
+                                <div class="ms-auto">
+                                    <small class="badge bg-light text-secondary">Contrat Location</small>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <h6 class="text-primary">Clinique reçoit:</h6>
-                                <ul class="list-unstyled">
-                                    <li><i class="fas fa-check-circle text-primary me-2"></i><%= 100 - (surgery.surgeon.percentageRate || 45) %>% du prix effectif (avec frais urgents inclus)</li>
-                                    <li><i class="fas fa-x-circle text-muted me-2"></i><s>Frais personnels horaires</s> <small class="text-muted">(non appliqués)</small></li>
-                                    <li><i class="fas fa-check-circle text-primary me-2"></i>Frais urgents intégrés dans le calcul de base</li>
-                                    <li><i class="fas fa-check-circle text-primary me-2"></i>Matériaux cliniques</li>
-                                    <li><i class="fas fa-check-circle text-primary me-2"></i>100% des frais de dépassement</li>
-                                </ul>
+                            <div class="card-body">
+                                <div class="financial-highlight mb-4" style="background: linear-gradient(135deg, var(--medical-gray), #6c757d);">
+                                    <h2 class="display-4 text-white mb-0 fw-bold">
+                                        <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(0) %> DA
+                                    </h2>
+                                    <small class="text-white-50">🏥 Le chirurgien ne reçoit pas de part (contrat location)</small>
+                                </div>
                             </div>
                         </div>
+                    </div>
                     <% } %>
+
+                    <!-- CLINIC SECTION -->
+                    <div class="mb-4">
+                        <div class="card border-info medical-card">
+                            <div class="card-header bg-info text-white d-flex align-items-center">
+                                <i class="fas fa-hospital me-2"></i>
+                                <h5 class="mb-0">🏥 Part de la Clinique</h5>
+                                <div class="ms-auto">
+                                    <small class="badge bg-light text-info">Revenus cliniques</small>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="financial-highlight mb-4" style="background: linear-gradient(135deg, var(--medical-blue), var(--medical-primary));">
+                                    <h2 class="display-4 text-white mb-0 fw-bold">
+                                        <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surgery.clinicAmount || 0) %> DA
+                                    </h2>
+                                    <small class="text-white-50">💼 Montant total de la clinique</small>
+                                </div>
+
+                                <h6 class="text-muted mb-3">
+                                    <i class="fas fa-chart-pie me-2"></i>📊 Détail du calcul:
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered table-medical">
+                                        <tbody>
+                                            <% if (isLocationContract) { %>
+                                            <!-- Location Contract Breakdown -->
+                                            <tr class="bg-light">
+                                                <td class="fw-bold">
+                                                    <i class="fas fa-euro-sign me-2 text-primary"></i>Coût location (horaire)
+                                                    <br><small class="text-muted">Taux: <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surgery.surgeon?.locationRate || 0) %> DA/h × <%= durationH.toFixed(2) %> h <%= urgentRate > 0 ? '× (1 + ' + (urgentRate * 100).toFixed(0) + '%)' : '' %></small>
+                                                </td>
+                                                <td class="text-end fw-bold text-primary">
+                                                    <% const locationCost = (surgery.surgeon?.locationRate || 0) * durationH * (1 + urgentRate); %>
+                                                    <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(locationCost) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Matériaux patient
+                                                    <br><small class="text-muted">Facturés au patient</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(patientMaterials) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Matériaux clinique
+                                                    <br><small class="text-muted">Consommables non-patient</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(otherMaterials) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Frais personnel
+                                                    <br><small class="text-muted">Tarif horaire × <%= durationH.toFixed(2) %> h <%= urgentRate > 0 ? '× (1 + ' + (urgentRate * 100).toFixed(0) + '%)' : '' %></small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    <% const personnelFeesWithUrgent = personnelFees * (1 + urgentRate); %>
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(personnelFeesWithUrgent) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Frais dépassement
+                                                    <br><small class="text-muted">Ajoutés à la clinique</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(extraFee) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Frais ASA
+                                                    <br><small class="text-muted"><%= surgery.asaClass ? 'Classe ASA ' + surgery.asaClass : 'Non applicable' %></small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    <% const asaFee = (surgery.asaClass && surgery.asaPricing) ? (surgery.asaPricing.fee || 0) : 0; %>
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(asaFee) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Frais personnalisés
+                                                    <br><small class="text-muted">Ajoutés à la clinique</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(customFeeTotal) %> DA
+                                                </td>
+                                            </tr>
+                                            <% } else { %>
+                                            <!-- Percentage Contract Breakdown -->
+                                            <tr class="bg-light">
+                                                <td class="fw-bold">
+                                                    <i class="fas fa-percentage me-2 text-info"></i>Part pourcentage clinique
+                                                    <br><small class="text-muted"><%= 100 - (surgery.surgeon?.percentageRate || 45) %>% × (Prix effectif − Matériaux patient)</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-info">
+                                                    <% const clinicBase = (effectivePrice - patientMaterials) * (1 - ((surgery.surgeon?.percentageRate || 45) / 100)); %>
+                                                    <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(clinicBase) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Matériaux patient
+                                                    <br><small class="text-muted">Ajoutés après répartition</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(patientMaterials) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Frais dépassement
+                                                    <br><small class="text-muted">Ajoutés à la clinique</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(extraFee) %> DA
+                                                </td>
+                                            </tr>
+                                            <tr class="bg-light">
+                                                <td class="fw-bold text-success">
+                                                    <i class="fas fa-plus me-2"></i>+ Frais personnalisés
+                                                    <br><small class="text-muted">Ajoutés à la clinique</small>
+                                                </td>
+                                                <td class="text-end fw-bold text-success">
+                                                    + <%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(customFeeTotal) %> DA
+                                                </td>
+                                            </tr>
+                                            <% } %>
+                                            <tr class="table-info fw-bold">
+                                                <td class="bg-info text-white">
+                                                    <i class="fas fa-equals me-2"></i>= TOTAL CLINIQUE
+                                                </td>
+                                                <td class="text-end bg-info text-white">
+                                                    <strong><%= new Intl.NumberFormat('fr-DZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(surgery.clinicAmount || 0) %> DA</strong>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <% } %>
@@ -1127,12 +1083,12 @@
 <!-- Add Materials Modal -->
 <div class="modal fade" id="addMaterialsModal" tabindex="-1" aria-labelledby="addMaterialsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content medical-card">
+            <div class="modal-header medical-header">
                 <h5 class="modal-title" id="addMaterialsModalLabel">
-                    <i class="fas fa-plus me-2"></i>Ajouter des Matériaux à la Chirurgie
+                    <i class="fas fa-plus me-2"></i>➕ Ajouter des Matériaux à la Chirurgie
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="addMaterialsForm" action="/surgeries/<%= surgery._id %>/add-materials" method="POST">
                 <div class="modal-body">
@@ -1312,3 +1268,140 @@ $(document).ready(function() {
     });
 });
 </script>
+
+<!-- Add Custom Fees Modal -->
+<div class="modal fade" id="addCustomFeesModal" tabindex="-1" aria-labelledby="addCustomFeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content medical-card">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="addCustomFeesModalLabel">
+                    <i class="fas fa-plus me-2"></i>💰 Ajouter des Frais Personnalisés
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addCustomFeesForm" action="/surgeries/<%= surgery._id %>/add-custom-fees" method="POST">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Exemple:</strong> OVERNIGHT STAY, Location de matériel spécialisé, etc.
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Ces frais seront déduits du montant du chirurgien lors du calcul des honoraires.
+                    </div>
+                    
+                    <div id="feesContainer">
+                        <div class="fee-row mb-3">
+                            <div class="row align-items-end">
+                                <div class="col-md-7">
+                                    <label class="form-label">Nom du Frais</label>
+                                    <input type="text" class="form-control fee-name" name="fees[0][feeName]" placeholder="Ex: OVERNIGHT STAY, Matériel spécialisé..." required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Montant (DA)</label>
+                                    <input type="number" class="form-control fee-amount" name="fees[0][feeAmount]" min="0" step="0.01" placeholder="0,00" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-fee-row" disabled>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline-warning btn-sm" id="addFeeRow">
+                        <i class="fas fa-plus me-1"></i>Ajouter un autre frais
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>Ajouter les Frais
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let feeRowIndex = 1;
+
+$(document).ready(function() {
+    // Add new fee row
+    $('#addFeeRow').click(function() {
+        const container = $('#feesContainer');
+        const newRow = `
+            <div class="fee-row mb-3">
+                <div class="row align-items-end">
+                    <div class="col-md-7">
+                        <label class="form-label">Nom du Frais</label>
+                        <input type="text" class="form-control fee-name" name="fees[${feeRowIndex}][feeName]" placeholder="Ex: OVERNIGHT STAY, Matériel spécialisé..." required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Montant (DA)</label>
+                        <input type="number" class="form-control fee-amount" name="fees[${feeRowIndex}][feeAmount]" min="0" step="0.01" placeholder="0,00" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-fee-row">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.append(newRow);
+        updateRemoveButtons();
+        feeRowIndex++;
+    });
+    
+    // Update remove button states
+    function updateRemoveButtons() {
+        const rows = $('.fee-row').length;
+        $('.remove-fee-row').prop('disabled', rows <= 1);
+    }
+    
+    // Remove fee row
+    $(document).on('click', '.remove-fee-row', function() {
+        const row = $(this).closest('.fee-row');
+        if ($('.fee-row').length > 1) {
+            row.remove();
+            updateRemoveButtons();
+        }
+    });
+    
+    // Form submission
+    $('#addCustomFeesForm').submit(function(e) {
+        e.preventDefault();
+        
+        // Get all fee rows
+        const feeRows = $('.fee-row');
+        let hasValidFee = false;
+        const feesData = [];
+        
+        feeRows.each(function(index) {
+            const feeName = $(this).find('.fee-name').val().trim();
+            const feeAmount = parseFloat($(this).find('.fee-amount').val()) || 0;
+            
+            if (feeName && feeAmount > 0) {
+                hasValidFee = true;
+                feesData.push({
+                    index,
+                    feeName,
+                    feeAmount
+                });
+            }
+        });
+        
+        if (!hasValidFee) {
+            alert('Veuillez ajouter au moins un frais avec un nom et un montant valide.');
+            return false;
+        }
+        
+        // Submit the form
+        this.submit();
+    });
+});
+</script>
+

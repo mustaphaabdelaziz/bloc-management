@@ -8,7 +8,7 @@ const patientSchema = new mongoose.Schema({
     },
     nin: {
         type: String,
-        required: true,
+        required: false,
         unique: true
     },
     firstName: {
@@ -126,3 +126,6 @@ patientSchema.pre('save', async function(next) {
 });
 
 module.exports = mongoose.model('Patient', patientSchema);
+
+// Ensure unique index but allow multiple documents without a NIN
+patientSchema.index({ nin: 1 }, { unique: true, sparse: true });

@@ -9,11 +9,27 @@ const { ensureAdmin } = require('../middleware/rbac');
 
 // Show all users (admin only)
 router.get("/", isLoggedIn, ensureAdmin, catchAsync(async (req, res) => {
-    const users = await User.find({}).select('-password').sort({ lastname: 1 });
+    const searchTerm = req.query.search ? req.query.search.trim() : '';
+    
+    let query = {};
+    if (searchTerm) {
+        // Search by email, firstname, or lastname
+        query = {
+            $or: [
+                { email: { $regex: searchTerm, $options: 'i' } },
+                { firstname: { $regex: searchTerm, $options: 'i' } },
+                { lastname: { $regex: searchTerm, $options: 'i' } }
+            ]
+        };
+    }
+    
+    const users = await User.find(query).select('-password').sort({ lastname: 1 });
+    
     res.render("users/index", {
         title: "Gestion des Utilisateurs",
         currentUser: req.user,
-        users
+        users,
+        filters: { search: searchTerm }
     });
 }));
 

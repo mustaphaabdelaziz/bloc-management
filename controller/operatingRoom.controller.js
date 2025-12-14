@@ -3,12 +3,12 @@ const catchAsync = require('../utils/catchAsync');
 
 // List all operating rooms
 module.exports.operatingRoomList = catchAsync(async (req, res) => {
-    const filters = {};
+    let query = {};
     
     // Search filter
     if (req.query.search) {
         const searchRegex = new RegExp(req.query.search, 'i');
-        filters.$or = [
+        query.$or = [
             { code: searchRegex },
             { name: searchRegex },
             { location: searchRegex }
@@ -17,10 +17,27 @@ module.exports.operatingRoomList = catchAsync(async (req, res) => {
     
     // Active status filter
     if (req.query.status) {
-        filters.isActive = req.query.status === 'active';
+        query.isActive = req.query.status === 'active';
     }
     
-    const operatingRooms = await OperatingRoom.find(filters).sort({ code: 1 });
+    // Build final query with $and if both search and status are present
+    let finalQuery = query;
+    if (req.query.search && req.query.status) {
+        finalQuery = {
+            $and: [
+                {
+                    $or: [
+                        { code: new RegExp(req.query.search, 'i') },
+                        { name: new RegExp(req.query.search, 'i') },
+                        { location: new RegExp(req.query.search, 'i') }
+                    ]
+                },
+                { isActive: req.query.status === 'active' }
+            ]
+        };
+    }
+    
+    const operatingRooms = await OperatingRoom.find(finalQuery).sort({ code: 1 });
     
     res.render('operatingRooms/index', {
         title: 'Salles Opératoires',

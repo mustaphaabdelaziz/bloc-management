@@ -4,13 +4,26 @@ const Surgery = require("../models/Surgery");
 
 module.exports.fonctionlist = async (req, res) => {
   try {
-    const fonctions = await Fonction.find()
+    const search = req.query.search || "";
+
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { code: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    const fonctions = await Fonction.find(query)
       .populate('createdBy', 'firstname lastname')
       .populate('updatedBy', 'firstname lastname')
       .sort({ name: 1 });
     res.render("fonctions/index", {
       title: "Gestion des Fonctions",
       fonctions,
+      filters: { search },
     });
   } catch (error) {
     res.status(500).render("error", { title: "Erreur", error });
@@ -130,6 +143,8 @@ module.exports.importFonctions = async (req, res) => {
         }
 
         const fonction = new Fonction({ code: code.trim(), name: name.trim(), description: description ? description.trim() : '' });
+        fonction.createdBy = req.user._id;
+        fonction.updatedBy = req.user._id;
         await fonction.save();
         results.imported++;
 

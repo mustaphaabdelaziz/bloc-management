@@ -7,7 +7,27 @@ const Prestation = require("../models/Prestation");
 
 module.exports.surgeonList = async (req, res) => {
   try {
-    const surgeons = await Surgeon.find()
+    const searchTerm = req.query.search ? req.query.search.trim() : '';
+
+    let query = {};
+    if (searchTerm) {
+      // Search by firstName, lastName, or specialty name
+      const specialtyMatches = await Specialty.find({
+        name: { $regex: searchTerm, $options: 'i' }
+      }).select('_id');
+      const specialtyIds = specialtyMatches.map(s => s._id);
+
+      query = {
+        $or: [
+          { firstName: { $regex: searchTerm, $options: 'i' } },
+          { lastName: { $regex: searchTerm, $options: 'i' } },
+          { email: { $regex: searchTerm, $options: 'i' } },
+          { specialty: { $in: specialtyIds } }
+        ]
+      };
+    }
+
+    const surgeons = await Surgeon.find(query)
       .populate("specialty")
       .populate("createdBy", "firstname lastname")
       .populate("updatedBy", "firstname lastname")
@@ -29,6 +49,7 @@ module.exports.surgeonList = async (req, res) => {
       title: "Gestion des Chirurgiens",
       surgeons: filteredSurgeons,
       canSeeContractInfo,
+      search: searchTerm
     });
   } catch (error) {
     res.status(500).render("error", { title: "Erreur", error });
@@ -447,6 +468,8 @@ module.exports.importSurgeons = async (req, res) => {
         }
 
         const surgeon = new Surgeon(surgeonData);
+        surgeon.createdBy = req.user._id;
+        surgeon.updatedBy = req.user._id;
         await surgeon.save();
         results.imported++;
 

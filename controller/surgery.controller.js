@@ -710,6 +710,18 @@ async function calculateSurgeonFees(surgeryId) {
     // Note: ASA fees are not applicable for percentage contracts
   }
 
+  // Calculate total custom fees
+  let totalCustomFees = 0;
+  if (surgery.customFees && Array.isArray(surgery.customFees)) {
+    totalCustomFees = surgery.customFees.reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
+  }
+
+  // Apply custom fees:
+  // - Deduct from surgeon amount
+  // - Add to clinic amount
+  surgeonAmount = surgeonAmount - totalCustomFees;
+  clinicAmount = clinicAmount + totalCustomFees;
+
   // S'assurer que le montant n'est pas négatif
   surgeonAmount = Math.max(0, surgeonAmount);
   clinicAmount = Math.max(0, clinicAmount);
@@ -1226,7 +1238,110 @@ module.exports.addMaterialsToSurgery = async (req, res) => {
   }
 };
 
+// ==================== CUSTOM FEES METHODS ====================
+
+module.exports.addCustomFeesToSurgery = async (req, res) => {
+  try {
+    const surgery = await Surgery.findById(req.params.id);
+    if (!surgery) {
+      req.flash('error', 'Chirurgie non trouvée');
+      return res.redirect('/surgeries');
+    }
+
+    // Check if surgery is still editable
+    if (surgery.statusLifecycle !== 'editable') {
+      req.flash('error', 'Impossible d\'ajouter des frais à une chirurgie clôturée');
+      return res.redirect(`/surgeries/${req.params.id}`);
+    }
+
+    const customFees = [];
+
+    // Process custom fees from the form
+    if (req.body.fees && Array.isArray(req.body.fees)) {
+      for (const feeData of req.body.fees) {
+        const feeName = feeData.feeName ? String(feeData.feeName).trim() : '';
+        const feeAmount = parseFloat(feeData.feeAmount) || 0;
+        
+        // Validate fee name and amount
+        if (feeName && feeAmount > 0) {
+          customFees.push({
+            feeName: feeName,
+            feeAmount: feeAmount,
+            createdBy: req.user ? req.user._id : undefined,
+            createdAt: new Date(),
+          });
+        }
+      }
+    }
+
+    // Add new custom fees to existing ones
+    if (customFees.length > 0) {
+      if (!surgery.customFees) {
+        surgery.customFees = [];
+      }
+      surgery.customFees.push(...customFees);
+      await surgery.save();
+
+      // Recalculate fees after adding custom fees
+      try {
+        await calculateSurgeonFees(surgery._id);
+      } catch (feeErr) {
+        console.error('Erreur calcul honoraires (ajout frais personnalisés):', feeErr);
+      }
+    }
+
+    req.flash('success', `${customFees.length} frais personnalisé${customFees.length > 1 ? 's' : ''} ajouté${customFees.length > 1 ? 's' : ''} à la chirurgie`);
+    res.redirect(`/surgeries/${req.params.id}`);
+  } catch (error) {
+    console.error("Erreur ajout frais personnalisés à chirurgie:", error);
+    req.flash('error', 'Erreur lors de l\'ajout des frais');
+    res.redirect(`/surgeries/${req.params.id}`);
+  }
+};
+
+module.exports.removeCustomFee = async (req, res) => {
+  try {
+    const { id, feeIndex } = req.params;
+    const surgery = await Surgery.findById(id);
+
+    if (!surgery) {
+      req.flash('error', 'Chirurgie non trouvée');
+      return res.redirect('/surgeries');
+    }
+
+    // Check if surgery is still editable
+    if (surgery.statusLifecycle !== 'editable') {
+      req.flash('error', 'Impossible de modifier les frais d\'une chirurgie clôturée');
+      return res.redirect(`/surgeries/${id}`);
+    }
+
+    const index = parseInt(feeIndex, 10);
+    if (!isNaN(index) && surgery.customFees && surgery.customFees[index]) {
+      surgery.customFees.splice(index, 1);
+      await surgery.save();
+
+      // Recalculate fees after removing custom fee
+      try {
+        await calculateSurgeonFees(id);
+      } catch (feeErr) {
+        console.error('Erreur calcul honoraires (suppression frais):', feeErr);
+      }
+
+      req.flash('success', 'Frais supprimés de la chirurgie');
+    } else {
+      req.flash('error', 'Frais non trouvé');
+    }
+
+    res.redirect(`/surgeries/${id}`);
+  } catch (error) {
+    console.error("Erreur suppression frais personnalisés:", error);
+    req.flash('error', 'Erreur lors de la suppression des frais');
+    res.redirect(`/surgeries/${req.params.id}`);
+  }
+};
+
 // ==================== OPERATING ROOM RESERVATION METHODS ====================
+
 
 const reservationService = require('../services/reservationService');
 const OperatingRoom = require('../models/OperatingRoom');
@@ -2063,6 +2178,278 @@ module.exports.exportPlanningExcel = async (req, res) => {
     
   } catch (error) {
     console.error('Error exporting Excel:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Export surgery financial breakdown to Excel
+module.exports.exportSurgeryFinancialsExcel = async (req, res) => {
+  try {
+    const surgery = await Surgery.findById(req.params.id)
+      .populate("patient")
+      .populate("surgeon")
+      .populate("prestation")
+      .populate("consumedMaterials.material")
+      .populate("medicalStaff.staff");
+
+    if (!surgery) {
+      return res.status(404).json({ success: false, message: 'Chirurgie non trouvée' });
+    }
+
+    // Fetch ASA pricing if needed
+    let asaPricing = null;
+    if (surgery.asaClass) {
+      asaPricing = await AsaPricing.getPricingByClass(surgery.asaClass);
+    }
+
+    // Calculate breakdown components (reuse same logic as view)
+    const basePrice = surgery.adjustedPrice || surgery.prestation.priceHT;
+    const urgentRate = surgery.status === 'urgent' ? (surgery.prestation.urgentFeePercentage || 0) : 0;
+    const effectivePrice = basePrice * (1 + urgentRate);
+    
+    const patientMaterials = surgery.consumedMaterials.reduce((sum, mat) => {
+      return sum + (mat.material?.category === 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
+    }, 0);
+
+    const otherMaterials = surgery.consumedMaterials.reduce((sum, mat) => {
+      return sum + (mat.material?.category !== 'patient' ? (mat.priceUsed || 0) * mat.quantity : 0);
+    }, 0);
+
+    const durationInHours = (surgery.actualDuration || 0) / 60;
+    const personnelFees = (surgery.medicalStaff || []).reduce((sum, s) => {
+      return sum + ((s.staff?.personalFee || 0) * durationInHours);
+    }, 0);
+
+    // Calculate extra fees
+    let extraFee = 0;
+    let extraUnits = 0;
+    let billableExtraDuration = 0;
+    if (surgery.applyExtraFees && surgery.actualDuration > surgery.prestation.duration) {
+      const extraDuration = surgery.actualDuration - surgery.prestation.duration;
+      const tolerance = surgery.prestation.exceededDurationTolerance || 15;
+      billableExtraDuration = Math.max(0, extraDuration - tolerance);
+      const durationUnit = surgery.prestation.exceededDurationUnit || 15;
+      if (billableExtraDuration > 0) {
+        extraUnits = Math.ceil(billableExtraDuration / durationUnit);
+        extraFee = (surgery.prestation.exceededDurationFee || 0) * extraUnits;
+      }
+    }
+
+    // Calculate custom fees
+    const customFeeTotal = (surgery.customFees || []).reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
+
+    // ASA fee
+    const asaFee = (surgery.surgeon.contractType === 'location' && asaPricing) ? (asaPricing.fee || 0) : 0;
+
+    // Create workbook
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Calcul Financier');
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 40 },
+      { width: 20 }
+    ];
+
+    // Header section
+    worksheet.mergeCells('A1:B1');
+    worksheet.getCell('A1').value = 'DÉTAILS FINANCIERS DE LA CHIRURGIE';
+    worksheet.getCell('A1').font = { bold: true, size: 14 };
+    worksheet.getCell('A1').alignment = { horizontal: 'center' };
+
+    let rowNum = 3;
+
+    // Surgery metadata
+    worksheet.getCell(`A${rowNum}`).value = 'Code Chirurgie:';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = surgery.code;
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Patient:';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = `${surgery.patient.firstName} ${surgery.patient.lastName}`;
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Chirurgien:';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = `Dr. ${surgery.surgeon.lastName} ${surgery.surgeon.firstName}`;
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Prestation:';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = surgery.prestation.designation;
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Date:';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = new Date(surgery.incisionTime).toLocaleDateString('fr-FR');
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Type de contrat:';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = surgery.surgeon.contractType === 'location' ? 'Location' : 'Pourcentage';
+    rowNum += 2;
+
+    // SURGEON SECTION
+    worksheet.mergeCells(`A${rowNum}:B${rowNum}`);
+    worksheet.getCell(`A${rowNum}`).value = 'PART DU CHIRURGIEN';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    worksheet.getCell(`A${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF28a745' } };
+    worksheet.getCell(`A${rowNum}`).alignment = { horizontal: 'center' };
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Montant Total Chirurgien';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = surgery.surgeonAmount;
+    worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+    worksheet.getCell(`B${rowNum}`).font = { bold: true, color: { argb: 'FF28a745' } };
+    rowNum += 2;
+
+    // Surgeon breakdown header
+    worksheet.getCell(`A${rowNum}`).value = 'Détails du calcul';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true, italic: true };
+    worksheet.getCell(`B${rowNum}`).value = 'Montant (DA)';
+    worksheet.getCell(`B${rowNum}`).font = { bold: true, italic: true };
+    worksheet.getCell(`A${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    worksheet.getCell(`B${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    rowNum++;
+
+    if (surgery.surgeon.contractType === 'location') {
+      // Location contract - surgeon gets 0
+      worksheet.getCell(`A${rowNum}`).value = 'Contrat location - pas de part chirurgien';
+      worksheet.getCell(`B${rowNum}`).value = 0;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+    } else {
+      // Percentage contract breakdown
+      worksheet.getCell(`A${rowNum}`).value = 'Prix effectif';
+      worksheet.getCell(`B${rowNum}`).value = effectivePrice;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '- Matériaux patient';
+      worksheet.getCell(`B${rowNum}`).value = -patientMaterials;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = `× Taux chirurgien (${surgery.surgeon.percentageRate || 45}%)`;
+      const surgeonRate = (surgery.surgeon.percentageRate || 45) / 100;
+      const surgeonBase = (effectivePrice - patientMaterials) * surgeonRate;
+      worksheet.getCell(`B${rowNum}`).value = surgeonBase;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '- Frais de dépassement';
+      worksheet.getCell(`B${rowNum}`).value = -extraFee;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '- Frais personnalisés';
+      worksheet.getCell(`B${rowNum}`).value = -customFeeTotal;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+    }
+    rowNum += 2;
+
+    // CLINIC SECTION
+    worksheet.mergeCells(`A${rowNum}:B${rowNum}`);
+    worksheet.getCell(`A${rowNum}`).value = 'PART DE LA CLINIQUE';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    worksheet.getCell(`A${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF17a2b8' } };
+    worksheet.getCell(`A${rowNum}`).alignment = { horizontal: 'center' };
+    rowNum++;
+
+    worksheet.getCell(`A${rowNum}`).value = 'Montant Total Clinique';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true };
+    worksheet.getCell(`B${rowNum}`).value = surgery.clinicAmount;
+    worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+    worksheet.getCell(`B${rowNum}`).font = { bold: true, color: { argb: 'FF17a2b8' } };
+    rowNum += 2;
+
+    // Clinic breakdown header
+    worksheet.getCell(`A${rowNum}`).value = 'Détails du calcul';
+    worksheet.getCell(`A${rowNum}`).font = { bold: true, italic: true };
+    worksheet.getCell(`B${rowNum}`).value = 'Montant (DA)';
+    worksheet.getCell(`B${rowNum}`).font = { bold: true, italic: true };
+    worksheet.getCell(`A${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    worksheet.getCell(`B${rowNum}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    rowNum++;
+
+    if (surgery.surgeon.contractType === 'location') {
+      // Location contract breakdown
+      const locationRate = surgery.surgeon.locationRate || 0;
+      const urgentUpliftForRate = surgery.status === 'urgent' ? locationRate * urgentRate : 0;
+      const effectiveLocationRate = locationRate + urgentUpliftForRate;
+      const locationCost = durationInHours * effectiveLocationRate;
+
+      worksheet.getCell(`A${rowNum}`).value = 'Coût location';
+      worksheet.getCell(`B${rowNum}`).value = locationCost;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Matériaux patient';
+      worksheet.getCell(`B${rowNum}`).value = patientMaterials;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Autres matériaux';
+      worksheet.getCell(`B${rowNum}`).value = otherMaterials;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      const personnelFeesWithUrgent = personnelFees * (surgery.status === 'urgent' ? (1 + urgentRate) : 1);
+      worksheet.getCell(`A${rowNum}`).value = '+ Frais personnel';
+      worksheet.getCell(`B${rowNum}`).value = personnelFeesWithUrgent;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Frais dépassement';
+      worksheet.getCell(`B${rowNum}`).value = extraFee;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Frais ASA';
+      worksheet.getCell(`B${rowNum}`).value = asaFee;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Frais personnalisés';
+      worksheet.getCell(`B${rowNum}`).value = customFeeTotal;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+    } else {
+      // Percentage contract breakdown
+      const clinicRate = 1 - ((surgery.surgeon.percentageRate || 45) / 100);
+      const clinicBase = (effectivePrice - patientMaterials) * clinicRate;
+
+      worksheet.getCell(`A${rowNum}`).value = `Part clinique (${100 - (surgery.surgeon.percentageRate || 45)}%)`;
+      worksheet.getCell(`B${rowNum}`).value = clinicBase;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Matériaux patient';
+      worksheet.getCell(`B${rowNum}`).value = patientMaterials;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Frais dépassement';
+      worksheet.getCell(`B${rowNum}`).value = extraFee;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+      rowNum++;
+
+      worksheet.getCell(`A${rowNum}`).value = '+ Frais personnalisés';
+      worksheet.getCell(`B${rowNum}`).value = customFeeTotal;
+      worksheet.getCell(`B${rowNum}`).numFmt = '#,##0.00 "DA"';
+    }
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=surgery-financial-${surgery.code}.xlsx`);
+    
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+    
+  } catch (error) {
+    console.error('Error exporting surgery financials Excel:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

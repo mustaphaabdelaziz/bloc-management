@@ -4,7 +4,19 @@ const Surgery = require("../models/Surgery");
 
 module.exports.medicalStaffList = async (req, res) => {
   try {
-    const medicalStaff = await MedicalStaff.find()
+    const search = req.query.search || "";
+
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { firstName: { $regex: search, $options: "i" } },
+          { lastName: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    const medicalStaff = await MedicalStaff.find(query)
       .populate("fonctions")
       .populate('createdBy', 'firstname lastname')
       .populate('updatedBy', 'firstname lastname')
@@ -12,6 +24,7 @@ module.exports.medicalStaffList = async (req, res) => {
     res.render("medicalStaff/index", {
       title: "Personnel Médical",
       medicalStaff,
+      search,
     });
   } catch (error) {
     res.status(500).render("error", { title: "Erreur", error });
@@ -246,6 +259,8 @@ module.exports.importMedicalStaff = async (req, res) => {
         }
 
         const staff = new MedicalStaff(staffData);
+        staff.createdBy = req.user._id;
+        staff.updatedBy = req.user._id;
         await staff.save();
         results.imported++;
 

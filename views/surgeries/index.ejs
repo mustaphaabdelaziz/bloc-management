@@ -20,14 +20,14 @@
         <h5 class="filter-title">
             <i class="bi bi-funnel"></i>Filtres et Recherche
         </h5>
-        <form method="GET" class="row g-3">
+        <form method="GET" class="row g-3" id="searchForm" onsubmit="return false;">
             <div class="col-md-4">
                 <label class="form-label">Recherche</label>
-                <input type="text" name="search" class="form-control" placeholder="Code, patient, chirurgien..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
+                <input type="text" name="search" class="form-control" placeholder="Code, patient, chirurgien..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>" id="searchInput" autocomplete="off">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Classification ASA</label>
-                <select name="asaClass" class="form-select">
+                <select name="asaClass" class="form-select" id="asaFilter">
                     <option value="">Toutes les classes</option>
                     <option value="I" <%= typeof asaFilter !== 'undefined' && asaFilter === 'I' ? 'selected' : '' %>>ASA I</option>
                     <option value="II" <%= typeof asaFilter !== 'undefined' && asaFilter === 'II' ? 'selected' : '' %>>ASA II</option>
@@ -37,7 +37,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Statut</label>
-                <select name="status" class="form-select">
+                <select name="status" class="form-select" id="statusFilter">
                     <option value="">Tous les statuts</option>
                     <option value="planned" <%= typeof statusFilter !== 'undefined' && statusFilter === 'planned' ? 'selected' : '' %>>Planifiée</option>
                     <option value="urgent" <%= typeof statusFilter !== 'undefined' && statusFilter === 'urgent' ? 'selected' : '' %>>Urgente</option>
@@ -46,7 +46,7 @@
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary">
+                    <button type="button" class="btn btn-outline-primary" id="searchBtn">
                         <i class="bi bi-search"></i>
                     </button>
                     <a href="/surgeries" class="btn btn-outline-secondary">
@@ -180,4 +180,13 @@
     </div>
 </div>
 
-
+<script src="/js/live-search.js"></script>
+<script>
+// Initialize live search with multiple filters
+initLiveSearch({
+    searchInputId: 'searchInput',
+    contentSelector: '.material-card .card-body',
+    filterSelectors: ['#asaFilter', '#statusFilter'],
+    endpoint: '/surgeries'
+});
+</script>

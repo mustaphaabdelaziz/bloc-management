@@ -29,6 +29,9 @@ const {
   rescheduleSurgery,
   exportPlanningPDF,
   exportPlanningExcel,
+  addCustomFeesToSurgery,
+  removeCustomFee,
+  exportSurgeryFinancialsExcel,
 } = require("../controller/surgery.controller");
 
 // Debug: ensure handlers are defined
@@ -60,7 +63,10 @@ router.post("/:id/update-status", isLoggedIn, ensureHeadDepartManagement, catchA
 router.post("/:id/close", isLoggedIn, ensureManagementAccess, catchAsync(closeSurgery));
 router.post("/:id/reopen", isLoggedIn, ensureManagementAccess, catchAsync(reopenSurgery));
 router.post("/:id/add-materials", isLoggedIn, ensureHeadDepartManagement, catchAsync(addMaterialsToSurgery));
+router.post("/:id/add-custom-fees", isLoggedIn, ensureHeadDepartManagement, catchAsync(addCustomFeesToSurgery));
+router.delete("/:id/custom-fees/:feeIndex", isLoggedIn, ensureHeadDepartManagement, catchAsync(removeCustomFee));
 router.get("/:id/edit", isLoggedIn, ensureHeadDepartManagement, renderEditSurgeryForm);
+router.get("/:id/export/financial-excel", isLoggedIn, ensureManagementAccess, catchAsync(exportSurgeryFinancialsExcel));
 
 // Operating Room Reservation Routes
 router.get("/planning/view", isLoggedIn, ensureViewSurgeries, catchAsync(showPlanning));

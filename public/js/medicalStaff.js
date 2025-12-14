@@ -89,6 +89,11 @@ function downloadTemplateViaLibrary() {
 }
 
 function showImportModal() {
-  const modal = new bootstrap.Modal(document.getElementById('importExcelModal'));
-  modal.show();
+  // Ensure Bootstrap is loaded before using it
+  if (typeof bootstrap !== 'undefined') {
+    const modal = new bootstrap.Modal(document.getElementById('importExcelModal'));
+    modal.show();
+  } else {
+    console.error('Bootstrap not loaded yet');
+  }
 }

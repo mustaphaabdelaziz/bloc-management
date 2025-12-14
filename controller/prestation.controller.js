@@ -553,6 +553,8 @@ module.exports.importPrestations = async (req, res) => {
 
         // Create and save prestation
         const prestation = new Prestation(prestationData);
+        prestation.createdBy = req.user._id;
+        prestation.updatedBy = req.user._id;
         await prestation.save();
         results.imported++;
 

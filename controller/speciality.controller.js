@@ -4,13 +4,27 @@ const Surgery = require("../models/Surgery");
 
 module.exports.specialityList = async (req, res) => {
   try {
-    const specialties = await Specialty.find()
+    const search = req.query.search || "";
+
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { code: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    const specialties = await Specialty.find(query)
       .populate('createdBy', 'firstname lastname')
       .populate('updatedBy', 'firstname lastname')
       .sort({ name: 1 });
     res.render("specialties/index", {
       title: "Gestion des Spécialités",
       specialties,
+      filters: { search },
     });
   } catch (error) {
     res.status(500).render("error", { title: "Erreur", error });
@@ -183,6 +197,8 @@ module.exports.importSpecialties = async (req, res) => {
 
         // Create and save specialty
         const specialty = new Specialty(specialtyData);
+        specialty.createdBy = req.user._id;
+        specialty.updatedBy = req.user._id;
         await specialty.save();
         results.imported++;
 

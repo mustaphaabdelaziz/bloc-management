@@ -361,6 +361,8 @@ module.exports.importFamilies = async (req, res) => {
 
         // Create and save family
         const family = new Family(familyData);
+        family.createdBy = req.user._id;
+        family.updatedBy = req.user._id;
         await family.save();
         results.imported++;
 

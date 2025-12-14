@@ -1318,6 +1318,191 @@
     left: 0;
 }
 
+/* ===== CUSTOM ASA SELECT ===== */
+.custom-asa-select {
+    position: relative;
+    width: 100%;
+    z-index: 1;
+}
+
+.asa-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid var(--surgery-gray-300);
+    border-radius: var(--surgery-border-radius);
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--surgery-dark);
+    min-height: 50px;
+}
+
+.asa-select-trigger:hover {
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f8f0 100%);
+}
+
+.asa-select-trigger:focus {
+    outline: none;
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.15);
+}
+
+.asa-select-trigger.active {
+    border-color: var(--surgery-primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.asa-select-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.asa-select-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: var(--surgery-transition);
+    background: var(--surgery-gray-100);
+    color: var(--surgery-gray-600);
+}
+
+.asa-select-text {
+    flex: 1;
+    font-weight: 500;
+    color: var(--surgery-gray-600);
+}
+
+.asa-select-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--surgery-gray-600);
+    transition: var(--surgery-transition);
+    transform: rotate(0deg);
+}
+
+.asa-select-trigger.active .asa-select-arrow {
+    transform: rotate(180deg);
+}
+
+/* Custom ASA Dropdown */
+.asa-select-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: var(--surgery-border-radius-lg);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    border: 2px solid var(--surgery-gray-200);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.95);
+    transition: var(--surgery-transition);
+    z-index: 1050;
+    overflow: hidden;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.asa-select-dropdown.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+.asa-select-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: var(--surgery-transition);
+    border-bottom: 1px solid var(--surgery-gray-100);
+    font-size: 1rem;
+    background: transparent;
+}
+
+.asa-select-option:last-child {
+    border-bottom: none;
+}
+
+.asa-select-option:hover {
+    background: linear-gradient(135deg, var(--surgery-gray-50) 0%, rgba(40, 167, 69, 0.05) 100%);
+    transform: translateX(4px);
+    border-left: 4px solid var(--surgery-primary);
+}
+
+.asa-select-option.selected {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+    color: var(--surgery-primary);
+    font-weight: 600;
+    border-left: 4px solid var(--surgery-primary);
+}
+
+.asa-option-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    background: var(--surgery-gray-100);
+    color: var(--surgery-gray-600);
+    transition: var(--surgery-transition);
+}
+
+.asa-select-option:hover .asa-option-icon {
+    background: var(--surgery-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.asa-select-option.selected .asa-option-icon {
+    background: var(--surgery-primary);
+    color: white;
+}
+
+.asa-option-text {
+    flex: 1;
+    font-weight: 500;
+    color: var(--surgery-gray-700);
+}
+
+.asa-select-option.selected .asa-option-text {
+    color: var(--surgery-primary);
+}
+
+/* Hide native select for ASA */
+.custom-asa-select select {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
 .input-feedback {
     margin-top: 0.5rem;
 }

@@ -1095,6 +1095,8 @@ module.exports.importMaterials = async (req, res) => {
 
         // Create and save material - code will be auto-generated
         const material = new Material(materialData);
+        material.createdBy = req.user._id;
+        material.updatedBy = req.user._id;
         await material.save();
         results.imported++;
 

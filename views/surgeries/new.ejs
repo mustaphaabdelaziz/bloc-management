@@ -278,31 +278,53 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Classe ASA</label>
-                                <div class="input-wrapper-modern">
-                                    <i class="input-icon-wrapper bi bi-heart-pulse"></i>
-                                    <select class="form-select-modern" id="asaClass" name="asaClass">
+                                <div class="custom-asa-select">
+                                    <select class="form-select-modern" id="asaClass" name="asaClass" style="display: none;">
                                         <option value="">Non spécifiée</option>
                                         <option value="I">ASA I - Patient en bonne santé</option>
                                         <option value="II">ASA II - Maladie systémique légère</option>
                                         <option value="III">ASA III - Maladie systémique grave</option>
                                     </select>
+                                    <div class="asa-select-trigger">
+                                        <div class="asa-select-content">
+                                            <div class="asa-select-icon">
+                                                <i class="bi bi-heart-pulse"></i>
+                                            </div>
+                                            <div class="asa-select-text" id="asaText">Non spécifiée</div>
+                                        </div>
+                                        <div class="asa-select-arrow">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="asa-select-dropdown">
+                                        <div class="asa-select-option" data-value="">
+                                            <div class="asa-option-icon">
+                                                <i class="bi bi-dash-circle"></i>
+                                            </div>
+                                            <div class="asa-option-text">Non spécifiée</div>
+                                        </div>
+                                        <div class="asa-select-option" data-value="I">
+                                            <div class="asa-option-icon">
+                                                <i class="bi bi-heart"></i>
+                                            </div>
+                                            <div class="asa-option-text">ASA I - Patient en bonne santé</div>
+                                        </div>
+                                        <div class="asa-select-option" data-value="II">
+                                            <div class="asa-option-icon">
+                                                <i class="bi bi-heart-half"></i>
+                                            </div>
+                                            <div class="asa-option-text">ASA II - Maladie systémique légère</div>
+                                        </div>
+                                        <div class="asa-select-option" data-value="III">
+                                            <div class="asa-option-icon">
+                                                <i class="bi bi-heart-pulse"></i>
+                                            </div>
+                                            <div class="asa-option-text">ASA III - Maladie systémique grave</div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="form-help-text">
                                     Évaluation de l'état de santé physique du patient avant l'intervention
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Urgence ASA</label>
-                                <div class="form-check-modern">
-                                    <input class="form-check-input-modern" type="checkbox" id="asaUrgent" name="asaUrgent">
-                                    <label class="form-check-label-modern" for="asaUrgent">
-                                        <i class="bi bi-exclamation-triangle me-1"></i>Marquer comme ASA Urgent (U)
-                                    </label>
-                                </div>
-                                <div class="form-help-text text-warning">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Si activé, la classe ASA sera complétée par "U" (ex: ASA III U)
                                 </div>
                             </div>
                         </div>
@@ -699,6 +721,76 @@ document.addEventListener('DOMContentLoaded', function() {
     const defaultOption = customSelect.querySelector(`[data-value="${defaultValue}"]`);
     if (defaultOption) {
         defaultOption.click();
+    }
+
+    // Custom ASA Select Functionality
+    const asaCustomSelect = document.querySelector('.custom-asa-select');
+    if (asaCustomSelect) {
+        const asaSelectTrigger = asaCustomSelect.querySelector('.asa-select-trigger');
+        const asaSelectDropdown = asaCustomSelect.querySelector('.asa-select-dropdown');
+        const asaSelectOptions = asaCustomSelect.querySelectorAll('.asa-select-option');
+        const asaHiddenSelect = asaCustomSelect.querySelector('select');
+        const asaText = asaCustomSelect.querySelector('#asaText');
+
+        let asaIsOpen = false;
+
+        // Toggle dropdown
+        asaSelectTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            asaIsOpen = !asaIsOpen;
+            asaToggleDropdown();
+        });
+
+        // Handle option selection
+        asaSelectOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                const text = this.querySelector('.asa-option-text').textContent;
+
+                // Update hidden select
+                asaHiddenSelect.value = value;
+
+                // Update trigger appearance
+                asaText.textContent = text;
+
+                // Update selected state
+                asaSelectOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // Close dropdown
+                asaIsOpen = false;
+                asaToggleDropdown();
+
+                // Trigger change event for form validation
+                asaHiddenSelect.dispatchEvent(new Event('change'));
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!asaCustomSelect.contains(e.target)) {
+                asaIsOpen = false;
+                asaToggleDropdown();
+            }
+        });
+
+        // Toggle dropdown function
+        function asaToggleDropdown() {
+            if (asaIsOpen) {
+                asaSelectDropdown.classList.add('open');
+                asaSelectTrigger.classList.add('active');
+            } else {
+                asaSelectDropdown.classList.remove('open');
+                asaSelectTrigger.classList.remove('active');
+            }
+        }
+
+        // Initialize with default selection
+        const asaDefaultValue = asaHiddenSelect.value || '';
+        const asaDefaultOption = asaCustomSelect.querySelector(`[data-value="${asaDefaultValue}"]`);
+        if (asaDefaultOption) {
+            asaDefaultOption.click();
+        }
     }
 
     // Update preview when form changes

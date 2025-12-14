@@ -17,15 +17,15 @@
         <h5 class="filter-title">
             <i class="bi bi-funnel"></i>Filtres et Recherche
         </h5>
-        <form method="GET" class="row g-3">
+        <form method="GET" class="row g-3" id="searchForm" onsubmit="return false;">
             <div class="col-md-8">
                 <label class="form-label">Recherche</label>
-                <input type="text" name="search" class="form-control" placeholder="Code chirurgie, chirurgien, patient..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>">
+                <input type="text" name="search" class="form-control" placeholder="Code chirurgie, chirurgien, patient..." value="<%= typeof filters !== 'undefined' && filters.search ? filters.search : '' %>" id="searchInput" autocomplete="off">
             </div>
             <div class="col-md-4">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary">
+                    <button type="button" class="btn btn-outline-primary" id="searchBtn">
                         <i class="bi bi-search"></i>
                     </button>
                     <a href="/payments" class="btn btn-outline-secondary">
@@ -243,5 +243,14 @@ document.getElementById('recordPaymentForm').addEventListener('submit', function
         alert(`Le montant ne peut pas dépasser ${maxAmount.toFixed(2)} DA`);
         return false;
     }
+});
+</script>
+<script src="/js/live-search.js"></script>
+<script>
+// Initialize live search
+initLiveSearch({
+    searchInputId: 'searchInput',
+    contentSelector: '.material-card .card-body',
+    endpoint: '/payments'
 });
 </script>

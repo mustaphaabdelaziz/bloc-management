@@ -22,10 +22,10 @@
         <h5 class="filter-title">
             <i class="bi bi-funnel"></i>Filtres et Recherche
         </h5>
-        <form method="GET" class="row g-3">
+        <form method="GET" class="row g-3" id="searchForm" onsubmit="return false;">
             <div class="col-md-4">
                 <label class="form-label">Statut</label>
-                <select name="status" class="form-select">
+                <select name="status" class="form-select" id="statusFilter">
                     <option value="">Toutes les salles</option>
                     <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Actives</option>
                     <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Inactives</option>
@@ -33,12 +33,12 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Recherche</label>
-                <input type="text" name="search" class="form-control" placeholder="Code, nom, localisation..." value="<%= filters.search || '' %>">
+                <input type="text" name="search" class="form-control" placeholder="Code, nom, localisation..." value="<%= filters.search || '' %>" id="searchInput" autocomplete="off">
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary">
+                    <button type="button" class="btn btn-outline-primary" id="searchBtn">
                         <i class="bi bi-search"></i>
                     </button>
                     <a href="/operating-rooms" class="btn btn-outline-secondary">
@@ -150,3 +150,13 @@
         </div>
     </div>
 </div>
+<script src="/js/live-search.js"></script>
+<script>
+// Initialize live search with status filter
+initLiveSearch({
+    searchInputId: 'searchInput',
+    contentSelector: '.material-card .card-body',
+    filterSelectors: ['#statusFilter'],
+    endpoint: '/operating-rooms'
+});
+</script>

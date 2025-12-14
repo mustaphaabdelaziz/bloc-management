@@ -38,10 +38,10 @@
         <h5 class="filter-title">
             <i class="bi bi-funnel"></i>Filtres et Recherche
         </h5>
-        <form method="GET" class="row g-3">
+        <form method="GET" class="row g-3" id="searchForm" onsubmit="return false;">
             <div class="col-md-4">
                 <label class="form-label">Catégorie</label>
-                <select name="category" class="form-select">
+                <select name="category" class="form-select" id="categoryFilter">
                     <option value="">Toutes les catégories</option>
                     <option value="consumable" <%= filters.category === 'consumable' ? 'selected' : '' %>>Consommables</option>
                     <option value="patient" <%= filters.category === 'patient' ? 'selected' : '' %>>Matériels patients</option>
@@ -49,12 +49,12 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">Recherche</label>
-                <input type="text" name="search" class="form-control" placeholder="Nom ou code du matériau..." value="<%= filters.search %>">
+                <input type="text" name="search" class="form-control" placeholder="Nom ou code du matériau..." value="<%= filters.search %>" id="searchInput" autocomplete="off">
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary">
+                    <button type="button" class="btn btn-outline-primary" id="searchBtn">
                         <i class="bi bi-search"></i>
                     </button>
                     <a href="/materials" class="btn btn-outline-secondary">
@@ -332,3 +332,14 @@ function showImportModal() {
         </div>
     </div>
 </div>
+
+<script src="/js/live-search.js"></script>
+<script>
+// Initialize live search with category filter
+initLiveSearch({
+    searchInputId: 'searchInput',
+    contentSelector: '.material-card .card-body',
+    filterSelectors: ['#categoryFilter'],
+    endpoint: '/materials'
+});
+</script>

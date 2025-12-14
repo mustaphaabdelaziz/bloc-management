@@ -123,6 +123,29 @@ const surgerySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    customFees: [
+      {
+        feeName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        feeAmount: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        createdBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: false,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     notes: {
       type: String,
     },
